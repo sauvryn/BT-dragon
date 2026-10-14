@@ -21,12 +21,12 @@ BT Dragon turns a Raspberry Pi Zero 2 W (on its own, or as part of an old Pwnago
 > The author came up with the idea for Harald and directed the work: the features, how Harald's food, joy and leveling should feel, the privacy rules (passive only, no following other people's devices), and every design decision along the way. The author also tested it on real hardware, found the bugs, and experimented with Harald to tune him. Bugs and ideas for improvement were reported to Claude, who performed troubleshooting and bugfixing in the code itself. Claude's own testing was limited to simulations and automated checks; anything marked "tested" in this README was genuinely tested by the author on their real devices (which are named).
 >
 > **If you're uncomfortable using AI-assisted code for any reason, please don't use this program.** That is your choice, it is perfectly reasonable, and this disclaimer is here so you can make it before downloading (if you're reading this on GitHub) or installing anything. That being said, please respect that the project author has been completely open and honest about the contents of this disclaimer and the fact of its inclusion, especially in a world where more and more individuals are attempting to pass off partially or completely AI-generated work as their own, either through direct deceit or by omission of fact.
+>
+>Are you still interested? Cool. Moving on...
 
 ![Harald's screen](docs/screen.png)
 
 ---
-
-Are you still interested? Cool. Let's move on, then.
 
 ## Contents
 
