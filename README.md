@@ -6,6 +6,8 @@ BT Dragon turns a Raspberry Pi Zero 2 W (on its own, or as part of an old Pwnago
 
 **Why Harald?** He's named after **Harald "Bluetooth" Gormsson**, a Viking king of Denmark who died around 986. He's remembered for uniting Denmark's tribes under one crown, for bringing Christianity to the Danes, and for the great runestone he raised at Jelling, which Danes still call their country's birth certificate. Nobody knows for sure where his nickname came from: perhaps a dead, dark tooth, or an older word meaning "dark chieftain". In 1997, engineers from Intel, Ericsson and Nokia were looking for a working name for a new short-range radio standard that would unite phones and computers, the way Harald had united the Danes. They called it Bluetooth, and the name stuck. The Bluetooth logo is Harald's initials in runes: ᚼ (H) and ᛒ (B), joined together. Thus, this Bluetooth-eating dragon is Viking-themed and named Harald in honor of this legacy.
 
+![Harald's screen](docs/screen.png)
+
 > **Prototype release.** Everything here works on the author's own hardware, but it hasn't been tried on many setups yet. Expect rough edges, and please open an issue when you find one.
 >
 > **Placeholder art.** Harald's current pixel art is an AI-generated placeholder, made only so the prototype could be designed and tuned. It will be replaced with the author's own original, hand-drawn artwork before the first release. The Den also allows an individual user to easily upload their own artwork or artwork they have permission to use.
@@ -24,7 +26,7 @@ BT Dragon turns a Raspberry Pi Zero 2 W (on its own, or as part of an old Pwnago
 >
 >If you're still interested in learning about Harald and what he can do, let's move on...
 
-![Harald's screen](docs/screen.png)
+
 
 ---
 
