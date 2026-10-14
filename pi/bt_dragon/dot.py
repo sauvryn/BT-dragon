@@ -50,7 +50,7 @@ H = "/data/local/tmp/harald"
 CHIP = "/sys/devices/soc/11007000.i2c/i2c-0/0-003f/frame"
 PORT = 5555
 MODES = ("all", "big", "recap", "silent", "adventure")
-BIG_MOODS = {"proud", "happy", "excited", "ecstatic", "adventure", "riding", "alarmed"}
+BIG_MOODS = {"proud", "happy", "excited", "ecstatic", "adventure", "riding", "alarmed", "sunglasses"}
 NEVER_SAY = ("MY DEN:",)
 
 DEFAULTS = {
@@ -73,7 +73,15 @@ DEFAULTS = {
     "home_town": "", "home_lat": None, "home_lon": None,   # where "the weather" is, without GPS
     "phone": False,           # also (or instead) speak through the phone (Termux helper)
     "phone_backup": True,     # the Dot's voice, but the phone while the Dot is lost
+    # weather news said out loud (his screen always shows it): from the Lair...
+    "say_lair_temp": True, "say_lair_storm": True, "say_lair_sun": True, "say_lair_warnings": True,
+    "say_lair_pollen": True, "say_lair_pollen_when": "increased",    # "all" high readings, or "increased" only
+    "say_lair_uv": True, "say_lair_uv_when": "increased",
+    # ...and from the phone's own sensors
+    "say_phone_storm": True, "say_phone_sun": True,
 }
+SAY_BOOLS = ("say_lair_temp", "say_lair_storm", "say_lair_sun", "say_lair_warnings", "say_lair_pollen", "say_lair_uv",
+             "say_phone_storm", "say_phone_sun")
 LIMITS = {"volume": (0, 100), "adv_volume": (0, 100), "brightness": (0, 100), "red": (0, 100), "green": (0, 100),
           "blue": (0, 100), "pitch": (-8, 8), "speed": (0.6, 1.6), "gap": (0, 120)}
 
@@ -252,13 +260,17 @@ class DotLink:
         """Change one setting from the den. Returns an error string or None."""
         if key not in DEFAULTS or key in ("serial", "model", "last_ip", "home_lat", "home_lon"):
             return "no such setting"
-        if key in ("enabled", "listen", "wake", "phone", "phone_backup"):
+        if key in ("enabled", "listen", "wake", "phone", "phone_backup") + SAY_BOOLS:
             self.s[key] = str(value).lower() in ("1", "true", "on", "yes")
         elif key == "home_town":
             self.s[key] = value.strip()[:40]
             self.s["home_lat"] = self.s["home_lon"] = None
             if self.s[key]:
                 asyncio.ensure_future(self._find_home(self.s[key]))
+        elif key in ("say_lair_pollen_when", "say_lair_uv_when"):
+            if value not in ("all", "increased"):
+                return "choose all or increased"
+            self.s[key] = value
         elif key == "chatty":
             if value not in MODES:
                 return "choose all, big, recap, silent or adventure"
@@ -571,6 +583,16 @@ class DotLink:
             return          # (Adventure mode speaks only its own announcements: see adventure())
         self.say(voicemod.speakable(text, self.app.pet.name))
 
+    def news(self, text, big=False):
+        """A remark that isn't on his screen word for word (the Lair's temperature, say),
+        spoken by the same rules as his screen messages: how chatty, quiet hours."""
+        if not self.speaks():
+            return
+        mode = self.s["chatty"]
+        if mode in ("recap", "silent", "adventure") or (mode == "big" and not big):
+            return
+        self.say(text)
+
     def on_event(self, kind, text, ts):
         """Hooked into the diary: things that happened, for the ring."""
         name = {"species": "ev_species", "level": "ev_level", "landmark": "ev_landmark",
@@ -698,9 +720,12 @@ class DotLink:
             self.phone.push(text)
         if route in ("phone", None):
             return
+        if not (self.connected and self.ready):
+            return              # the Dot's away: nothing is saved up (the recap covers time apart),
+                                # or a timer would come back as a pile of stale "pasta is done!"
         if not force:
-            if not (self.connected and self.ready) or self.quiet_now():
-                return          # live remarks aren't saved up; the recap covers time apart
+            if self.quiet_now():
+                return
             # don't let a busy street build a backlog: keep the newest few (Adventure mode's
             # news is rarer and worth hearing, so it keeps more)
             self.queue = self.queue[-(8 if self.s["chatty"] == "adventure" else 3):]
@@ -924,7 +949,6 @@ class DotLink:
                         self.ready = False
                         await self.setup()
             if self.ready:
-                self._adventure_tick()
                 if self.dot_ears.connected:
                     await self.dot_ears.set_wake(self.wake_reason() == "", int(tuning.get("wake_strict")))
                 if self._anims_pushed != self._anim_key():
@@ -1360,7 +1384,9 @@ class DotLink:
         self.say(self.answered, force=True)
 
     async def answer(self, text):
-        """Words for a question (spoken or typed). '' means: nothing to say."""
+        """Words for a question (spoken or typed). '' means: nothing to say. A short version
+        for his screen, where there is one, is left in self.screen_answer."""
+        self.screen_answer = None
         q = ask.parse(text or "")
         i = q["intent"]
         if i == "stop":
@@ -1376,6 +1402,8 @@ class DotLink:
             return ask.answer_timer(q, self.timers)
         if i == "weather":
             return await self._weather(q)
+        if i == "conditions":
+            return await self._conditions(q)
         if i and i.startswith("shop_"):
             return self.answer_shopping(q)
         if i == "cal_day":
@@ -1470,24 +1498,79 @@ class DotLink:
             parts.append(f"{names[:1].upper() + names[1:]} {verb} on the list.")
         return " ".join(parts)
 
-    async def _weather(self, q):
-        label = None
-        if q["place"]:
+    def _target(self, q):
+        """Where a weather question is about: (lat, lon, words, country code), or words saying why not.
+        'At home' or 'at the Lair' means the Lair; a named place means there; otherwise here
+        (GPS or Wi-Fi), and if he doesn't know where here is, the Lair."""
+        lair = getattr(self.app, "lair", None)
+        at_lair = lair.where() if lair else None
+        if q.get("home"):
+            if not at_lair:
+                return f"I don't know where my Lair is yet. Set it in my den, under {self.app.pet.name}'s Lair."
+            return at_lair[0], at_lair[1], "at the Lair", lair.s.get("code")
+        if q.get("place"):
             _, lat, lon, label = ask.PLACES[q["place"]]
-        else:
-            fix = self.app.where_now() if hasattr(self.app, "where_now") else None
-            if fix:
-                lat, lon = fix["lat"], fix["lon"]
-            elif self.s["home_lat"] is not None:
-                lat, lon = self.s["home_lat"], self.s["home_lon"]
-            else:
-                return "I don't know where we are. Set your home town in my den, or link your phone's GPS."
+            return lat, lon, f"in {label}", None
+        fix = self.app.where_now() if hasattr(self.app, "where_now") else None
+        if fix:
+            return fix["lat"], fix["lon"], "here", None
+        if at_lair:
+            return at_lair[0], at_lair[1], "at the Lair", lair.s.get("code")
+        if self.s["home_lat"] is not None:
+            return self.s["home_lat"], self.s["home_lon"], "here", None
+        return (f"I don't know where we are. Set my Lair in my den, under {self.app.pet.name}'s Lair, "
+                "or link a GPS.")
+
+    async def _weather(self, q):
+        t = self._target(q)
+        if isinstance(t, str):
+            return t
+        lat, lon, where, _ = t
         try:
             data = await asyncio.to_thread(ask.fetch_weather, lat, lon)
         except Exception as e:
             log.warning("weather lookup failed: %s", e)
             return "I couldn't get the weather just now. Are we connected to the internet?"
-        return ask.answer_weather(data, q["when"], label)
+        if q["when"] == "now":
+            from . import lair as lairmod
+            self.screen_answer = lairmod.screen_conditions("temperature", where, data)
+        return ask.answer_weather(data, q["when"], None if where == "here" else where.removeprefix("in "))
+
+    def _warnings_answer(self):
+        lair = getattr(self.app, "lair", None)
+        if not lair or not lair.complete:
+            return f"I don't know where my Lair is yet. Set it in my den, under {self.app.pet.name}'s Lair."
+        source, _ = lair.warnings_where()
+        if not source:
+            return "I can only get official weather warnings for a Lair in the United Kingdom or the United States so far."
+        if not lair.announcing:
+            return "I only keep an eye on weather warnings while Local announcements are on, in my den."
+        active = lair.s.get("warn_active") or []
+        if not active:
+            return "There are no weather warnings at the Lair right now."
+        if len(active) == 1:
+            return f"There's one weather warning at the Lair: {active[0]['spoken']}."
+        return f"There are {len(active)} weather warnings at the Lair: " + "; ".join(w["spoken"] for w in active) + "."
+
+    async def _conditions(self, q):
+        """Humidity, air pressure, pollen, sunrise and sunset, UV, air quality."""
+        from . import lair as lairmod
+        if q["what"] == "warnings":
+            return self._warnings_answer()
+        t = self._target(q)
+        if isinstance(t, str):
+            return t
+        lat, lon, where, code = t
+        try:
+            if q["what"] in ("pollen", "air"):
+                return lairmod.answer_conditions(q["what"], where, air=await asyncio.to_thread(lairmod.fetch_air, lat, lon),
+                                                 code=code)
+            cond = await asyncio.to_thread(lairmod.fetch_conditions, lat, lon)
+            self.screen_answer = lairmod.screen_conditions(q["what"], where, cond, tomorrow=q.get("tomorrow", False))
+            return lairmod.answer_conditions(q["what"], where, cond, tomorrow=q.get("tomorrow", False), code=code)
+        except Exception as e:
+            log.warning("conditions lookup failed: %s", e)
+            return "I couldn't look that up just now. Are we connected to the internet?"
 
     async def _find_home(self, name):
         try:
@@ -1510,6 +1593,14 @@ class DotLink:
                     self.stop_alarm()
                 await self.app._sleep(1)
                 continue
+            if now - getattr(self, "_adv_checked", 0) >= 2:
+                # Adventure mode's milestones, here rather than in the Dot's own loop, so the
+                # phone voice gets them too (this loop runs with or without a Dot)
+                self._adv_checked = now
+                try:
+                    self._adventure_tick()
+                except Exception:
+                    log.exception("adventure milestones")
             if now - getattr(self, "_cal_checked", 0) >= 15:
                 self._cal_checked = now
                 try:

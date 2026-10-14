@@ -28,11 +28,12 @@ from .diary import DiaryFiles
 from .dot import DotLink
 from . import moon as moonmod
 from . import tuning
-from .pet import berry_value, hunger_word, joy_word, xp_for
+from .pet import _n, berry_value, hunger_word, joy_word, xp_for
 from . import friends as friendsmod
 from .dragon import MOODS
 from .gps import Gps
 from .wifipos import WifiPosition
+from .lair import Lair, LookupError_, c_and_f, deg_words
 from .pet import Pet
 from .screen import render, render_nap, render_sleep
 from .store import Store
@@ -139,6 +140,8 @@ class Dragon:
         self.nap_since = nap.get("since", 0) if isinstance(nap, dict) else 0
         # the Echo Dot: Harald's voice and light ring
         self.dot = DotLink(self)
+        self.lair = Lair(self.store)                # home, as far as the weather is concerned
+        self.lair.adopt_home_town(self.dot.s.get("home_town"), self.dot.s.get("home_lat"), self.dot.s.get("home_lon"))
         self.pet.on_say = self.dot.on_say
         if simulate:
             self.dot.state = "not used in the simulation"
@@ -388,6 +391,18 @@ class Dragon:
             self._clock_ok = (ok, time.time())
         return ok
 
+    @staticmethod
+    def screen_answer(reply, short=None):
+        """A typed question's answer on his screen (only there, never spoken): the short version
+        if there is one, the whole answer if it fits, otherwise a pointer to the den."""
+        from .fonts import text_width
+        from .pet import STATUS_W
+        options = ([short] if isinstance(short, str) else list(short or [])) + [reply.rstrip(".")]
+        for t in options:
+            if t and text_width(f"ANSWER: {t}".upper()) <= STATUS_W:
+                return f"ANSWER: {t}".upper()
+        return "ANSWER: A LONG RESPONSE. CHECK THE DEN."
+
     def own_ssids(self):
         mine = {ssid for ssid, _ in config_networks(self.cfg)}   # our own hotspots
         if self.dot.s.get("setup_network"):
@@ -421,7 +436,7 @@ class Dragon:
             if is_new:
                 packed = self.pet.treat(ap)
                 self.event("treat", f"New Wi-Fi: {ap['ssid'] or '(hidden)'} {ap['auth']}"
-                                    + (f" ({packed:g} into his pack)" if packed else ""))
+                                    + (f" ({_n(packed)} into his pack)" if packed else ""))
             elif clock and prev:
                 # berry bush: one point of food per calendar day since he last picked it
                 days = (datetime.date.fromtimestamp(now) - datetime.date.fromtimestamp(prev)).days
@@ -435,7 +450,7 @@ class Dragon:
         if berry_food:
             packed = self.pet.berries(berry_food, bushes)
             self.event("berries", f"Picked berries from {bushes} familiar network{'s' if bushes != 1 else ''} "
-                                  f"(+{berry_food:g} food" + (f", {packed:g} into his pack" if packed else "") + ")")
+                                  f"(+{_n(berry_food)} food" + (f", {_n(packed)} into his pack" if packed else "") + ")")
 
     async def wifi_loop(self):
         last_look = 0.0
@@ -669,8 +684,10 @@ class Dragon:
             return
         lux = self.sun.feed(float(vals[0]))
         if lux is not None:
-            self.pet.sunny()
-            self.dot.adventure("sunny")
+            say = self.dot.s["say_phone_sun"]
+            self.pet.sunny(speak=say)
+            if say:
+                self.dot.adventure("sunny")
             self.event("weather", f"Sunshine! The phone saw {lux:,.0f} lux")
 
     def on_pressure(self, vals):
@@ -693,6 +710,10 @@ class Dragon:
                     names = ", ".join(k.replace("-", " ") for k, _ in new[:6]) + (" ..." if len(new) > 6 else "")
                     self.event("star", f"New star{'s' if len(new) != 1 else ''} in the sky: {names}")
         self._moon_tick(now)
+        kinds = self.lair.due(now) if (self.home_ssid or self.simulate) else []
+        if kinds:
+            self.lair._busy = True               # (until the check itself runs)
+            asyncio.ensure_future(self._lair_check(now, kinds))
         if self.baro:
             m = self.baro.take_climb()
             if m:
@@ -700,13 +721,16 @@ class Dragon:
             if now - self._weather_check >= 60:
                 self._weather_check = now
                 kind, d = self.baro.weather(now)
+                say = self.dot.s["say_phone_storm"]
                 if kind == "storm":
-                    self.pet.storm(d)
-                    self.dot.adventure("storm")
+                    self.pet.storm(d, speak=say)
+                    if say:
+                        self.dot.adventure("storm")
                     self.event("weather", f"A storm is coming: pressure fell {abs(d):.1f} hPa in 3 hours")
                 elif kind == "rise":
-                    self.pet.weather_change(d)
-                    self.dot.adventure("weather")
+                    self.pet.weather_change(d, speak=say)
+                    if say:
+                        self.dot.adventure("weather")
                     self.event("weather", f"Weather change ahead: pressure rose {d:.1f} hPa in 3 hours")
 
     def _diary_context(self):
@@ -763,6 +787,68 @@ class Dragon:
                 self.pet.green_visit(words)
                 self.dot.adventure("green_visit", text=words)
                 self.event("green", f"{self.pet.name}: {words}")
+
+    async def _lair_check(self, now, kinds=None):
+        """Local announcements, each at its own time: how warm it is at the Lair (on the hour),
+        storms or changes on the way (a quarter past), high pollen (half past), high UV (a
+        quarter to), and sunrise and sunset as they happen."""
+        self.lair._busy = False
+        say, warned = self.dot.s, []
+        for ev in await self.lair.check(now, kinds):
+            if self.napping:
+                return
+            kind = ev[0]
+            if kind == "storm":
+                self.pet.storm(ev[1], at_lair=True, speak=say["say_lair_storm"])
+                self.event("weather", f"A storm is coming at the Lair: pressure {ev[1]:+.1f} hPa over 3 hours")
+            elif kind == "rise":
+                self.pet.weather_change(ev[1], at_lair=True, speak=say["say_lair_storm"])
+                self.event("weather", f"The weather is changing at the Lair: pressure {ev[1]:+.1f} hPa over 3 hours")
+            elif kind == "temp" and not self.dot.quiet_now():
+                t = c_and_f(ev[1])
+                self.pet.say([f"IT'S {t} OUTSIDE AT THE LAIR", f"IT'S {t} AT THE LAIR", f"{t} AT THE LAIR"],
+                             None, 30, speak=False)
+                if say["say_lair_temp"]:
+                    self.dot.news(f"It's {deg_words(ev[1])}, outside at the Lair.")
+            elif kind == "pollen":
+                level, groups, higher, increased = ev[1], ev[2], ev[3], ev[4]
+                names = " and ".join({"trees": "tree", "weeds": "weed"}.get(g, g) for g in groups)
+                screen = ([f"ACHOO! POLLEN IS HIGHER AT THE LAIR", "ACHOO! POLLEN IS HIGHER!", "ACHOO! HIGHER POLLEN"]
+                          if higher else
+                          [f"ACHOO! {level.upper()} POLLEN AT THE LAIR", f"ACHOO! {level.upper()} POLLEN", "ACHOO! POLLEN!"])
+                self.pet.say(screen, "sneezing", 45, speak=False)
+                if say["say_lair_pollen"] and (increased or say["say_lair_pollen_when"] == "all"):
+                    self.dot.news(f"Achoo! The {names} pollen is higher at the Lair! It's {level} now." if higher
+                                  else f"Achoo! The {names} pollen is {level} at the Lair.", big=True)
+                if increased:
+                    self.event("weather", f"{level.capitalize()} {names} pollen at the Lair")
+            elif kind == "uv":
+                uv, level, higher, increased = ev[1], ev[2], ev[3], ev[4]
+                screen = (["SUNGLASSES ON! UV IS HIGHER AT THE LAIR", "UV IS HIGHER AT THE LAIR", "HIGHER UV!"]
+                          if higher else
+                          [f"SUNGLASSES ON! {level.upper()} UV AT THE LAIR", f"{level.upper()} UV AT THE LAIR",
+                           f"{level.upper()} UV!"])
+                self.pet.say(screen, "sunglasses", 45, speak=False)
+                if say["say_lair_uv"] and (increased or say["say_lair_uv_when"] == "all"):
+                    self.dot.news(f"Sunglasses on! The UV index at the Lair is higher! It's {round(uv)} now, that's {level}."
+                                  if higher else
+                                  f"Sunglasses on! The UV index at the Lair is {round(uv)}, that's {level}.", big=True)
+                if increased:
+                    self.event("weather", f"{level.capitalize()} UV at the Lair (UV index {round(uv)})")
+            elif kind == "warning":
+                w = ev[1]
+                warned.append(w)
+                if say["say_lair_warnings"]:
+                    self.dot.news(f"Weather warning at the Lair: {w['spoken']}.", big=True)
+                self.event("weather", f"Weather warning at the Lair: {w['spoken']}")
+            elif kind in ("sunrise", "sunset"):
+                self.pet.cheer(tuning.get("sun_joy"), 0, "THE SUN IS RISING AT THE LAIR!" if kind == "sunrise"
+                               else "THE SUN IS SETTING AT THE LAIR", "happy", 30, speak=say["say_lair_sun"])
+        if warned and not self.napping:
+            # several at once: all are said (and in the diary), and the most serious stays on his screen
+            w = next((x for x in warned if x.get("severe")), warned[0])
+            self.pet.say([f"{w['title'].upper()} AT THE LAIR", w["title"].upper(), "WEATHER WARNING AT THE LAIR!"],
+                         "alarmed", 60, speak=False)
 
     def _moon_tick(self, now):
         """On the day of each major moon phase, once (needs a clock that's been set)."""
@@ -1025,7 +1111,7 @@ class Dragon:
                 except ValueError:
                     return ["ERR give a number"]
                 self.pet.save()
-                self.pet.say(f"PACK SET TO {self.pet.pack:g}")
+                self.pet.say(f"PACK SET TO {_n(self.pet.pack)}")
                 return ["OK"]
             if which == "food":
                 self.pet.hunger = v
@@ -1062,6 +1148,32 @@ class Dragon:
             return [f"{g['id']}|{g['name'].replace('|', '/')}|{g['kind']}|{int(g['first_seen'] or 0)}|"
                     f"{g['visits'] or 0}|{g['walks'] or 0}|{g['runs'] or 0}|{g['rides'] or 0}"
                     for g in self.store.greens_list()] + ["END"]
+        if cmd == "LAIR":  # place=, country=, found=, announce=, complete=, now=, then END
+            lr = self.lair
+            found, reading = lr.summary()
+            return [f"place={lr.s.get('place', '')}", f"country={lr.s.get('country_typed', lr.s.get('country', ''))}",
+                    f"found={found}", f"announce={1 if lr.s.get('announce') else 0}",
+                    f"complete={1 if lr.complete else 0}", f"now={reading}",
+                    f"warn_source={lr.warnings_where()[0]}", f"warn_area={lr.warnings_where()[1]}",
+                    f"warn_region={(lr.s.get('warn') or {}).get('area', '') if lr.warnings_where()[0] == 'uk' else ''}",
+                    "warn_active=" + " || ".join(w["title"] for w in lr.s.get("warn_active") or []), "END"]
+        if cmd == "LAIRSET":  # place|country: looked up straight away
+            place, _, country = arg.partition("|")
+            ok, words = await self.lair.set_place(place, country)
+            if ok:
+                self.event("network", f"{self.pet.name}'s Lair set: {self.lair.s['label']}, {self.lair.s['country']}")
+            return [("OK " if ok else "ERR ") + words]
+        if cmd == "LAIRREGION":  # the UK warning region, if the guess was wrong (e.g. LAIRREGION nw)
+            err = self.lair.set_region(arg.strip().lower())
+            return [f"ERR {err}" if err else "OK"]
+        if cmd == "LAIRANNOUNCE":  # on / off
+            err = self.lair.set_announce(arg.strip().lower() in ("on", "1", "true"))
+            return [f"ERR {err}" if err else "OK"]
+        if cmd == "LAIRFORGET":
+            self.lair.forget()
+            self.dot.s["home_town"], self.dot.s["home_lat"], self.dot.s["home_lon"] = "", None, None
+            self.dot.save()
+            return ["OK"]
         if cmd == "WIFIPOS":  # finding him by Wi-Fi: on=, status=, lookups=, fix_acc=
             w = self.wifipos
             if w.enabled and self.gps.current():
@@ -1145,8 +1257,10 @@ class Dragon:
                 return ["ERR type a question"]
             reply = await self.dot.answer(text)
             self.dot.heard, self.dot.answered = text, reply
-            if reply and self.dot.connected and self.dot.ready:
-                self.dot.say(reply, force=True)
+            if reply:
+                self.pet.say(self.screen_answer(reply, getattr(self.dot, "screen_answer", None)), None, 30, speak=False)
+            if reply:
+                self.dot.say(reply, force=True)     # out loud through the Dot or the phone, if he has a voice
             return ["OK " + (reply or "(nothing to say)")]
         if cmd.startswith("SHOP"):  # the shopping list page: SHOPADD name, SHOPTOGGLE id, ...
             return self.shopping_command(cmd, arg)

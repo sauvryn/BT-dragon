@@ -64,6 +64,7 @@ KNOBS = [
     ("storm_first_joy", "joy", "A storm coming: first of the day", 15, "joy", ""),
     ("storm_joy", "joy", "A storm coming: later ones that day", 4, "joy", ""),
     ("rise_joy", "joy", "Pressure rising fast: weather change", 3, "joy", ""),
+    ("sun_joy", "joy", "Sunrise or sunset at the Lair", 2, "joy", "With the Lair's Local announcements on."),
     ("sunny_joy", "joy", "Sunshine on the phone's light sensor", 3, "joy",
      "\"Wow! It's sunny out today!\" At most once per Sunshine wait (Detection)."),
     ("climb_joy", "joy", "Climbing (stairs, hills)", 2, "joy/10 m", ""),
@@ -124,6 +125,8 @@ KNOBS = [
     ("storm_hpa", "detect", "Storm: pressure fall within 3 hours", 3, "hPa",
      "Forecasters treat a fall of about 3 hPa in 3 hours as a sign of wind and rain on the way."),
     ("rise_hpa", "detect", "Weather change: pressure rise within 3 hours", 3, "hPa", ""),
+    ("lair_temp_every_h", "detect", "Lair: say how warm it is there every", 1, "hours",
+     "On the hour. Not during the Dot's quiet hours."),
     ("adv_walk_km", "detect", "Adventure mode: say how far we've walked every", 0.5, "km",
      "Today's walking, out loud through the Dot in Adventure mode: \"We've walked 2.5 kilometres!\""),
     ("adv_climb_m", "detect", "Adventure mode: say how high we've climbed every", 20, "m",
@@ -201,6 +204,8 @@ def set_value(key, value):
         return "must be a percentage, 0 to 100"
     if key in ("xp_curve", "climb_step_m", "storm_hpa", "rise_hpa") and v < 0.5:
         return "too small"
+    if key == "lair_temp_every_h" and (v < 1 or v != int(v)):
+        return "a whole number of hours, at least 1"
     if key == "xp_curve" and v < 1:
         return "must be at least 1"
     if v == float(_defaults[key]):

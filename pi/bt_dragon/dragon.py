@@ -13,7 +13,7 @@ B, P = 0, 255  # black ink, paper
 
 MOODS = ("content", "happy", "eating", "excited", "treat", "stuffed", "hungry", "starving",
          "bored", "lonely", "sleepy", "asleep", "alarmed", "uploading", "proud", "adventure", "riding",
-         "ecstatic")  # new moods go at the end: friends' beacons send the mood's number
+         "ecstatic", "sneezing", "sunglasses")  # new moods go at the end: friends' beacons send the mood's number
 
 
 def _ell(d, x0, y0, x1, y1, fill=P, outline=B, width=1):
@@ -205,7 +205,40 @@ def _mouth_wavy(d):
     d.line([(40, 64), (43, 62), (46, 64), (49, 62), (52, 64), (55, 62)], fill=B, width=1)
 
 
+def _eye_squeeze(d, cx, cy, side):    # sneezing: screwed shut, > <
+    tip = cx + (3 if side < 0 else -3)
+    back = cx - (5 if side < 0 else -5)
+    d.line([(back, cy - 4), (tip, cy), (back, cy + 4)], fill=B, width=2)
+
+
+def _mouth_wide(d):                   # mid-sneeze
+    d.chord([39, 58, 57, 72], 0, 180, fill=B)
+
+
 # ---------------------------------------------------------------- accessories
+
+def _round_shades(d, phase):
+    """Sunglasses with round frames (the Pwnagotchi's deauth face has square ones)."""
+    for cx in (33, 63):
+        d.ellipse([cx - 9, 35, cx + 9, 53], fill=B, outline=B)
+        # a glint that moves across the lens between refreshes
+        gx = cx - 4 + (3 if phase else 0)
+        d.line([(gx, 41), (gx + 3, 38)], fill=P)
+    d.line([(42, 43), (54, 43)], fill=B)                      # the bridge, just under his helmet's nose guard
+    d.line([(24, 42), (16, 39)], fill=B, width=2)            # the arms, back to his frills
+    d.line([(72, 42), (80, 39)], fill=B, width=2)
+
+
+def _spray(d):
+    """Achoo! Droplets flying out either side of his snout."""
+    for side in (-1, 1):
+        x0 = 48 + side * 21
+        for dy, dx, y1 in ((-2, 9, -6), (3, 11, 3), (8, 9, 11)):
+            d.line([(x0, 60 + dy), (x0 + side * dx, 60 + y1)], fill=B, width=2)
+        for x, y in ((14, 52), (11, 61), (14, 70)):
+            px = 48 + side * (48 - x) - (1 if side > 0 else 0)
+            d.rectangle([px, y, px + 1, y + 1], fill=B)
+
 
 def _zzz(d, phase):
     from .fonts import draw_text
@@ -313,6 +346,13 @@ def draw_dragon(d: ImageDraw.ImageDraw, ox, oy, mood="content", phase=0, belly=N
         _eye_closed(t, L, EY); _eye_closed(t, R, EY); _mouth_smile(t); _zzz(t, phase)
     elif m == "alarmed":
         _eye_wide(t, L, EY); _eye_wide(t, R, EY); _mouth_o(t); _sweat(t); _exclaim(t)
+    elif m == "sneezing":   # high pollen: "ah..." then "CHOO!"
+        if phase:
+            _eye_squeeze(t, L, EY, -1); _eye_squeeze(t, R, EY, 1); _mouth_wide(t); _spray(t)
+        else:
+            _eye_half(t, L, EY); _eye_half(t, R, EY); _mouth_o(t)
+    elif m == "sunglasses":  # sunshine, or high UV
+        _round_shades(t, phase); _mouth_grin(t)
     elif m == "uploading":
         _eye_open(t, L, EY, 1); _eye_open(t, R, EY, 1); _mouth_smile(t); _cloud(t, phase)
     else:

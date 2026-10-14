@@ -292,11 +292,11 @@ class Pet:
         """Big joy boosts get the ecstatic face (big starry eyes), small ones the excited face."""
         return "ecstatic" if joy >= tuning.get("ecstatic_joy") else "excited"
 
-    def cheer(self, joy, xp=0, text=None, mood=None, seconds=30):
+    def cheer(self, joy, xp=0, text=None, mood=None, seconds=30, speak=True):
         if mood in ("excited", "happy") and joy >= tuning.get("ecstatic_joy"):
             mood = "ecstatic"
         if not self._gain(0, xp, joy) and text:
-            self.say(text, mood, seconds)
+            self.say(text, mood, seconds, speak=speak)
 
     # ---------------------------------------------------------------- the world around him
     def land(self, new_realm, riding=False):
@@ -358,22 +358,24 @@ class Pet:
         if not self._gain(0, tuning.get("moon_xp"), joy):
             self.say(self.MOON_WORDS[phase], self.face_for(joy), 45)
 
-    def storm(self, hpa_change):
+    def storm(self, hpa_change, at_lair=False, speak=True):
         first = self.storms_today == 0
         self.storms_today += 1
         joy = tuning.get("storm_first_joy") if first else tuning.get("storm_joy")
         if not self._gain(0, tuning.get("storm_xp"), joy):
-            self.say(f"A STORM IS COMING! ({hpa_change:+.1f} HPA)", self.face_for(joy), 45)
+            self.say(["THERE'S A STORM COMING AT THE LAIR!", "STORM COMING AT THE LAIR!"] if at_lair
+                     else f"A STORM IS COMING! ({hpa_change:+.1f} HPA)", self.face_for(joy), 45, speak=speak)
 
-    def weather_change(self, hpa_change):
+    def weather_change(self, hpa_change, at_lair=False, speak=True):
         joy = tuning.get("rise_joy")
         if not self._gain(0, tuning.get("storm_xp"), joy):
-            self.say("LOOKS LIKE A WEATHER CHANGE SOON!", self.face_for(joy), 40)
+            self.say(["THE WEATHER IS CHANGING AT THE LAIR!", "WEATHER CHANGING AT THE LAIR"] if at_lair
+                     else "LOOKS LIKE A WEATHER CHANGE SOON!", self.face_for(joy), 40, speak=speak)
 
-    def sunny(self):
+    def sunny(self, speak=True):
         joy = tuning.get("sunny_joy")
         if not self._gain(0, 0, joy):
-            self.say(["WOW! IT'S SUNNY OUT TODAY!", "WOW! SUNSHINE!"], "happy", 40)
+            self.say(["WOW! IT'S SUNNY OUT TODAY!", "WOW! SUNSHINE!"], "sunglasses", 40, speak=speak)
 
     def climb(self, meters):
         self.climbed_today += meters

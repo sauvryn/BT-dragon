@@ -206,6 +206,29 @@ def parse_where(t):
 
 
 # ------------------------------------------------------------------ understanding
+HOME = r"\b(home|lair|the lair|my lair|your lair|our lair)\b"
+CONDITIONS = [
+    ("humidity", r"\bhumid(ity)?\b"),
+    ("pressure", r"\b(air pressure|pressure|barometer|barometric)\b"),
+    ("pollen", r"\b(pollen|hay ?fever)\b"),
+    ("sunrise", r"\b(sunrise|sun rise|sun come up|sun up|dawn)\b"),
+    ("sunset", r"\b(sunset|sun set|sun go down|sundown|dusk|get dark)\b"),
+    ("uv", r"\b(uv|u v|ultraviolet|uv index|sunburn)\b"),
+    ("air", r"\b(air quality|pollution|smog)\b"),
+    ("warnings", r"\b(weather )?warnings?\b|\bweather alerts?\b"),
+]
+
+
+def parse_conditions(t, place):
+    """Humidity, pressure, pollen, sunrise, sunset, UV and air quality: here, at home (the
+    Lair), or in a named place."""
+    for what, pat in CONDITIONS:
+        if re.search(pat, t):
+            return {"intent": "conditions", "what": what, "place": place, "home": bool(re.search(HOME, t)),
+                    "tomorrow": " tomorrow " in t}
+    return None
+
+
 def parse(text):
     """What's being asked: {'intent': ..., plus details}. intent is one of time, date, day,
     weather, timer_set, timer_left, timer_cancel, stop, or None."""
@@ -219,6 +242,9 @@ def parse(text):
     if re.search(r"\bwho am i\b|\bwho is (speaking|talking)\b|\bdo you know (who i am|my voice)\b", t):
         return {"intent": "voice_who"}
     place = find_place(t.strip())
+    cond = parse_conditions(t, place)
+    if cond:
+        return cond
     if re.search(r"\b(stop|enough|quiet|shush|okay|ok)\b", t) and not re.search(r"\btimer", t):
         if len(t.split()) <= 3:
             return {"intent": "stop"}
@@ -252,7 +278,7 @@ def parse(text):
             when = "later"
         elif re.search(r"\btoday\b", t) and when == "now":
             when = "today"
-        return {"intent": "weather", "place": place, "when": when}
+        return {"intent": "weather", "place": place, "when": when, "home": bool(re.search(HOME, t))}
     if re.search(r"\btime\b", t):
         return {"intent": "time", "place": place}
     if re.search(r"\b(date|what day|which day|day is it|day of the week)\b", t):
@@ -274,7 +300,9 @@ VOCABULARY = sorted(set(
     "where direction which way far away from here that this landmark place closest nearest famous "
     "unseen unknown undiscovered unexplored unvisited new not never seen found discovered visited haven't "
     "park parks green space spaces wood woods woodland forest nature reserve garden gardens common explored been "
-    "gone went traveled travelled walked come ran cycled biked ridden walk run ride trip so".split()
+    "gone went traveled travelled walked come ran cycled biked ridden walk run ride trip so "
+    "home lair outside humidity humid pressure air barometer pollen count hay fever sunrise sunset sun "
+    "rise up go dark when does index quality pollution ultraviolet uv warm warning warnings any there".split()
     + list(_UNITS) + list(_TENS) + ["hundred"] + WEEKDAYS + TIMER_NAMES) | place_words()
     | {w for name in _shopping.known_items() for w in name.split()})
 
@@ -319,6 +347,14 @@ PHRASES = [
     "the nearest unexplored park", "the closest unexplored green space", "that i haven't explored",
     "where is the closest", "where is the nearest",
     "how far have we gone", "how far have we traveled", "how far have we walked", "how far have i walked",
+    "what's the temperature at home", "what is the temperature at home", "what's the weather like at home",
+    "what's the weather at home", "at home", "at the lair", "how warm is it at home", "how cold is it at home",
+    "what's the humidity", "what is the humidity", "what's the air pressure", "what is the air pressure",
+    "what's the pollen count", "what is the pollen count", "when is sunrise", "when is sunset",
+    "what time is sunrise", "what time is sunset", "when does the sun rise", "when does the sun set",
+    "when does the sun go down", "what's the uv index", "what is the uv index", "what's the air quality",
+    "what is the air quality", "how is the air quality", "are there any weather warnings",
+    "any weather warnings", "are there any warnings at home",
     "on this walk", "so far", "how far have we gone today", "how far have we come", "in what direction", "which direction", "what direction",
 ]
 # Adding to or taking off the shopping list: the item could be anything, and with only his
@@ -418,8 +454,9 @@ def geocode(name, timeout=10):
 
 
 def answer_weather(data, when="now", label=None, now=None):
-    """Words for a forecast from fetch_weather(). `label` is the place, or None for here."""
-    where = f"in {label}" if label else ""
+    """Words for a forecast from fetch_weather(). `label` is the place ("Tokyo", or "at
+    the Lair"), or None for here."""
+    where = (label if label.startswith("at ") else f"in {label}") if label else ""
     pre = (lambda s: f"{s} {where}".strip())   # "Tomorrow" + " in Tokyo"
     cur, hourly, daily = data.get("current", {}), data.get("hourly", {}), data.get("daily", {})
     off = datetime.timedelta(seconds=data.get("utc_offset_seconds", 0))

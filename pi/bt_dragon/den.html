@@ -85,6 +85,9 @@
   body.arranging .arrange-bar { display: flex; }
   .arrange-bar b { color: var(--rune); font-size: 12.5px; letter-spacing: 1px; text-transform: uppercase; }
   .arrange-bar button { padding: 4px 12px; }
+  .saybox { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; width: 100%; padding-top: 4px; }
+  .saybox > span { display: inline-flex; gap: 6px; align-items: center; }
+  .saybox select { font-size: 0.85em; }
 </style>
 </head>
 <body>
@@ -284,6 +287,46 @@
       <a href="/calendar" target="_blank"><button class="primary">Calendar</button></a></div>
   </section>
 
+  <section data-arrange="ask">
+    <h2>Ask <span class="pname">Harald</span></h2>
+    <p class="sub" style="margin:0 0 6px">Type a question and his answer appears below (and he says it out loud, if he has a voice).
+      Try: the time in Tokyo, the date, "set a pasta timer for twelve minutes", what's on the shopping list or the calendar,
+      the weather, or at home: "what's the temperature at home?", the humidity, air pressure, pollen count, UV index,
+      air quality, sunrise or sunset.</p>
+    <p class="sub" style="margin:0 0 6px"><b>He only knows a set range of questions</b> (the full list is in the README), and
+      his answers don't come from a search engine. For anything else, use a real search engine (DuckDuckGo, for example)
+      or an assistant that uses one (Hey Google, Siri, Alexa and so on).</p>
+      <div class="row"><input type="text" id="askText" maxlength="200" placeholder="Ask: what time is it in Tokyo?"
+        onkeydown="if(event.key==='Enter') askTyped()"><button onclick="askTyped()">Ask</button></div>
+      <div class="row" style="border:0"><div class="grow sub" id="askLast"></div></div>
+      <div id="timerList"></div>
+  </section>
+
+  <section data-arrange="lair">
+    <h2><span class="pname">Harald</span>'s Lair</h2>
+    <p class="sub" style="margin:0 0 6px">Home, as far as the weather is concerned: what "at home" means when you ask him,
+      and where the weather comes from when he doesn't know where he is. He only keeps it to within about 10 km, and a full
+      postcode is cut to its area before it's looked up.</p>
+    <div class="row wrap" style="border:0">
+      <input type="text" id="lairPlace" maxlength="60" placeholder="City/state or zip/postcode" style="flex:2 1 180px"
+        onkeydown="if(event.key==='Enter') lairSave()">
+      <input type="text" id="lairCountry" maxlength="60" placeholder="Country" list="countryList" style="flex:1 1 120px"
+        onkeydown="if(event.key==='Enter') lairSave()">
+      <button class="primary" onclick="lairSave()">Save</button></div>
+    <datalist id="countryList"><option value="Afghanistan"><option value="Albania"><option value="Algeria"><option value="American Samoa"><option value="Andorra"><option value="Angola"><option value="Anguilla"><option value="Antarctica"><option value="Antigua and Barbuda"><option value="Argentina"><option value="Armenia"><option value="Aruba"><option value="Australia"><option value="Austria"><option value="Azerbaijan"><option value="Bahamas"><option value="Bahrain"><option value="Bangladesh"><option value="Barbados"><option value="Belarus"><option value="Belgium"><option value="Belize"><option value="Benin"><option value="Bermuda"><option value="Bhutan"><option value="Bolivia"><option value="Bosnia and Herzegovina"><option value="Botswana"><option value="Brazil"><option value="British Virgin Islands"><option value="Brunei"><option value="Bulgaria"><option value="Burkina Faso"><option value="Burundi"><option value="Cambodia"><option value="Cameroon"><option value="Canada"><option value="Cape Verde"><option value="Caribbean Netherlands"><option value="Cayman Islands"><option value="Central African Republic"><option value="Chad"><option value="Chile"><option value="China"><option value="Christmas Island"><option value="Cocos (Keeling) Islands"><option value="Colombia"><option value="Comoros"><option value="Cook Islands"><option value="Costa Rica"><option value="Croatia"><option value="Cuba"><option value="Curaçao"><option value="Cyprus"><option value="Czechia"><option value="Democratic Republic of the Congo"><option value="Denmark"><option value="Djibouti"><option value="Dominica"><option value="Dominican Republic"><option value="Ecuador"><option value="Egypt"><option value="El Salvador"><option value="Equatorial Guinea"><option value="Eritrea"><option value="Estonia"><option value="Eswatini"><option value="Ethiopia"><option value="Falkland Islands"><option value="Faroe Islands"><option value="Fiji"><option value="Finland"><option value="France"><option value="French Guiana"><option value="French Polynesia"><option value="Gabon"><option value="Gambia"><option value="Georgia"><option value="Germany"><option value="Ghana"><option value="Gibraltar"><option value="Greece"><option value="Greenland"><option value="Grenada"><option value="Guadeloupe"><option value="Guam"><option value="Guatemala"><option value="Guernsey"><option value="Guinea"><option value="Guinea-Bissau"><option value="Guyana"><option value="Haiti"><option value="Honduras"><option value="Hong Kong"><option value="Hungary"><option value="Iceland"><option value="India"><option value="Indonesia"><option value="Iran"><option value="Iraq"><option value="Ireland"><option value="Isle of Man"><option value="Israel"><option value="Italy"><option value="Ivory Coast"><option value="Jamaica"><option value="Japan"><option value="Jersey"><option value="Jordan"><option value="Kazakhstan"><option value="Kenya"><option value="Kiribati"><option value="Kuwait"><option value="Kyrgyzstan"><option value="Laos"><option value="Latvia"><option value="Lebanon"><option value="Lesotho"><option value="Liberia"><option value="Libya"><option value="Liechtenstein"><option value="Lithuania"><option value="Luxembourg"><option value="Macao"><option value="Madagascar"><option value="Malawi"><option value="Malaysia"><option value="Maldives"><option value="Mali"><option value="Malta"><option value="Marshall Islands"><option value="Martinique"><option value="Mauritania"><option value="Mauritius"><option value="Mayotte"><option value="Mexico"><option value="Micronesia"><option value="Moldova"><option value="Monaco"><option value="Mongolia"><option value="Montenegro"><option value="Montserrat"><option value="Morocco"><option value="Mozambique"><option value="Myanmar"><option value="Namibia"><option value="Nauru"><option value="Nepal"><option value="Netherlands"><option value="New Caledonia"><option value="New Zealand"><option value="Nicaragua"><option value="Niger"><option value="Nigeria"><option value="Niue"><option value="Norfolk Island"><option value="North Korea"><option value="North Macedonia"><option value="Northern Mariana Islands"><option value="Norway"><option value="Oman"><option value="Pakistan"><option value="Palau"><option value="Palestine"><option value="Panama"><option value="Papua New Guinea"><option value="Paraguay"><option value="Peru"><option value="Philippines"><option value="Pitcairn Islands"><option value="Poland"><option value="Portugal"><option value="Puerto Rico"><option value="Qatar"><option value="Republic of the Congo"><option value="Romania"><option value="Russia"><option value="Rwanda"><option value="Réunion"><option value="Saint Barthélemy"><option value="Saint Helena"><option value="Saint Kitts and Nevis"><option value="Saint Lucia"><option value="Saint Martin"><option value="Saint Pierre and Miquelon"><option value="Saint Vincent and the Grenadines"><option value="Samoa"><option value="San Marino"><option value="Saudi Arabia"><option value="Senegal"><option value="Serbia"><option value="Seychelles"><option value="Sierra Leone"><option value="Singapore"><option value="Sint Maarten"><option value="Slovakia"><option value="Slovenia"><option value="Solomon Islands"><option value="Somalia"><option value="South Africa"><option value="South Korea"><option value="South Sudan"><option value="Spain"><option value="Sri Lanka"><option value="Sudan"><option value="Suriname"><option value="Svalbard and Jan Mayen"><option value="Sweden"><option value="Switzerland"><option value="Syria"><option value="São Tomé and Príncipe"><option value="Taiwan"><option value="Tajikistan"><option value="Tanzania"><option value="Thailand"><option value="Timor-Leste"><option value="Togo"><option value="Tokelau"><option value="Tonga"><option value="Trinidad and Tobago"><option value="Tunisia"><option value="Turkey"><option value="Turkmenistan"><option value="Turks and Caicos Islands"><option value="Tuvalu"><option value="US Virgin Islands"><option value="Uganda"><option value="Ukraine"><option value="United Arab Emirates"><option value="United Kingdom"><option value="United States"><option value="Uruguay"><option value="Uzbekistan"><option value="Vanuatu"><option value="Vatican City"><option value="Venezuela"><option value="Vietnam"><option value="Wallis and Futuna"><option value="Western Sahara"><option value="Yemen"><option value="Zambia"><option value="Zimbabwe"><option value="Åland Islands"></datalist>
+    <div class="row"><div class="grow sub" id="lairFound">Not set yet.</div></div>
+    <div class="row"><div class="grow">Local announcements<div class="sub">News from home while he's online, each at its own time:
+      how warm it is on the hour ("It's 14°C (57°F) outside at the Lair."), a storm or change in the weather at a quarter past,
+      high pollen at half past (he sneezes; Europe only), high UV at a quarter to (sunglasses on), and sunrise and sunset as
+      they happen. Storms and sunrises bring joy, just like when he feels them himself.</div>
+      <div class="sub" id="lairNow"></div></div>
+      <label class="sub"><input type="checkbox" id="lairAnnounce" onchange="lairAnnounceSet(this.checked)"> On</label></div>
+    <div class="row" id="warnRow"><div class="grow">Official weather warnings<div class="sub" id="warnNote"></div>
+      <div class="sub" id="warnActive"></div></div>
+      <select id="warnRegion" hidden onchange="lairRegion(this.value)"><option value="ta">Central, Tayside & Fife</option><option value="em">East Midlands</option><option value="ee">East of England</option><option value="gr">Grampian</option><option value="he">Highlands & Eilean Siar</option><option value="se">London & South East England</option><option value="ne">North East England</option><option value="nw">North West England</option><option value="ni">Northern Ireland</option><option value="os">Orkney & Shetland</option><option value="dg">SW Scotland, Lothian & Borders</option><option value="sw">South West England</option><option value="st">Strathclyde</option><option value="wl">Wales</option><option value="wm">West Midlands</option><option value="yh">Yorkshire & Humber</option></select></div>
+    <div class="actions"><button class="danger" onclick="lairForget()">Forget the Lair</button></div>
+  </section>
+
   <section data-arrange="voice" class="dotctl">
     <details class="fold" id="fold-voice"><summary class="foldhead"><h2>Voice and light ring</h2>
       <span class="sub">Echo Dot, phone voice, questions and timers</span></summary>
@@ -309,6 +352,26 @@
         <option value="all">Everything</option><option value="big">Big moments</option>
         <option value="recap">Welcome-home recap only</option><option value="silent">Silent (ring only)</option>
         <option value="adventure">Adventure mode</option></select></div>
+    <div class="row wrap"><div class="grow full">Weather information: Lair<div class="sub">Which news from home he says out loud
+      (his screen always shows it). Needs the Lair's Local announcements on.</div></div>
+      <div class="saybox">
+        <label class="sub"><input type="checkbox" id="say_lair_temp" onchange="sayTick(this)"> Temperature</label>
+        <label class="sub"><input type="checkbox" id="say_lair_storm" onchange="sayTick(this)"> Storm or change</label>
+        <label class="sub"><input type="checkbox" id="say_lair_warnings" onchange="sayTick(this)"> Weather warnings</label>
+        <span><label class="sub"><input type="checkbox" id="say_lair_pollen" onchange="sayTick(this)"> High pollen</label>
+          <select id="say_lair_pollen_when" onchange="dotSet(this.id, this.value)">
+            <option value="increased">Increased readings only</option><option value="all">All high readings</option></select></span>
+        <span><label class="sub"><input type="checkbox" id="say_lair_uv" onchange="sayTick(this)"> High UV</label>
+          <select id="say_lair_uv_when" onchange="dotSet(this.id, this.value)">
+            <option value="increased">Increased readings only</option><option value="all">All high readings</option></select></span>
+        <label class="sub"><input type="checkbox" id="say_lair_sun" onchange="sayTick(this)"> Sunrise/sunset</label>
+      </div></div>
+    <div class="row wrap"><div class="grow full">Weather information: Phone sensors<div class="sub">From your phone's own
+      barometer and light sensor (Level 3). Phones have no thermometer, pollen or UV sensor, so these are the two there are.</div></div>
+      <div class="saybox">
+        <label class="sub"><input type="checkbox" id="say_phone_storm" onchange="sayTick(this)"> Storm or change</label>
+        <label class="sub"><input type="checkbox" id="say_phone_sun" onchange="sayTick(this)"> Sunshine</label>
+      </div></div>
     <div class="row"><div class="grow">Volume<div class="sub">The speaker's own volume: 50 is 12 dB below full</div></div><input type="range" min="0" max="100" step="5" id="dotVolume"
       oninput="$('dotVolumeV').textContent=this.value" onchange="dotSet('volume', this.value)"><span class="val" id="dotVolumeV"></span></div>
     <div class="row"><div class="grow">Adventure volume<div class="sub">Used instead in Adventure mode, out and about</div></div><input type="range" min="0" max="100" step="5" id="dotAdvVolume"
@@ -344,7 +407,7 @@
         <button onclick="dotRing('ev_landmark')">Landmark</button>
       </div>
     </details>
-    <details class="subtools" id="dt-ask"><summary><b>Questions and timers</b> <span class="sub">· press the Dot's action button and ask</span></summary>
+    <details class="subtools" id="dt-ask"><summary><b>Listening</b> <span class="sub">· questions out loud, on the Dot</span></summary>
       <div class="row"><div class="grow">Answer questions<div class="sub" id="askNote"></div></div>
         <label class="sub"><input type="checkbox" id="dotListen" onchange="dotSet('listen', this.checked)"> On</label></div>
       <div class="row"><div class="grow">Wake word: "Hey dragon"<div class="sub" id="wakeNote"></div></div>
@@ -352,14 +415,6 @@
       <div class="row wrap"><div class="grow full sub">Listen for it between (the microphones stay on during these hours; nothing is saved, and with Harald's Debian on the Dot the sound never leaves it)</div>
         <div class="times"><input type="time" id="dotWFrom" onchange="dotSet('wake_from', this.value)"><span>and</span>
         <input type="time" id="dotWTo" onchange="dotSet('wake_to', this.value)"></div></div>
-      <div class="row"><div class="grow">Home town for the weather<div class="sub" id="homeNote">Used when your phone's GPS isn't linked. A big town or city is enough.</div></div></div>
-      <div class="row" style="border:0"><input type="text" id="dotHome" maxlength="40" placeholder="e.g. Toronto"
-        onkeydown="if(event.key==='Enter') dotSet('home_town', this.value)">
-        <button onclick="dotSet('home_town', $('dotHome').value)">Save</button></div>
-      <div class="row"><input type="text" id="askText" maxlength="200" placeholder="Ask: what time is it in Tokyo?"
-        onkeydown="if(event.key==='Enter') askTyped()"><button onclick="askTyped()">Ask</button></div>
-      <div class="row" style="border:0"><div class="grow sub" id="askLast"></div></div>
-      <div id="timerList"></div>
       <div class="row"><div class="grow">Voice profiles<div class="sub">Say "Set a voice profile" to the Dot and he'll learn who you are,
         then sometimes use your name. Voice prints (how a voice sounds, not recordings) stay on the Pi.
         "Who am I?" checks he knows you.</div></div></div>
@@ -406,7 +461,7 @@
     <p style="margin:0"><b id="cLands">0</b> <span id="cLandsW">lands</span> in <b id="cRealms">0</b> <span id="cRealmsW">realms</span> claimed
       <span class="sub">(squares of the map about 250 m and 1 km across)</span></p>
     <details style="margin-top:8px"><summary>Star chart: <span id="cStars">0</span> satellites seen</summary>
-      <p class="sub">Satellites need GPSd Forwarder or GPS2IP; SensorServer doesn't pass them on.</p>
+      <p class="sub">Satellites need GPSd Forwarder, GPS2IP or a USB GPS receiver; SensorServer doesn't pass them on.</p>
       <div id="starChart"></div></details>
     <details style="margin-top:8px"><summary>Landmarks: <span id="cLm">0</span> famous places seen</summary>
       <p class="sub">Famous places (on Wikipedia in many languages) are looked up for each new realm.
@@ -678,6 +733,7 @@ async function refresh() {
         times(rides, 'ride', 'rides')].filter(x => x).join(' · ') : 'Not discovered yet'}</div></div></div>`).join('')
     : '<p class="empty">None nearby yet. New realms are looked up while the dragon is on your hotspot.</p>';
   loadWifiPos();
+  loadLair();
 
   try {
     const files = await (await fetch('/api/diary-files')).json();
@@ -909,6 +965,11 @@ async function loadDot() {
   if (!keep($('dotOn'))) $('dotOn').checked = d.enabled === 'True';
   if (!keep($('phoneOn'))) $('phoneOn').checked = d.phone === 'True';
   if (!keep($('phoneBackup'))) $('phoneBackup').checked = d.phone_backup === 'True';
+  for (const k of SAY_KEYS) {
+    if (!keep($(k))) $(k).checked = d[k] === 'True';
+    const when = $(k + '_when');
+    if (when) { if (!keep(when)) when.value = d[k + '_when'] || 'increased'; when.disabled = d[k] !== 'True'; }
+  }
   $('phoneNote').textContent = (d.phone_listening === 'True' ? 'A phone is listening.' : 'No phone listening yet: see "Set up the phone voice" below.')
     + (d.phone_route === 'phone' && d.phone !== 'True' ? ' Standing in for the Dot right now.' : '');
   $('phoneCmd').textContent = `curl -O http://${location.host}/phone/harald_voice.py && python harald_voice.py`;
@@ -922,7 +983,6 @@ async function loadDot() {
   }
   if (!keep($('dotSetupNet'))) $('dotSetupNet').value = d.setup_network || '';
   if (!keep($('dotListen'))) $('dotListen').checked = d.listen === 'True';
-  if (!keep($('dotHome'))) $('dotHome').value = d.home_town || '';
   if (!keep($('dotWake'))) $('dotWake').checked = d.wake === 'True';
   if (!keep($('dotWFrom'))) $('dotWFrom').value = d.wake_from.padStart(5, '0');
   if (!keep($('dotWTo'))) $('dotWTo').value = d.wake_to.padStart(5, '0');
@@ -935,9 +995,6 @@ async function loadDot() {
          + (+d.wake_unasked ? ` Woke ${d.wake_unasked} time${d.wake_unasked === '1' ? '' : 's'} with no question after: probably false alarms.` : '') : '')
       + (d.wake_cpu !== '' ? ` Uses about ${Math.round(+d.wake_cpu * 100)}% of one of the ${d.wake_where === 'Dot' ? "Dot's" : "Pi's"} cores.` : '')
       + (d.wake_where === 'Dot' ? ' Listening happens on the Dot: the sound never leaves it.' : '');
-  $('homeNote').textContent = d.home_lat && d.home_lat !== 'None'
-    ? `Found: ${d.home_town}. Used when your phone's GPS isn't linked.`
-    : (d.home_town ? 'Looking it up... (needs the internet)' : "Used when your phone's GPS isn't linked. A big town or city is enough.");
   $('askNote').textContent = (d.ears === 'True'
     ? (d.mic_muted === 'True' ? 'The microphones are switched off (red ring).' : 'Press the action button (the dot), then ask.')
     : 'The speech recognizer isn\'t installed yet: run install-voice.sh on the Pi. Typed questions still work.')
@@ -952,6 +1009,13 @@ async function loadDot() {
     : (d.setup_network ? 'Ready. No rescues yet.' : 'Off until you enter the name.');
   if (!keep($('dotQFrom'))) $('dotQFrom').value = d.quiet_from.padStart(5, '0');
   if (!keep($('dotQTo'))) $('dotQTo').value = d.quiet_to.padStart(5, '0');
+}
+const SAY_KEYS = ['say_lair_temp', 'say_lair_storm', 'say_lair_warnings', 'say_lair_pollen', 'say_lair_uv', 'say_lair_sun',
+                  'say_phone_storm', 'say_phone_sun'];
+function sayTick(box) {
+  const when = $(box.id + '_when');
+  if (when) when.disabled = !box.checked;
+  dotSet(box.id, box.checked);
 }
 async function dotSet(key, value) {
   const r = await cmd(`DOTSET ${key} ${value}`);
@@ -976,6 +1040,53 @@ async function wifiPosSet(on) {
   const r = await cmd('WIFIPOSSET ' + (on ? 'on' : 'off'));
   if (r[0] !== 'OK') toast((r[0] || PET + ' is not answering').replace(/^ERR /, ''));
   loadWifiPos();
+}
+async function loadLair() {
+  const d = {};
+  (await cmd('LAIR')).forEach(l => { const i = l.indexOf('='); if (i > 0) d[l.slice(0, i)] = l.slice(i + 1); });
+  if (!('place' in d)) return;
+  const keep = el => document.activeElement === el;
+  if (!keep($('lairPlace'))) $('lairPlace').value = d.place;
+  if (!keep($('lairCountry'))) $('lairCountry').value = d.country;
+  $('lairFound').textContent = d.complete === '1' ? 'The Lair: ' + d.found
+    : d.found ? `The Lair: ${d.found}. Add the country and press Save to confirm it.` : 'Not set yet.';
+  if (!keep($('lairAnnounce'))) $('lairAnnounce').checked = d.announce === '1';
+  $('lairAnnounce').disabled = d.complete !== '1';
+  $('lairNow').textContent = d.announce === '1' ? (d.now || 'First check within a minute or two (needs the internet).') : '';
+  const src = d.warn_source;
+  $('warnRegion').hidden = src !== 'uk';
+  if (src === 'uk' && !keep($('warnRegion'))) $('warnRegion').value = d.warn_region;
+  $('warnNote').textContent = src === 'uk' ? 'From the Met Office, for this region (change it if the guess is wrong):'
+    : src === 'us' ? (d.warn_area ? `From the National Weather Service, for zone and county ${d.warn_area}.`
+                                  : "Couldn't find the National Weather Service area: press Save above to try again.")
+    : d.complete === '1' ? 'Only for a Lair in the United Kingdom or the United States so far.' : 'Set the Lair first.';
+  $('warnActive').textContent = !src ? '' : d.announce !== '1' ? 'Checked every 15 minutes while Local announcements are on.'
+    : d.warn_active ? 'In force now: ' + d.warn_active.split(' || ').join('; ') : 'None in force right now.';
+}
+async function lairSave() {
+  const place = $('lairPlace').value.trim(), country = $('lairCountry').value.trim();
+  if (!place || !country) return toast('Fill in both: a place (city, city and state, or zip/postcode) and a country');
+  $('lairFound').textContent = 'Looking it up...';
+  const r = await cmd(`LAIRSET ${place.replace(/\|/g, ' ')}|${country.replace(/\|/g, ' ')}`);
+  const words = (r[0] || PET + ' is not answering').replace(/^(OK|ERR) /, '');
+  toast(words);
+  loadLair();
+}
+async function lairAnnounceSet(on) {
+  const r = await cmd('LAIRANNOUNCE ' + (on ? 'on' : 'off'));
+  if (r[0] !== 'OK') toast((r[0] || PET + ' is not answering').replace(/^ERR /, ''));
+  loadLair();
+}
+async function lairRegion(code) {
+  const r = await cmd('LAIRREGION ' + code);
+  if (r[0] !== 'OK') toast((r[0] || PET + ' is not answering').replace(/^ERR /, ''));
+  loadLair();
+}
+async function lairForget() {
+  if (!confirm('Forget where the Lair is? Local announcements stop until you set it again.')) return;
+  await cmd('LAIRFORGET');
+  $('lairPlace').value = $('lairCountry').value = '';
+  loadLair();
 }
 async function phoneSet(on) {
   // Ticking the phone switches the Dot's voice off; tick the Dot again to have both.

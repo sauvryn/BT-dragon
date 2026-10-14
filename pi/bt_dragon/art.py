@@ -44,6 +44,7 @@ MOOD_NOTES = {
     "starving": "belly empty", "excited": "something new", "ecstatic": "a big joy boost",
     "proud": "level up", "alarmed": "an unknown tracker following you", "uploading": "sending to WiGLE",
     "adventure": "out walking together", "riding": "in a vehicle",
+    "sneezing": "high pollen at the Lair", "sunglasses": "sunshine, or high UV at the Lair",
 }
 
 

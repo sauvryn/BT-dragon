@@ -33,7 +33,7 @@ OUT_RATE = 48000
 SAY_AS = {
     "HPA": "hectopascals", "XP": "X P", "GPS": "G P S", "WIGLE": "wiggle", "KM": "kilometers",
     "M UP": "meters up", "WPA3": "W P A 3", "WPA2": "W P A 2", "WEP": "wep", "HP": "H P",
-    "NOM!": "Nom nom!", "PWNAGOTCHI": "pwnagotchi",
+    "NOM!": "Nom nom!", "PWNAGOTCHI": "pwnagotchi", "LAIR": "Lair",
 }
 
 

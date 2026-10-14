@@ -19,9 +19,9 @@ assert P("what time is it in new york")["place"] == "new york"
 assert P("what time is it in new york state")["place"] == "new york state"
 assert P("what's the date")["intent"] == "date" and P("what day is it")["intent"] == "day"
 assert P("what is the date tomorrow")["tomorrow"]
-assert P("what's the weather like tomorrow") == {"intent": "weather", "place": None, "when": "tomorrow"}
+assert P("what's the weather like tomorrow") == {"intent": "weather", "place": None, "when": "tomorrow", "home": False}
 assert P("will it rain later")["when"] == "later"
-assert P("what's the weather in tokyo on saturday") == {"intent": "weather", "place": "tokyo", "when": "saturday"}
+assert P("what's the weather in tokyo on saturday") == {"intent": "weather", "place": "tokyo", "when": "saturday", "home": False}
 assert P("what is the temperature in new mexico")["place"] == "new mexico"
 assert P("set a timer for twelve minutes") == {"intent": "timer_set", "name": None, "seconds": 720}
 assert P("set a pasta timer for twenty five minutes") == {"intent": "timer_set", "name": "pasta", "seconds": 1500}
