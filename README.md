@@ -297,7 +297,9 @@ Take him with you: a **USB power bank** for power, and **your smartphone's hotsp
   - **iPhone:** Settings → Personal Hotspot → turn on **Maximize Compatibility**.
   - **Android:** Hotspot settings → **AP band** → 2.4 GHz (the wording varies by phone).
 
-### Adding your hotspot
+### Adding your hotspot 
+
+**(THE BACKUP WI-FI FEATURE IS CURRENTLY NOT WORKING AND IS AWAITING A BUGFIX)**
 
 He can know several networks and joins the best one in range. Put your home Wi-Fi under `[home_wifi]` and your hotspot as a backup, below it in `bt-dragon.toml`:
 
