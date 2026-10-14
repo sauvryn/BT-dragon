@@ -8,11 +8,11 @@ BT Dragon turns a Raspberry Pi Zero 2 W (on its own, or as part of an old Pwnago
 
 > **Prototype release.** Everything here works on the author's own hardware, but it hasn't been tried on many setups yet. Expect rough edges, and please open an issue when you find one.
 >
-> **Placeholder art.** Harald's current pixel art is a AI-generated placeholder, made only so the prototype could be designed and tuned. It will be replaced with the author's own original, hand-drawn artwork before the first release. The Den also allows an individual user to easily upload their own artwork or artwork they have permission to use.
+> **Placeholder art.** Harald's current pixel art is an AI-generated placeholder, made only so the prototype could be designed and tuned. It will be replaced with the author's own original, hand-drawn artwork before the first release. The Den also allows an individual user to easily upload their own artwork or artwork they have permission to use.
 
 > ### 🤖 AI disclaimer
 > **The project author's personal ethics on AI use and the author's intentions.**
-> The project author's personal stance on anything they create with partially or wholly AI-generated code is that the code must be free and open source to all and the end product must benefit humanity in some way. Harald was created as a way to re-use old hardware (reducing potential e-waste) in an educational and fun way for the user that promotes curiosity about the invisible signals that surround us and to encourage the physical activity of the user by finding new and novel signals to "feed" their dragon.
+> The project author's personal stance on anything they create with mostly or wholly AI-generated code is that the code must be free and open source to all and the end product must benefit humanity in some way. Harald was created as a way to re-use old hardware (reducing potential e-waste) in an educational and fun way for the user that promotes curiosity about the invisible signals that surround us and to encourage the physical activity of the user by finding new and novel signals to "feed" their dragon.
 >
 > Optional GPS integration unlocks the ability to "conquer" squares on a real-world map by traveling through them with Harald, "visiting" real public-access historic landmarks and green spaces (major parks, etc.) by passing near them, and participating in the Wigle.net wireless access point discovery "point-scoring" leaderboards and rankings. If connected to the sensors of a user's smartphone, Harald can pass on interesting information about the types and numbers of navigational satellites he can see (using the phone's GPS) which are added to his "star" collection, changes in weather (detected via the phone's air pressure sensor), and other features. There is even an included way to connect him to an old 2nd Gen Echo Dot that has been unlocked and rooted, giving the user a way to ask Harald some basic questions and issue certain commands, either by pressing the action button or by using a hands-free wake word (with lots of room for additional development). It is the project author's sincere hope that their intentions behind the creation of Harald are understood and respected even if their choice to use AI for this project is ultimately not.
 >
@@ -34,8 +34,8 @@ This guide grows with your setup. Start with the bare minimum, a Pi on your home
 
 | Level | You add | He gains |
 |---|---|---|
-| [1. The basics](#level-1-the-basics) | A Raspberry Pi Zero 2 W, a microSD card, your home Wi-Fi and a computer | Bluetooth snacks, Wi-Fi treats, species, friends, finding your own gadgets, tracker warnings, the Den |
-| [2. Out and about](#level-2-out-and-about) | Your smartphone's hotspot and a USB power bank | Walks together: more to eat, dragons to meet, the Den in your pocket |
+| [1. The basics](#level-1-the-basics) | A Raspberry Pi Zero 2 W, a microSD card, your home Wi-Fi and a computer | Bluetooth snacks, Wi-Fi treats, species, friends, finding your own gadgets, tracker warnings, the moon, a shopping list and calendar, kitchen timers, typed questions, the weather and local weather news from his Lair, the Den |
+| [2. Out and about](#level-2-out-and-about) | Your smartphone's hotspot and a USB power bank | Walks together: more to eat, dragons to meet, the Den in your pocket. Optionally, much of Level 3 without phone apps: a USB GPS receiver, or claiming land by Wi-Fi |
 | [3. Your phone's senses](#level-3-your-phones-senses) | An Android phone sharing its sensors | Walks tracked and logged, wardriving, conquering the map, landmarks, parks, stars, weather, sunshine, his voice through your phone |
 | [4. A voice and ears](#level-4-a-voice-and-ears-echo-dot) | A rooted Echo Dot (2nd generation) | Spoken news, a mood ring, questions, timers, a calendar, a shopping list, "Hey dragon" |
 
@@ -63,7 +63,21 @@ A Raspberry Pi Zero 2 W on your home Wi-Fi, with no screen, no phone and nothing
 - **A diary** of everything he did, kept on the Pi, downloadable as spreadsheet files.
 - **The moon.** He knows the moon's phases without any internet: they're worked out on the Pi from the date, with the formulas astronomers use. On the day of each new moon, first quarter, full moon and last quarter he gets a burst of joy (the full moon is the biggest) and announces it, Norse style: in the old myths the moon is the god Máni, chased across the sky by the wolf Hati (**"MANI SHINES! FULL MOON TONIGHT"**). The Den shows tonight's moon and when the next phases are.
 
-What he can't do yet: anything that needs to know where he is (walks, wardriving, the map). That's Level 3.
+- **A shopping list and a calendar.** Each has its own page in the Den (*Shopping list and calendar*). A calendar reminder shows on his screen (and the Den's copy of it) only as **"REMINDER: EVENT IN 1 HOUR!"**, so anyone glancing at him can't read your plans. Asking about them out loud needs a voice and ears (Level 4), but adding things, ticking them off and reminders all work now.
+- **Ask Harald: typed questions and kitchen timers.** In the Den's **Ask Harald** section, type a question and his answer appears underneath: the time here or in a big city, the date, the shopping list, what's on the calendar, or the weather. "Set a pasta timer for twelve minutes" works too: when it ends, his screen says **TIMER DONE!** and the Den shows a **Stop** button. If the answer is short enough for his screen, it shows there too, as **"ANSWER: IT'S 14°C (57°F) AT THE LAIR"**; a longer one shows **"ANSWER: A LONG RESPONSE. CHECK THE DEN."** (that's for the screen only: if he has a voice, he says the whole answer as usual). He only knows a set range of questions (the full list is under [Asking him questions](#what-he-gains-1) in Level 4), and his answers don't come from a search engine: for anything else, use a real search engine (DuckDuckGo, for example) or an assistant that uses one (Hey Google, Siri, Alexa and so on).
+- **Harald's Lair: the weather at home.** In the Den's **Harald's Lair** section, enter a place (a city, "city, state", or a zip or postcode) and its country. That's home, as far as the weather is concerned: ask him "What's the temperature at home?", or about the humidity, air pressure, pollen count (Europe only), UV index, air quality, sunrise or sunset there. The country matters because there's more than one London and Toronto in the world. He keeps the Lair only to within about 10 km, and a postcode is cut down to its area before it's looked up, so your full postcode never leaves the Pi (how, exactly, is in [the privacy section](#the-lair-and-your-postcode)). Both need the internet.
+- **Local announcements** (in the Lair section). While he's online, he keeps an eye on the weather at home, each kind of news at its own time so they never pile up:
+  - **on the hour:** how warm it is, **"It's 14°C (57°F) outside at the Lair."** (no joy for this one, and not during quiet hours);
+  - **a quarter past:** when the air pressure there is falling or rising fast, **"There's a storm coming at the Lair!"** or **"The weather is changing at the Lair!"**, with the same joy as when he feels a storm himself through your phone's barometer (Level 3);
+  - **half past:** when the pollen count is high, he sneezes: **"Achoo! The grass pollen is high at the Lair."**, or, if it was already high and has gone up since the hour before, **"Achoo! The grass pollen is higher at the Lair! It's very high now."** (Europe only: see [pollen outside Europe](#pollen-outside-europe));
+  - **a quarter to:** when the UV index is high, he puts his sunglasses on: **"Sunglasses on! The UV index at the Lair is 7, that's high."** (or **"…is higher! It's 8 now"**);
+  - **sunrise and sunset**, as they happen, with a little joy: **"The sun is rising at the Lair!"**
+  - **official weather warnings**, checked every 15 minutes (at 5, 20, 35 and 50 past) and announced once each, with his alarmed face: **"AMBER WARNING: WIND AT THE LAIR"**. In the United Kingdom they come from the Met Office, for the Lair's region (worked out from the county; the Den lets you change it if the guess is wrong). In the United States they come from the National Weather Service, for the Lair's forecast zone and county. Other countries aren't covered yet, as each publishes its warnings its own way. Ask him **"Are there any weather warnings at home?"** for the ones in force.
+
+  High pollen and high UV show on his screen every hour they're high. **What he says out loud is up to you**: if he has a voice (the phone, or the Dot at Level 4), the Den's *Voice and light ring* section has **Weather information: Lair**, with a tick box for each kind of news (Temperature, Storm or change, Weather warnings, High pollen, High UV, Sunrise/sunset). High pollen and High UV each have a choice of **Increased readings only** (the default: said when the reading goes up, so a long sunny day isn't a reminder every hour) or **All high readings**. There's a matching **Weather information: Phone sensors** for the storms and sunshine his phone's barometer and light sensor notice (Level 3). Untick anything and he still shows it on his screen, just quietly.
+- **Optional: his voice, through an Android phone.** It needs none of the phone's sensors, only the phone on the same Wi-Fi as him: see [His voice through your phone](#his-voice-through-your-phone-tested).
+
+What he can't do yet: anything that needs to know where he is (walks, wardriving, the map). That's Level 3, or Level 2 with a [USB GPS receiver](#optional-a-usb-gps-receiver) or [finding him by Wi-Fi](#no-gps-at-all-finding-him-by-wi-fi-untested).
 
 ### What you need
 
@@ -156,7 +170,7 @@ Without a screen on the Pi, the Den *is* how you see him: a live copy of his scr
 
 > **The Den lives on the Pi, not on the internet.** The Den and its pages (the shopping list, the calendar, the map and the artwork page) only open while your computer or phone can reach the Pi over the same network. They aren't an online service or an app on your phone. For example, you can only tick things off the shopping list while you shop if Harald is in your bag, on your phone's hotspot (Level 2). At home with him, you can read it out or write it down before you go.
 
-**The order of the Den.** Below his meters, the Den starts with what a dragon at Levels 1 and 2 (no GPS, no Echo Dot) does most: **Find my pals**, **Dragon friends**, **Gadgets nearby**, **Recent treats**, his **Life list** and **Diary**, then looking after him: **Network**, **Care**, **Backup** and **Developer Tools**. After that come the parts that are still useful without GPS or a Dot (**The moon**, then the **Shopping list and calendar**, then **Voice and light ring**, where typed questions and kitchen timers work without a Dot), and last the ones that need GPS (**Adventures today**, **Conquests**, **WiGLE**). **Voice and light ring** is folded away until you open it. To change the order, press **Arrange the den** at the bottom of the page and move sections up or down; **Back to the usual order** undoes it. The order is remembered by each phone or computer's browser, so your phone and your computer can each have their own.
+**The order of the Den.** Below his meters, the Den starts with what a dragon at Levels 1 and 2 (no GPS, no Echo Dot) does most: **Find my pals**, **Dragon friends**, **Gadgets nearby**, **Recent treats**, his **Life list** and **Diary**, then looking after him: **Network**, **Care**, **Backup** and **Developer Tools**. After that come the parts that are still useful without GPS or a Dot (**The moon**, then the **Shopping list and calendar**, **Ask Harald** for typed questions and kitchen timers, **Harald's Lair** for the weather at home, then **Voice and light ring**), and last the ones that need GPS (**Adventures today**, **Conquests**, **WiGLE**). **Voice and light ring** is folded away until you open it. To change the order, press **Arrange the den** at the bottom of the page and move sections up or down; **Back to the usual order** undoes it. The order is remembered by each phone or computer's browser, so your phone and your computer can each have their own.
 
 **Always put him to sleep before unplugging.** Use **Put to sleep** in the Den and wait about 30 seconds (with a screen: until it shows *SAFE TO UNPLUG*), then pull the plug. Cutting the power while the Pi is writing to the card can corrupt it.
 
@@ -223,7 +237,7 @@ Every one of these numbers can be changed while he runs, from **Developer Tools*
 
 **Levels:** level = 1 + √(XP ÷ 50), so level 2 at 50 XP, 3 at 200, 5 at 800 and 10 at 4,050.
 
-**His face:** joy picks the eyes (happy, content, bored, sad), and his belly can change the mouth (drooling when hungry, a contented wobble when stuffed). Short reactions, like a feast, an adventure or riding with the wind in his face, take over for a moment. A small joy boost gets his **excited** face; a big one (8 joy or more, adjustable) gets his **ecstatic** face, with big starry eyes and sparkles.
+**His face:** joy picks the eyes (happy, content, bored, sad), and his belly can change the mouth (drooling when hungry, a contented wobble when stuffed). Short reactions, like a feast, an adventure or riding with the wind in his face, take over for a moment. A small joy boost gets his **excited** face; a big one (8 joy or more, adjustable) gets his **ecstatic** face, with big starry eyes and sparkles. High pollen at home makes him **sneeze**, and sunshine or a high UV index gets his **sunglasses** on (round ones, so they're never mistaken for a Pwnagotchi's square ones).
 
 ![Harald's moods](docs/moods.png)
 
@@ -263,7 +277,7 @@ To restore, use **Restore from a backup…** in the Den and pick the file. It's 
 **Customizing your dragon's artwork.** The Harald in this repository for purposes of testing the prototype is an AI-generated placeholder, drawn by code from simple shapes. To use your own art or art you have permission to use, open **Artwork** in the Den's *Care* section. Each mood is shown as it will look on the screen, with buttons to **Upload** a picture, download a **Template** (the placeholder at actual size, to draw over) or **Remove** yours again.
 
 - **96 × 86 pixels, black and white, PNG.** The screen is two-colour, so each pixel ends up ink or paper: transparent counts as paper, and grey becomes black if darker than half way, white if lighter. The page shows the result and points out grey pixels and wrong sizes. (JPEG blurs every edge into grey: use PNG.)
-- **One picture per mood**, named after it: `content`, `happy`, `bored`, `lonely`, `sleepy`, `asleep`, `eating`, `treat`, `stuffed`, `hungry`, `starving`, `excited`, `ecstatic`, `proud`, `alarmed`, `uploading`, `adventure`, `riding` (`happy.png` and so on). Optionally a second frame (`happy_1.png`), which he alternates with the first on screen updates, and, for the five everyday moods, versions for an empty or full belly (`happy-hungry.png`, `happy-stuffed.png`). Anything the placeholder adds on top (Zzz, sparkles, sweat drops, speed lines) belongs in your picture.
+- **One picture per mood**, named after it: `content`, `happy`, `bored`, `lonely`, `sleepy`, `asleep`, `eating`, `treat`, `stuffed`, `hungry`, `starving`, `excited`, `ecstatic`, `proud`, `alarmed`, `uploading`, `adventure`, `riding`, `sneezing`, `sunglasses` (`happy.png` and so on). Optionally a second frame (`happy_1.png`), which he alternates with the first on screen updates, and, for the five everyday moods, versions for an empty or full belly (`happy-hungry.png`, `happy-stuffed.png`). Anything the placeholder adds on top (Zzz, sparkles, sweat drops, speed lines) belongs in your picture.
 - **Moods without a picture keep the placeholder**, so you can replace them one at a time. Pictures are kept in a `harald-art` folder on **bootfs**, so you can also copy them there from your computer.
 
 From pencil to pixels, if you prefer traditional art methods (like the project author does): sketch the drawing in pencil, carefully go over the drawing in black pen and then erase as much of the pencil as you can (pencil turns patchy when forced to black and white), photograph or scan it to make it digital, then in GIMP, Paint.NET or Photopea raise the contrast, scale it down to 96 × 86 with no smoothing, and switch to a 1-bit black and white palette without dithering. At this size the best final results usually come from the addition of pixel art tracing: use the faded photo on a layer underneath and draw your pixels on top using your computer mouse with a 1-pixel pencil (LibreSprite is specifically made for this if you want to give it a try!). Look up online tutorials for additional guidance.
@@ -316,6 +330,31 @@ Add the Den to your phone's home screen for quick access. It only works while he
 - **Put him to sleep before unplugging** (Den → *Care* → **Put to sleep**), so the card isn't being written to when the power goes.
 - **Nap** is the gentler option: as good as switched off (no Bluetooth or Wi-Fi feeding, meters frozen, nothing written to the card), but he stays on the network so you can wake him from the Den. He's safe to unplug mid-nap, and keeps napping through a restart until you wake him.
 
+### Optional: a USB GPS receiver
+
+A small USB GPS receiver gives him most of [Level 3](#level-3-your-phones-senses) without any phone apps: a "G-mouse" receiver with a u-blox chip (the VK-162 and VK-172 are common), plugged into the Pi's **data** port (the middle micro-USB, marked USB) with a micro-USB OTG adapter. He finds it by himself. It needs to be outdoors. Receivers like these can generally hear the satellites through a bag or backpack, so it can travel tucked away with him, but your experience may vary depending on the make and model you try. Indoors they struggle, and the first fix after switching on can take a minute or two.
+
+- **What it brings:** walks (tracked and logged), conquering the map, landmarks, green spaces (walks, runs and rides in them included), wardriving, stars and the better tracker warning, all as described in Level 3.
+- **What still needs the phone:** stories (its step counter), weather and climbing (its barometer) and sunshine (its light sensor).
+- **With both** it and the phone sending positions, `prefer` under `[gps]` in the settings file decides which wins, and the other fills in while the preferred one has no fix.
+
+### No GPS at all: finding him by Wi-Fi (untested)
+
+Level 3 brings **conquering the map**: the world is cut into squares about 250 m across ("lands"), grouped into squares about 1 km across ("realms"), and he claims each one you take him into. Normally that uses a GPS: your phone's, or [a USB receiver](#optional-a-usb-gps-receiver). If you can't, or would rather not, give him one, he can still claim land from Level 2, by working out roughly where he is from the Wi-Fi networks around him. It's off unless you switch it on in the Den: **Conquests → Find him by Wi-Fi**.
+
+**How it works.** Every Wi-Fi router announces itself about ten times a second with a unique hardware address, and he already hears those announcements. Routers almost never move, so a service that knows roughly where millions of them are can turn "I can hear these networks, this loudly" into "then you're about here". It takes the known positions of the routers he hears and averages them, counting the louder ones for more, because a loud router is usually a near one. In a town that's usually within 20 to 50 m. In the countryside, with only one or two networks about, it often can't tell at all. The service is [beaconDB](https://beacondb.net), free and community-built. He only *asks* it: he never sends it sightings of his own.
+
+> ⚠️ **This is less private.** The list of networks around you *is* where you are, so every lookup tells beaconDB where he is, to within tens of meters. Its [privacy notice](https://beacondb.net/privacy) says it doesn't keep the networks asked about or the answer, but its server logs keep your internet address and the time for 28 days. To keep this to a minimum, he only asks while there's **no GPS at all** (a phone or USB GPS always wins), only while he's on your hotspot, at most once every two minutes, and not again while the same networks are still around. Your own hotspots, phones' hotspots (they move around with their owners) and networks ending in `_nomap` are never sent.
+
+**What a Wi-Fi position does:** claims lands and realms (only the square he's in, since it's too rough to tell you're passing a square's edge), points out landmarks and discovers green spaces (both described in [Level 3](#level-3-your-phones-senses)), answers "where is...?" questions, and shows where he is on the Den's map, with a circle for how rough it is.
+
+**What it doesn't:**
+
+- **No walks, runs or rides in green spaces, and no walk distances.** A Wi-Fi position wanders by tens of meters even while you sit still, so he'd count walks you never took.
+- **No WiGLE uploads.** A position worked out from beaconDB is an estimate built from other people's reports, not a sighting, so passing it to WiGLE would muddy the map everyone shares. Networks he hears still feed him, as always.
+
+How precise a Wi-Fi position must be to claim land is **Lands: ignore Wi-Fi positions less precise than** in **Developer Tools → Detection** (75 m).
+
 ---
 
 ## Level 3: Your phone's senses
@@ -330,14 +369,14 @@ Your phone has a GPS, a step counter, a barometer and a light sensor. Shared wit
 
 - **Walks.** He knows when you're walking, running, cycling or riding, and how far. Each outing goes in his diary when it ends: **"Walk: 4.57 km (2.84 mi) in 1 h 24 min, from 15:20"**. The Den shows the walk in progress and today's walks under *Adventures today*. Walks are also kept for good in his database.
 - **Stories.** Steps your phone counted while he wasn't with you become a story you tell him when you're back.
-- **Conquests: new land.** The map is cut into squares about 250 m across ("lands"), grouped into squares about 1 km across ("realms"). He claims the square he's in, and any neighboring square whose edge you pass within about 40 m of. The squares are deliberately big, so nearly every one has a public road or path in it: **you never need to go onto private property to claim land.** The Den's **Conquests** section counts them, and **Open the map** shows them with a fog of war over everywhere you haven't been yet. **Forget my map** in the Den erases the lot.
+- **Conquests: new land.** The map is cut into squares about 250 m across ("lands"), grouped into squares about 1 km across ("realms"). He claims the square he's in, and any neighboring square whose edge you pass within about 40 m of. The squares are deliberately big, so nearly every one has a public road or path in it: **you never need to go onto private property to claim land.** The Den's **Conquests** section counts them, and **Open the map** shows them with a fog of war over everywhere you haven't been yet. **Forget my map** in the Den erases the lot. (No GPS? He can still claim land by [finding himself by Wi-Fi](#no-gps-at-all-finding-him-by-wi-fi-untested), back in Level 2.)
 - **Landmarks.** The first time he enters a realm, he asks Wikipedia which famous places are in and around it. "Famous" means Wikipedia has an article about it in at least 10 languages: the Tower of London passes easily, the pub on the corner doesn't. When you come within about 250 m of one, he points it out: **"LOOK! TOWER BRIDGE!"** The map marks them.
   **In the countryside, lower the bar.** 10 languages suits a city, but a rural area may have few places that famous, or none. The number is **Landmarks: how famous** in **Developer Tools → Detection**, and lowering it is highly recommended for rural areas. If you don't see any landmarks on the map within a reasonable distance, lower it by 1 and look at the map again, and repeat until your area feels as full of landmarks as you'd like. The change shows straight away, since he keeps every place Wikipedia told him about along with how many languages it's written about in.
 - **Green spaces.** Public parks, woods, nature reserves, commons, village greens and gardens, from OpenStreetMap (the same map the Den draws, so the outlines match its green areas). Going into one for the first time finds it: **"A NEW GREEN SPACE: FERNHILL VALE!"** Ten minutes on foot in one (with at least 150 m of actual walking) earns **"Took a walk in Oakfield Country Park!"**; five minutes running or cycling, **"Went for a run in..."** or **"Biked through..."**. Time in a vehicle never counts. "Inside" means within the outline or 20 m of it: from your position, picture a line heading due east and count how many times it crosses the outline; an odd number means inside. The Den's **Conquests** section lists them under **Green spaces**: the ones he's discovered, with how many visits, walks, runs and rides each, and the ones nearby he hasn't been in yet.
 - **Wardriving.** Every network he hears is logged with a location and uploaded to [WiGLE](https://wigle.net) under **your own account**, if you add your WiGLE **API Name** and **API Token** under `[wigle]` in the settings file (wigle.net → Account → "Show my token"; these are not your login password). WiGLE limits uploads per day, so he batches them: at most every 4 hours, once at least 50 sightings are waiting. Networks whose name ends in `_nomap`, and hidden networks, are never uploaded. The Den has **Upload now** and **Download CSV**.
 - **Weather and climbing.** Air pressure drops about 0.12 hPa for every meter you go up. A quick change over a minute or two is you climbing stairs or a hill; a slow change over hours is the weather. A fall of about 3 hPa in 3 hours usually means wind and rain on the way. He only judges the weather while you've stayed in roughly the same place, so a hill can't fool him.
-- **Sunshine.** When your phone's light sensor reads 30,000 lux or more for 30 seconds (indoors is 100 to 500), he cheers: **"Wow! It's sunny out today!"**
-- **Stars.** Your phone's GPS chip hears navigation satellites from GPS (USA), Galileo (EU), GLONASS (Russia), BeiDou (China), QZSS (Japan), NavIC (India) and others. Each one is a star he collects in the Den's **Star chart**, and his first of a new constellation is a big one. After that, a star cheers him up again whenever it *rises*: heard low over the horizon after an hour or more out of earshot (**"A STAR RISES! GALILEO 19"**). Satellites you simply lose indoors don't count when you step back outside, because they come back at whatever height they happen to be. This needs **GPSd Forwarder** (set up below): SensorServer doesn't pass satellite details on.
+- **Sunshine.** When your phone's light sensor reads 30,000 lux or more for 30 seconds (indoors is 100 to 500), he puts on his round sunglasses and cheers: **"Wow! It's sunny out today!"**
+- **Stars.** Your phone's GPS chip hears navigation satellites from GPS (USA), Galileo (EU), GLONASS (Russia), BeiDou (China), QZSS (Japan), NavIC (India) and others. Each one is a star he collects in the Den's **Star chart**, and his first of a new constellation is a big one. After that, a star cheers him up again whenever it *rises*: heard low over the horizon after an hour or more out of earshot (**"A STAR RISES! GALILEO 19"**). Satellites you simply lose indoors don't count when you step back outside, because they come back at whatever height they happen to be. This needs **GPSd Forwarder** (set up below) or a [USB GPS receiver](#optional-a-usb-gps-receiver): SensorServer doesn't pass satellite details on.
 - **A better tracker warning.** With GPS, an unknown tracker only raises the alarm once it has stayed with you while you've moved 250 m.
 
 Every distance, time and reward here is adjustable in **Developer Tools**. Each feature can be switched off under `[sky]` in the settings file (`lands`, `landmarks`, `greens`, `stars`, `barometer`, `moon`).
@@ -368,28 +407,11 @@ Within a minute of a GPS fix outdoors, the Den's **Star chart** under *Conquests
 ### Other ways to share a position (untested)
 
 - **iPhone, GPS only: GPS2IP** (App Store). Turn on Socket Mode (TCP) on port `11123`. iOS limits what apps can do in the background, so it may stop when the screen locks. There's no step counting on iPhone yet.
-- **A USB GPS receiver**, for wardriving without the phone's GPS: a "G-mouse" receiver with a u-blox chip (the VK-162 and VK-172 are common), plugged into the Pi's **data** port (the middle micro-USB, marked USB) with a micro-USB OTG adapter. He finds it by himself, and with both it and the phone sending positions, `prefer` under `[gps]` decides which wins. It needs to be outdoors, but it hears the satellites through a bag or backpack, so it can travel tucked away with him. Indoors it struggles, and the first fix after switching on can take a minute or two.
-
-### No GPS at all: finding him by Wi-Fi (untested)
-
-If you can't, or would rather not, share a GPS with him, he can still claim land by working out roughly where he is from the Wi-Fi networks around him. It's off unless you switch it on in the Den: **Conquests → Find him by Wi-Fi**.
-
-**How it works.** Every Wi-Fi router announces itself about ten times a second with a unique hardware address, and he already hears those announcements. Routers almost never move, so a service that knows roughly where millions of them are can turn "I can hear these networks, this loudly" into "then you're about here". It takes the known positions of the routers he hears and averages them, counting the louder ones for more, because a loud router is usually a near one. In a town that's usually within 20 to 50 m. In the countryside, with only one or two networks about, it often can't tell at all. The service is [beaconDB](https://beacondb.net), free and community-built. He only *asks* it: he never sends it sightings of his own.
-
-> ⚠️ **This is less private.** The list of networks around you *is* where you are, so every lookup tells beaconDB where he is, to within tens of meters. Its [privacy notice](https://beacondb.net/privacy) says it doesn't keep the networks asked about or the answer, but its server logs keep your internet address and the time for 28 days. To keep this to a minimum, he only asks while there's **no GPS at all** (a phone or USB GPS always wins), only while he's on your hotspot, at most once every two minutes, and not again while the same networks are still around. Your own hotspots, phones' hotspots (they move around with their owners) and networks ending in `_nomap` are never sent.
-
-**What a Wi-Fi position does:** claims lands and realms (only the square he's in, since it's too rough to tell you're passing a square's edge), points out landmarks, discovers green spaces, answers "where is...?" questions, and shows where he is on the Den's map, with a circle for how rough it is.
-
-**What it doesn't:**
-
-- **No walks, runs or rides in green spaces, and no walk distances.** A Wi-Fi position wanders by tens of meters even while you sit still, so he'd count walks you never took.
-- **No WiGLE uploads.** A position worked out from beaconDB is an estimate built from other people's reports, not a sighting, so passing it to WiGLE would muddy the map everyone shares. Networks he hears still feed him, as always.
-
-How precise a Wi-Fi position must be to claim land is **Lands: ignore Wi-Fi positions less precise than** in **Developer Tools → Detection** (75 m).
+- **A USB GPS receiver** needs no phone app at all: see [Level 2](#optional-a-usb-gps-receiver).
 
 ### His voice through your phone (tested)
 
-Harald can talk through your phone's speaker (or Bluetooth earphones), with the screen off and the phone in your pocket. Tested on the Pixel 7 Pro with **Termux** and **Termux:API** (both from F-Droid; the Play Store versions don't work together), and with **SherpaTTS** (F-Droid) to give the phone his own Piper voice.
+Harald can talk through your phone's speaker (or Bluetooth earphones), with the screen off and the phone in your pocket. This works at **any level**, even Level 1: none of the phone's sensors are used, it only needs to be on the same network as him (your home Wi-Fi, or its own hotspot). Tested on the Pixel 7 Pro with **Termux** and **Termux:API** (both from F-Droid; the Play Store versions don't work together), and with **SherpaTTS** (F-Droid) to give the phone his own Piper voice.
 
 1. In Termux: `pkg install -y python termux-api`
 2. Then the line shown in the Den under *Voice and light ring → Set up the phone voice* (it has your dragon's address filled in). He says hello through the phone when it's working.
@@ -409,7 +431,7 @@ With a rooted Echo Dot that he controls on the same network, Harald speaks, list
 
 ### What he gains
 
-- **He speaks his news** ("Treat! Coffee shop guest!", "A storm is coming!"), in an offline voice ([Piper](https://github.com/rhasspy/piper)). In the Den you choose how chatty he is: *Everything*, *Big moments*, *Welcome-home recap only*, *Silent* or *Adventure mode*.
+- **He speaks his news** ("Treat! Coffee shop guest!", "A storm is coming!") through the Dot, in an offline voice ([Piper](https://github.com/rhasspy/piper)). In the Den you choose how chatty he is: *Everything*, *Big moments*, *Welcome-home recap only*, *Silent* or *Adventure mode*.
 - **Adventure mode**, for taking the Dot out on a power bank: only adventure news, at its own quieter volume. How far you've walked today, how high you've climbed, new lands and realms, landmarks, green spaces, sunshine, stars, level-ups, and "Smashing! My pack is full up!". Never anything about Bluetooth or Wi-Fi.
 - **Welcome-home recap.** When you take Harald out and the Dot stays home, he tells you what he did once he's back in range.
 - **Mood ring.** The ring glows in his mood's color and plays a short animation when something happens: lightning for a storm, twinkles for a satellite, a gold sweep for a level-up, the moon's phase on moon days.
@@ -419,16 +441,18 @@ With a rooted Echo Dot that he controls on the same network, Harald speaks, list
 **Asking him questions.** Press the Dot's action button (the one with the dot), or say **"Hey dragon"** (see below), and ask. The ring turns cyan while he listens. He understands:
 
 - **the time**, here or in a big city, country or US state ("What time is it in Tokyo?"), and **the date** or **the day**;
-- **the weather** now, later today, tomorrow or on a named day, in °C with °F alongside;
+- **the weather** now, later today, tomorrow or on a named day, in °C with °F alongside, here, in a big city, or at home ("What's the temperature at home?", using [Harald's Lair](#what-he-does-at-this-level));
+- **more about the weather**, here or at home: the humidity, the air pressure, the pollen count (Europe only, in season), the UV index, the air quality, and sunrise or sunset ("When is sunset tomorrow?");
+- **weather warnings** at home (UK and US): "Are there any weather warnings at home?";
 - **kitchen timers**: "Set a pasta timer for twelve minutes", "How long left?", "Cancel the timer". Say "stop" while one rings;
 - **the shopping list**: "Add eggs and milk to the shopping list", "Take bread off the list", "What's on the shopping list?" It has its own page in the Den, sorted into supermarket sections, with how many to buy and which shop;
 - **the calendar**: "What events do I have today?" Events and reminders live on the Den's calendar page. A reminder shows only "REMINDER: EVENT IN 1 HOUR!" on his screen (anyone can see the screen), while the Dot says the event's name;
 - **voice profiles**: "Set a voice profile" teaches him the speaker's voice. After that, he recognizes you and sometimes uses your name: "It's 7:30 at night, Sam." Asking "Who am I?" checks his guess of who is asking the question. What's kept is a voice print (128 numbers describing how a voice sounds), never a recording;
-- *with Level 3:* **which way is it**: "What direction is East Harbour Railway in?", "Where is the closest park?", "How far is it?", with the straight-line distance and compass direction: "East Harbour Railway is 900 meters to the southeast, about half a mile.";
-- *with Level 3:* **how far have we gone**: "How far have we gone on this walk?";
+- *with a position (Level 3, or Level 2 with a USB GPS or Wi-Fi):* **which way is it**: "What direction is East Harbour Railway in?", "Where is the closest park?", "How far is it?", with the straight-line distance and compass direction: "East Harbour Railway is 900 meters to the southeast, about half a mile.";
+- *with a GPS (Level 3, or a USB GPS):* **how far have we gone**: "How far have we gone on this walk?";
 - **going to sleep**: "Go to sleep" or "Take a nap". He checks first ("Shall I go to sleep now?") and only a clear "yes" counts.
 
-You can also **type** questions in the Den and he will answer out loud if the phone speaker or Dot is connected per this guide and enabled.
+You can also **type** these questions in the Den, from Level 1 (all except voice profiles and going to sleep, which need him to hear you). The answer appears under the box, and he also says it out loud if he has a voice: the Dot, or the phone.
 
 **"Hey dragon."** Tick the wake word in the Den and choose the hours. A tiny speech recognizer on the Dot listens only for "hey dragon"; when it hears it, the ring changes to cyan and your question is recorded. **Wake word: how strict** in Developer Tools trades false alarms against missed wake word calls, and the Den shows how sure he was each time to help you choose.
 
@@ -500,7 +524,8 @@ Everything he knows lives on the Pi's memory card, in `/var/lib/bt-dragon/` and 
 
 - his meters, diary, life list of species, Wi-Fi networks he's seen, and your pals' Bluetooth addresses;
 - *Level 3:* the lands he's claimed (a rough map of where you've taken him, which **Forget my map** erases), landmarks and green spaces seen, your walks, and wardriving sightings (networks with locations);
-- *Level 4:* voice prints (128 numbers each, never recordings), the calendar and the shopping list;
+- the calendar, the shopping list and Harald's Lair (the town or postcode area you typed, and its position rounded to about 10 km);
+- *Level 4:* voice prints (128 numbers each, never recordings);
 - the settings file, with your Wi-Fi details (passwords scrambled into keys on first start) and WiGLE token.
 
 ### What's on the Echo Dot (Level 4)
@@ -514,12 +539,34 @@ No personal data. The Dot holds Harald's programs, his light ring animations, th
 | Installing and updating | Debian and Raspberry Pi package servers, the Python package index, GitHub, Hugging Face, alphacephei.com | Ordinary software downloads, nothing about you |
 | *Level 3:* the first time he enters a new 1 km square | Wikipedia and Wikidata (landmarks), OpenStreetMap's Overpass service (green spaces) | The square's corners (roughly which square kilometer you're in). Each square is asked about once, and again after half a year to look for any updates |
 | *Level 3:* when the Den's map is open | OpenStreetMap's map tiles and the unpkg.com code library, loaded by your phone's browser, not by Harald | Which area you're looking at, as with any web map |
-| *Level 3:* only if you switch on **Find him by Wi-Fi**, and only while there's no GPS | beaconDB | The Wi-Fi networks he can hear (their hardware addresses and signal strengths), which shows where he is to within tens of meters. Its server logs keep your internet address and the time for 28 days |
+| *Level 2 and up:* only if you switch on **Find him by Wi-Fi**, and only while there's no GPS | beaconDB | The Wi-Fi networks he can hear (their hardware addresses and signal strengths), which shows where he is to within tens of meters. Its server logs keep your internet address and the time for 28 days |
 | *Level 3:* wardriving, if you've added your WiGLE token | WiGLE, your own account | The networks he heard, with where and when |
-| *Level 4:* when you ask about the weather | Open-Meteo | A position rounded to about 10 km, or the city you named. If you type a home town in the Den (for weather without GPS), its name is looked up once to find it on the map |
+| When you ask about the weather (any level), and every hour with the Lair's **Local announcements** on | Open-Meteo | A position rounded to about 10 km, or the city you named. Setting **Harald's Lair** looks up the place you typed once, with its country; a postcode is cut to its area first (`SW1A` of `SW1A 1AA`, the first three characters of a Canadian code, the five-digit ZIP of a ZIP+4), so a full postcode never leaves the Pi |
+| With the Lair's **Local announcements** on, every 15 minutes (UK) | The Met Office | Nothing about you: he downloads the public warnings feed for the Lair's region, the same file anyone can open |
+| Setting the Lair (US), once; then every 15 minutes with **Local announcements** on | The National Weather Service (api.weather.gov) | Once: the town's (or ZIP area's) own middle, to find its forecast zone and county. After that, only those two names (like `TXZ192` and `TXC453`) |
 | Before each WiGLE upload | api.wigle.net | A connection check, nothing else |
 
 The Pi also sets its clock from the internet, as every Raspberry Pi does. Nothing else leaves your network. Between your own devices, on your network: your phone sends its sensor readings to Harald (Level 3), the Pi and the Dot exchange his words and the text of your questions (Level 4), and the phone voice receives the words he says.
+
+### The Lair and your postcode
+
+Setting **Harald's Lair** sends the place you typed, and its country, to Open-Meteo's place finder once. A full postcode can narrow things down to a street or two, so before it's sent, a postcode is cut down to its area:
+
+| Country | You type | What's looked up |
+|---|---|---|
+| United Kingdom | `SW1A 1AA` | `SW1A` (the postcode district) |
+| Canada | `K1A 0B1` | `K1A` (the forward sortation area) |
+| United States | `20500-0003` | `20500` (the five-digit ZIP, which already covers a whole area) |
+| Netherlands | `1012 AB` | `1012` |
+| Ireland | `D02 X285` | `D02` (the Eircode routing key) |
+
+**Warning areas.** US weather warnings are issued per forecast zone and county, and a position rounded to 10 km could land in the neighboring county near a boundary. So when you set the Lair, the town's (or ZIP area's) own middle, as the place finder returned it, is sent to the National Weather Service once to find the zone and county, and then forgotten; only the zone and county names are kept and used. In the UK, the Met Office's region is worked out on the Pi from the county name, and the public feed for that region is simply downloaded.
+
+Other countries' postcodes are looked up as typed, so for those, typing the town is the more private choice. Whatever comes back, he keeps only its name and its position rounded to one decimal place of latitude and longitude, about 10 km. That rounded position is all that's ever sent for the weather, pollen and air quality at the Lair. What you typed stays on the Pi (so the Den can show it back to you), and **Forget the Lair** erases it.
+
+#### Pollen outside Europe
+
+The free pollen forecast Harald uses (Open-Meteo, from the EU's Copernicus atmosphere service) covers Europe only. The US services that offer pollen counts (Google's Pollen API, Ambee, Tomorrow.io, The Weather Company) all need an account and an API key, and most become paid beyond a small free allowance, so they aren't built in. Outside Europe he simply says he can't get the pollen count.
 
 ### What's visible on your network
 
@@ -593,6 +640,11 @@ On TCP port 5151 you send one command per line. Replies are either one `OK …` 
 | `SPECIES` / `TREATS [n]` | Life list / recent networks, then `END` |
 | `STARS` | Star chart: `key\|constellation\|number\|first_seen\|days_seen\|in_view_now` lines, then `END` |
 | `LANDMARKS` | Famous places: `qid\|title\|languages\|first_seen (0 = not yet)\|visits` lines, then `END` |
+| `LAIR` | Harald's Lair: `place=`, `country=`, `found=`, `announce=`, `complete=`, `now=`, `warn_source=`, `warn_area=`, `warn_region=`, `warn_active=` lines, then `END` |
+| `LAIRSET place\|country` | Look up and set the Lair: `OK Found …` or `ERR` with why not |
+| `LAIRREGION code` | The UK warning region, if the guess was wrong (`nw`, `se`, `st`… as in the Met Office's feeds) |
+| `LAIRANNOUNCE on` / `off` | Local announcements on or off (needs the Lair set) |
+| `LAIRFORGET` | Forget the Lair |
 | `GREENS` | Green spaces: `id\|name\|kind\|first_seen (0 = not yet)\|visits\|walks\|runs\|rides` lines, then `END` |
 | `WIFIPOS` | Finding him by Wi-Fi: `on=`, `status=`, `lookups=`, `fix_acc=` lines, then `END` |
 | `WIFIPOSSET on` / `off` | Switch finding him by Wi-Fi on or off |
