@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__NAME__'s Conquests</title>
+<!-- Leaflet draws the map. It and the map tiles come from the internet through your phone's
+     own connection; the dragon only supplies the squares. -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  :root { --stone: #1d1c1a; --stone2: #282623; --line: #3d3a35; --ink: #ece6da; --dim: #a69f92;
+          --rune: #d9a441; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--stone); color: var(--ink);
+               font: 15px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  body { display: flex; flex-direction: column; }
+  header { padding: 10px 16px; border-bottom: 3px double var(--line); display: flex; flex-wrap: wrap;
+           align-items: center; gap: 8px 14px; }
+  h1 { margin: 0; font-size: 13px; letter-spacing: 2px; text-transform: uppercase; color: var(--rune); }
+  .stats { color: var(--dim); font-size: 13.5px; flex: 1; min-width: 180px; }
+  .stats b { color: var(--ink); }
+  button { background: transparent; color: var(--ink); border: 1px solid var(--rune); border-radius: 6px;
+           padding: 6px 10px; font: inherit; font-size: 13px; cursor: pointer; }
+  label { font-size: 13px; color: var(--dim); display: flex; align-items: center; gap: 4px; }
+  #map { flex: 1; min-height: 300px; background: #10100f; }
+  #note { padding: 6px 16px; font-size: 12px; color: var(--dim); border-top: 1px solid var(--line); }
+  #fallback { width: 100%; height: 100%; display: block; }
+  .leaflet-container { background: #10100f; }
+</style>
+</head>
+<body>
+<header>
+  <h1>__NAME__'s conquests</h1>
+  <div class="stats" id="stats">Loading…</div>
+  <label><input type="checkbox" id="fog" checked> Fog</label>
+  <button onclick="centerOnMe()">Where am I?</button>
+</header>
+<div id="map"></div>
+<div id="note">Gold squares are lands claimed (about 250 m across); dashed outlines are realms (about 1 km);
+  ★ famous places seen, ? famous places nearby not seen yet. Green outlines are parks, woods and other
+  green spaces: solid once you've been in them, dashed if not yet.
+  The fog hides everywhere you haven't taken __NAME__ yet. Map tiles load from OpenStreetMap over your phone's own
+  connection.</div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'})[c]);
+const GREEN = '#7fbf5f';
+let data = null, map = null, layers = [], first = true;
+
+async function load() {
+  try { data = await (await fetch('/api/lands')).json(); } catch (e) { $('stats').textContent = 'The dragon is not answering.'; return; }
+  const n = data.lands.length, r = data.realms.length;
+  $('stats').innerHTML = `<b>${n.toLocaleString()}</b> land${n === 1 ? '' : 's'} in <b>${r.toLocaleString()}</b> ` +
+    `realm${r === 1 ? '' : 's'} · <b>${data.today}</b> new today`;
+  if (typeof L === 'undefined') return drawFallback();
+  draw();
+}
+
+function draw() {
+  if (!map) {
+    map = L.map('map', {zoomControl: true, worldCopyJump: true});
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+  }
+  layers.forEach(l => map.removeLayer(l)); layers = [];
+  const ring = ([s, w, n, e]) => [[s, w], [n, w], [n, e], [s, e]];
+  if ($('fog').checked) {
+    // one big dark sheet over the world, with every claimed square cut out of it
+    const world = [[-85, -180], [85, -180], [85, 180], [-85, 180]];
+    layers.push(L.polygon([world, ...data.lands.map(ring)], {
+      stroke: false, fillColor: '#0b0b0a', fillOpacity: 0.62, interactive: false}).addTo(map));
+  }
+  if (data.lands.length) {
+    layers.push(L.polygon(data.lands.map(b => [ring(b)]), {
+      color: '#d9a441', weight: 1, opacity: 0.9, fillColor: '#d9a441', fillOpacity: $('fog').checked ? 0.12 : 0.35,
+      interactive: false}).addTo(map));
+  }
+  data.realms.forEach(b => layers.push(L.rectangle([[b[0], b[1]], [b[2], b[3]]], {
+    color: '#d9a441', weight: 1.5, dashArray: '6 5', fill: false, interactive: false}).addTo(map)));
+  (data.greens || []).forEach(g => {
+    layers.push(L.polygon(g.rings, {color: GREEN, weight: 2, opacity: 0.95, dashArray: g.seen ? null : '5 5',
+      fillColor: GREEN, fillOpacity: g.seen ? 0.22 : 0.06}).addTo(map)
+      .bindTooltip(`${esc(g.name)} (${esc(g.kind)})${g.seen ? '' : ': not explored yet'}`, {sticky: true}));
+  });
+  (data.landmarks || []).forEach(lm => {
+    const icon = L.divIcon({className: '', iconSize: [22, 22], iconAnchor: [11, 11],
+      html: `<div style="width:22px;height:22px;border-radius:11px;display:flex;align-items:center;justify-content:center;
+        font:bold 14px system-ui;border:2px solid #d9a441;${lm.seen ? 'background:#d9a441;color:#1d1c1a' : 'background:#1d1c1a;color:#d9a441'}">
+        ${lm.seen ? '★' : '?'}</div>`});
+    layers.push(L.marker([lm.lat, lm.lon], {icon}).addTo(map)
+      .bindTooltip(lm.seen ? esc(lm.title) : `${esc(lm.title)}: not seen yet`));
+  });
+  if (data.here && data.here.wifi) {   // a Wi-Fi position: show how rough it is
+    layers.push(L.circle([data.here.lat, data.here.lon], {radius: data.here.acc || 50, color: '#c8553d', weight: 1,
+      fillOpacity: 0.12}).addTo(map));
+  }
+  if (data.here) {
+    layers.push(L.circleMarker([data.here.lat, data.here.lon], {
+      radius: 7, color: '#ece6da', weight: 2, fillColor: '#c8553d', fillOpacity: 1}).addTo(map)
+      .bindTooltip(data.here.wifi ? `${data.name} is about here (by Wi-Fi)` : `${data.name} is here`));
+  }
+  if (first) {
+    first = false;
+    if (data.lands.length) {
+      const all = data.lands.flatMap(b => [[b[0], b[1]], [b[2], b[3]]]);
+      map.fitBounds(all, {padding: [20, 20], maxZoom: 16});
+    } else if (data.here) map.setView([data.here.lat, data.here.lon], 16);
+    else map.setView([30, 0], 2);
+  }
+}
+
+function centerOnMe() {
+  if (!data || !data.here) { alert(`${data ? data.name : 'The dragon'} doesn't know where he is right now (no GPS fix).`); return; }
+  if (map) map.setView([data.here.lat, data.here.lon], 17);
+}
+
+function drawFallback() {
+  // No internet on the phone, so no map library or tiles: draw just the squares
+  $('fog').parentElement.style.display = 'none';
+  $('note').textContent = 'No internet on this phone right now, so there is no background map; ' +
+    'these are just the squares you have claimed. Gold: lands. Dashed: realms.';
+  const boxes = data.lands.concat(data.realms);
+  if (!boxes.length && !data.here) { $('map').innerHTML = '<p style="padding:16px;color:#a69f92">No lands claimed yet. Go exploring!</p>'; return; }
+  let s = 90, w = 180, n = -90, e = -180;
+  boxes.forEach(b => { s = Math.min(s, b[0]); w = Math.min(w, b[1]); n = Math.max(n, b[2]); e = Math.max(e, b[3]); });
+  if (data.here) { s = Math.min(s, data.here.lat); n = Math.max(n, data.here.lat); w = Math.min(w, data.here.lon); e = Math.max(e, data.here.lon); }
+  const k = Math.cos((s + n) / 2 * Math.PI / 180), W = 1000, pad = 0.002;
+  s -= pad; n += pad; w -= pad / k; e += pad / k;
+  const H = Math.max(200, W * (n - s) / ((e - w) * k));
+  const X = lon => (lon - w) / (e - w) * W, Y = lat => (n - lat) / (n - s) * H;
+  const rect = (b, attrs) => `<rect x="${X(b[1])}" y="${Y(b[2])}" width="${X(b[3]) - X(b[1])}" height="${Y(b[0]) - Y(b[2])}" ${attrs}/>`;
+  let svg = `<svg id="fallback" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">`;
+  (data.greens || []).forEach(g => g.rings.forEach(r => svg += `<polygon points="${r.map(p => X(p[1]) + ',' + Y(p[0])).join(' ')}"
+      fill="${GREEN}" fill-opacity="${g.seen ? 0.3 : 0.08}" stroke="${GREEN}" stroke-width="2"${g.seen ? '' : ' stroke-dasharray="6 5"'}><title>${esc(g.name)}</title></polygon>`));
+  data.lands.forEach(b => svg += rect(b, 'fill="#d9a441" fill-opacity="0.5" stroke="#d9a441"'));
+  data.realms.forEach(b => svg += rect(b, 'fill="none" stroke="#d9a441" stroke-dasharray="8 6" stroke-width="2"'));
+  (data.landmarks || []).forEach(lm => svg += `<text x="${X(lm.lon)}" y="${Y(lm.lat) + 6}" text-anchor="middle" font-size="18"
+      fill="#d9a441">${lm.seen ? '★' : '?'}<title>${esc(lm.title)}</title></text>`);
+  if (data.here) svg += `<circle cx="${X(data.here.lon)}" cy="${Y(data.here.lat)}" r="8" fill="#c8553d" stroke="#ece6da" stroke-width="3"/>`;
+  $('map').innerHTML = svg + '</svg>';
+}
+
+$('fog').addEventListener('change', () => { if (map) draw(); });
+load(); setInterval(load, 30000);
+</script>
+</body>
+</html>

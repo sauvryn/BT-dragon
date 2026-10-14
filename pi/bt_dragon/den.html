@@ -1,0 +1,1033 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Harald's Den</title>
+<style>
+  :root {
+    --stone: #1d1c1a; --stone2: #282623; --line: #3d3a35; --ink: #ece6da; --dim: #a69f92;
+    --rune: #d9a441; --blood: #c8553d; --moss: #7fa36b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--stone); color: var(--ink);
+         font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header { padding: 18px 16px 10px; border-bottom: 3px double var(--line); }
+  .runes { color: var(--rune); min-height: 34px; }
+  .runes svg polyline { fill: none; }
+  h1 { margin: 4px 0 0; font-size: 15px; font-weight: 600; letter-spacing: 3px; text-transform: uppercase; color: var(--dim); }
+  main { max-width: 560px; margin: 0 auto; padding: 12px 16px 40px; }
+  .screen { width: 100%; image-rendering: pixelated; background: #fff; border: 6px solid #e9e4d8;
+            border-radius: 6px; display: block; }
+  section { background: var(--stone2); border: 1px solid var(--line); border-radius: 8px;
+            padding: 12px 14px; margin-top: 14px; }
+  h2 { margin: 0 0 8px; font-size: 13px; letter-spacing: 2px; text-transform: uppercase; color: var(--rune); }
+  .row { display: flex; justify-content: space-between; align-items: center; gap: 10px;
+         padding: 7px 0; border-top: 1px solid var(--line); }
+  .row:first-of-type { border-top: 0; }
+  .sub { color: var(--dim); font-size: 12.5px; }
+  .grow { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  button { background: transparent; color: var(--ink); border: 1px solid var(--rune); border-radius: 6px;
+           padding: 7px 11px; font: inherit; font-size: 13.5px; cursor: pointer; white-space: nowrap; }
+  button.primary { background: var(--rune); color: #1d1c1a; font-weight: 600; }
+  button.danger { border-color: var(--blood); color: var(--blood); }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  .alert { border-color: var(--blood); }
+  .alert h2 { color: var(--blood); }
+  .meter { height: 10px; background: var(--stone); border: 1px solid var(--line); border-radius: 5px; overflow: hidden; margin-top: 6px; }
+  .meter > div { height: 100%; background: var(--moss); transition: width .3s; }
+  .big { font-size: 34px; font-variant-numeric: tabular-nums; font-weight: 700; }
+  .empty { color: var(--dim); font-style: italic; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .stat { background: var(--stone); border-radius: 6px; padding: 8px; text-align: center; }
+  .stat b { display: block; font-size: 20px; font-variant-numeric: tabular-nums; }
+  .stat span { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; }
+  #toast { position: fixed; left: 16px; right: 16px; bottom: 16px; background: var(--rune); color: #1d1c1a;
+           padding: 10px 14px; border-radius: 8px; font-weight: 600; display: none; text-align: center; }
+  details summary { cursor: pointer; color: var(--dim); }
+  .subtools { border-top: 1px solid var(--line); padding: 10px 0 2px; margin-top: 8px; }
+  .subtools > summary { color: var(--ink); }
+  .subtools[open] > summary { margin-bottom: 6px; }
+  .changedn { color: var(--rune); font-size: 12.5px; margin-left: 6px; }
+  .knob input { width: 76px; background: var(--stone); color: var(--ink); border: 1px solid var(--line);
+                border-radius: 6px; padding: 6px 8px; font: inherit; font-variant-numeric: tabular-nums; text-align: right; }
+  .knob input:focus { outline: none; border-color: var(--rune); }
+  .knob.changed input { border-color: var(--rune); color: var(--rune); font-weight: 600; }
+  .knob .unit { width: 62px; font-size: 12px; color: var(--dim); }
+  .knob button { padding: 4px 8px; font-size: 12px; border-color: var(--line); color: var(--dim); }
+  .knob:not(.changed) button { visibility: hidden; }
+  .setmeter { background: var(--stone); border-radius: 6px; padding: 8px 10px; margin-top: 4px; border-top: 0; }
+  .dotctl input[type=range] { width: 150px; accent-color: var(--rune); }
+  .dotctl .val { width: 42px; text-align: right; font-variant-numeric: tabular-nums; color: var(--rune); }
+  .dotctl select, .dotctl input[type=time], .dotctl input[type=text] { background: var(--stone); color: var(--ink);
+     border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; font: inherit; }
+  .dotctl input[type=text] { flex: 1; min-width: 0; }
+  .dotctl select { min-width: 0; max-width: 52%; }
+  .dotctl input[type=range] { min-width: 0; flex-shrink: 1; }
+  .dotctl .grow { min-width: 110px; }   /* never squeeze a label down to one letter per line */
+  .dotctl .row.wrap { flex-wrap: wrap; }
+  .dotctl .grow.full { flex-basis: 100%; }
+  .dotctl .times { display: flex; align-items: center; gap: 8px; flex: 1; }
+  .dotctl .times input { flex: 1; min-width: 0; }
+  .dotctl label { flex-shrink: 0; white-space: nowrap; }
+  .dot-on { color: var(--moss); } .dot-off { color: var(--dim); }
+  #napBox { border-color: var(--rune); }
+  body.napping main section:not(#napBox) { opacity: .35; pointer-events: none; }
+  summary.foldhead { list-style: none; }
+  summary.foldhead::-webkit-details-marker { display: none; }
+  summary.foldhead h2 { display: inline; margin: 0; }
+  summary.foldhead h2::before { content: "▸ "; }
+  details[open] > summary.foldhead h2::before { content: "▾ "; }
+  summary.foldhead .sub { display: block; margin-top: 2px; }
+  details[open] > summary.foldhead { margin-bottom: 8px; }
+  .arrange-bar { display: none; align-items: center; justify-content: space-between; gap: 8px;
+                 margin: -4px 0 10px; padding: 6px 8px; border: 1px dashed var(--rune); border-radius: 6px; }
+  body.arranging .arrange-bar { display: flex; }
+  .arrange-bar b { color: var(--rune); font-size: 12.5px; letter-spacing: 1px; text-transform: uppercase; }
+  .arrange-bar button { padding: 4px 12px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="runes" id="runes"></div>
+  <h1 id="title">Harald's den</h1>
+</header>
+<main>
+  <section id="napBox" hidden>
+    <h2><span class="pname">Harald</span> is napping</h2>
+    <p style="margin:0">Asleep <span id="napFor"></span>: no feeding, the Dot dark and quiet, his meters frozen,
+      and nothing being written to his card, so he's safe to unplug. He stays on his hotspot so you can wake him from here.</p>
+    <div class="actions" style="margin-top:10px"><button class="primary" onclick="wakeUp()">Wake up</button></div>
+  </section>
+  <img class="screen" id="screen" alt="Your dragon's e-ink screen">
+  <p class="sub" id="headlessNote" hidden style="margin:6px 0 0; text-align:center"></p>
+
+  <section id="alerts" class="alert" hidden>
+    <h2>Unknown tracker alert</h2>
+    <div id="alertList"></div>
+    <p class="sub">An item tracker that is away from its owner has kept showing up near you. If you don't
+      recognize it, check your bag, coat and car. Dismiss it if it's one you know about.</p>
+  </section>
+
+  <section>
+    <h2><span class="pname">Harald</span></h2>
+    <div class="stats">
+      <div class="stat"><b id="sMeals">0</b><span>snacks today</span></div>
+      <div class="stat"><b id="sSpecies">0</b><span>species</span></div>
+      <div class="stat"><b id="sTreats">0</b><span>treats today</span></div>
+    </div>
+    <div class="sub" style="margin-top:10px">Joy</div>
+    <div class="meter"><div id="joy" style="width:50%; background: var(--rune)"></div></div>
+    <div class="sub" style="margin-top:8px">Belly (food)</div>
+    <div class="meter"><div id="hunger" style="width:50%"></div></div>
+    <div class="sub" style="margin-top:8px">Pack <b id="packNow" style="color: var(--ink)">0</b> / <span id="packCap">50</span>
+      · spare berries and treats for when he gets hungry</div>
+    <div class="meter"><div id="packBar" style="width:0; background: var(--dim)"></div></div>
+    <p id="feeling" style="margin:10px 0 0; font-weight:600"></p>
+    <p class="sub" id="meta"></p>
+    <p class="sub" style="margin:4px 0 0">Awake <b id="awake" style="font-variant-numeric: tabular-nums; color: var(--ink)">00:00:00</b></p>
+    <p class="sub" id="vitals" style="margin:4px 0 0"></p>
+  </section>
+
+  <div id="arrange">
+  <section data-arrange="pals">
+    <h2>Find my pals</h2>
+    <div id="track" hidden>
+      <div class="row"><div class="grow"><b id="trackName"></b><div class="sub" id="trackHint">Walk around: the number
+        gets closer to 0 as you get nearer. Around -40 means within a meter or so.</div></div>
+        <div class="big" id="trackRssi">--</div></div>
+      <div class="meter"><div id="trackBar" style="width:0"></div></div>
+      <p class="sub" id="trackHow" style="margin:8px 0 0"></p>
+      <p><button onclick="stopTrack()">Stop finding</button></p>
+    </div>
+    <div id="pals"></div>
+  </section>
+
+  <section data-arrange="friends">
+    <h2>Dragon friends</h2>
+    <div id="friends"></div>
+  </section>
+
+  <section data-arrange="nearby">
+    <h2>Gadgets nearby</h2>
+    <p class="sub">Only gadgets with a fixed address are listed. Phones and watches change their address every few
+      minutes to stay private, so <span class="pname">Harald</span> counts them but never lists them. Mark the ones that are yours.</p>
+    <div class="actions" style="margin-bottom:8px">
+      <button onclick="searchGadgets()">Search for my gadgets</button>
+    </div>
+    <p class="sub" id="searchNote" hidden>Searching for 30 seconds. Put your headphones or speaker in
+      pairing mode now (and turn your phone's Bluetooth off for a moment).</p>
+    <details class="fold" id="fold-nearby"><summary>Show the list <span class="sub" id="nearbyCount"></span></summary>
+      <div id="nearby"></div></details>
+  </section>
+
+  <section data-arrange="treats">
+    <h2>Recent treats</h2>
+    <details class="fold" id="fold-treats"><summary>Show the list <span class="sub" id="treatsCount"></span></summary>
+      <div id="treats"></div></details>
+  </section>
+
+  <section data-arrange="life">
+    <h2>Life list</h2>
+    <details><summary>Every species <span class="pname">Harald</span> has eaten</summary><div id="species"></div></details>
+  </section>
+
+  <section data-arrange="diary">
+    <h2>Diary</h2>
+    <details class="fold" id="fold-log"><summary>Recent entries <span class="sub" id="logCount"></span></summary>
+      <div id="log"></div></details>
+    <div id="diaryFiles" hidden>
+      <p class="sub" style="margin:10px 0 6px">Every diary entry is also saved on the Pi as a spreadsheet file (CSV), one
+        per day, with the time, his meters and where it happened. Older days are deleted automatically.</p>
+      <div class="actions"><a id="dToday" href="#"><button>Download today's diary</button></a></div>
+      <details style="margin-top:8px"><summary>Earlier days (<span id="dCount">0</span>)</summary><div id="dList"></div></details>
+    </div>
+  </section>
+
+  <section data-arrange="network">
+    <h2>Network</h2>
+    <div class="row" style="border:0"><div class="grow"><b id="netNow">--</b><div class="sub" id="netWhich"></div></div></div>
+    <div id="netList"></div>
+    <div class="actions" style="margin-top:8px">
+      <button onclick="reconnect()">Disconnect and find the best network</button>
+    </div>
+    <p class="sub" style="margin:8px 0 0">He joins the highest one on this list that's in range. On a backup, he moves
+      back up by himself when a better one appears. To change the list, edit [home_wifi] and [[backup_wifi]] in the settings file.</p>
+  </section>
+
+  <section data-arrange="care">
+    <h2>Care</h2>
+    <div class="actions">
+      <button onclick="rename()">Rename</button>
+      <a href="/art" target="_blank"><button>Artwork</button></a>
+      <button onclick="napNow()">Nap (stays plugged in; wake him from here)</button>
+      <button class="danger" onclick="sleepNow()">Put to sleep (safe to unplug)</button>
+      <button onclick="if(confirm('Restart ' + PET + '?')) cmd('REBOOT', true)">Restart</button>
+    </div>
+  </section>
+
+  <section data-arrange="backup">
+    <h2>Backup</h2>
+    <p class="sub" style="margin:0 0 10px">A small file with everything that's yours: him, his diary,
+      lands, the shopping list, calendar, voice profiles, your artwork, your settings and Developer Tools knobs. It includes your
+      hotspot passwords and WiGLE token, so keep it somewhere private.</p>
+    <div class="actions">
+      <button type="button" onclick="location.href = '/api/backup'">Download backup</button>
+      <button type="button" onclick="$('restoreFile').click()">Restore from a backup…</button>
+      <input type="file" id="restoreFile" accept=".gz,.tgz,application/gzip" style="display:none" onchange="restoreBackup(this)">
+    </div>
+    <p class="sub" id="restoreNote" style="margin:10px 0 0">Without the den: copy a backup onto the card's boot
+      partition (the one Windows can open), named <b>harald-restore.tar.gz</b>, and he restores it the next time he starts.</p>
+  </section>
+
+  <section data-arrange="devtools" class="tools">
+    <h2>Developer Tools</h2>
+    <details id="devtools"><summary>Fine-tune food, joy, XP and detection</summary>
+    <p class="sub">For playtesting, or for special situations: in a quiet rural area, for example, you might make
+      <span class="pname">Harald</span> get hungry more slowly or make each catch more filling. Change any number while <span class="pname">Harald</span> runs; it takes
+      effect at once and is kept across restarts. Changed values are highlighted, with ↺ to put one back.</p>
+    <details class="subtools" id="dt-food"><summary><b>Food</b> <span class="sub">· belly, pack and what each catch is worth</span><span class="changedn" id="chg-food"></span></summary>
+      <div class="row knob setmeter"><div class="grow"><b>Set belly meter</b>
+        <div class="sub">Now <span id="nowFood">--</span>%</div></div>
+        <input id="setFood" type="number" min="0" max="100" step="1" inputmode="decimal"><span class="unit">%</span>
+        <button style="visibility:visible; border-color: var(--rune); color: var(--ink)" onclick="setMeter('food')">Set</button></div>
+      <div class="row knob setmeter"><div class="grow"><b>Set PACK</b>
+        <div class="sub">Now <span id="nowPack">--</span></div></div>
+        <input id="setPack" type="number" min="0" step="any" inputmode="decimal"><span class="unit">food</span>
+        <button style="visibility:visible; border-color: var(--rune); color: var(--ink)" onclick="setMeter('pack')">Set</button></div>
+      <div id="knobs-food"></div>
+    </details>
+    <details class="subtools" id="dt-joy"><summary><b>Joy</b> <span class="sub">· joy meter and what makes him happy</span><span class="changedn" id="chg-joy"></span></summary>
+      <div class="row knob setmeter"><div class="grow"><b>Set joy meter</b>
+        <div class="sub">Now <span id="nowJoy">--</span>%</div></div>
+        <input id="setJoy" type="number" min="0" max="100" step="1" inputmode="decimal"><span class="unit">%</span>
+        <button style="visibility:visible; border-color: var(--rune); color: var(--ink)" onclick="setMeter('joy')">Set</button></div>
+      <div id="knobs-joy"></div>
+    </details>
+    <details class="subtools" id="dt-xp"><summary><b>XP</b> <span class="sub">· XP and the level curve</span><span class="changedn" id="chg-xp"></span></summary>
+      <div class="row knob setmeter"><div class="grow"><b>Set XP</b>
+        <div class="sub">Now <span id="nowXp">--</span></div></div>
+        <input id="setXp" type="number" min="0" step="1" inputmode="numeric"><span class="unit">XP</span>
+        <button style="visibility:visible; border-color: var(--rune); color: var(--ink)" onclick="setMeter('xp')">Set</button></div>
+      <div id="knobs-xp"></div>
+      <p class="sub" id="levelTable"></p>
+    </details>
+    <details class="subtools" id="dt-detect"><summary><b>Detection</b> <span class="sub">· thresholds for lands, stars, climbing and weather</span><span class="changedn" id="chg-detect"></span></summary>
+      <div id="knobs-detect"></div>
+    </details>
+    <div class="actions" style="margin-top:12px">
+      <button class="danger" onclick="resetKnobs()">Reset all to defaults</button>
+    </div>
+    </details>
+  </section>
+
+  <section data-arrange="moon" id="moonBox" hidden>
+    <h2>The moon</h2>
+    <div class="row" style="border:0; gap:16px">
+      <svg id="moonSvg" viewBox="0 0 100 100" width="96" height="96" aria-label="Tonight's moon"></svg>
+      <div class="grow">
+        <b id="moonName" style="font-size:17px"></b>
+        <div class="sub" id="moonLit"></div>
+        <div class="sub" id="moonNext" style="margin-top:6px"></div>
+      </div>
+    </div>
+    <p class="sub" style="margin:8px 0 0">On the day of each new moon, first quarter, full moon and last quarter,
+      <span class="pname">Harald</span> gets a burst of joy (the full moon is the biggest) and announces it: on his screen,
+      and out loud if he has a voice. No internet needed: the phases are worked out on the Pi.</p>
+  </section>
+
+  <section data-arrange="lists">
+    <h2>Shopping list and calendar</h2>
+    <div class="row"><div class="grow sub" id="shopNote">Add things here or by voice: "Add eggs to the shopping list".</div>
+      <a href="/shopping" target="_blank"><button class="primary">Shopping list</button></a></div>
+    <div class="row" style="border:0"><div class="grow sub">Events and reminders. Ask him: "What events do I have today?"</div>
+      <a href="/calendar" target="_blank"><button class="primary">Calendar</button></a></div>
+  </section>
+
+  <section data-arrange="voice" class="dotctl">
+    <details class="fold" id="fold-voice"><summary class="foldhead"><h2>Voice and light ring</h2>
+      <span class="sub">Echo Dot, phone voice, questions and timers</span></summary>
+    <div class="row" style="border:0"><div class="grow"><b id="dotState">--</b><div class="sub" id="dotSub"></div></div>
+      <label class="sub"><input type="checkbox" id="dotOn" onchange="dotSet('enabled', this.checked)"> Use the Dot</label></div>
+    <div class="row"><div class="grow">Speak through my phone<div class="sub" id="phoneNote"></div></div>
+      <label class="sub"><input type="checkbox" id="phoneOn" onchange="phoneSet(this.checked)"> Use the phone</label></div>
+    <div class="row"><div class="grow">Phone as a backup<div class="sub">When he's using the Dot but loses it, he talks through the phone until it's back</div></div>
+      <label class="sub"><input type="checkbox" id="phoneBackup" onchange="dotSet('phone_backup', this.checked)"> On</label></div>
+    <details class="subtools"><summary><b>Set up the phone voice</b> <span class="sub">· once, in Termux</span></summary>
+      <ol class="sub" style="margin:8px 0; padding-left:20px; line-height:1.6">
+        <li>From <b>F-Droid</b>, install <b>Termux</b> and <b>Termux:API</b> (both from F-Droid: the Play Store versions don't work together).</li>
+        <li>Open Termux and type: <code>pkg install -y python termux-api</code></li>
+        <li>Then: <code id="phoneCmd"></code></li>
+        <li>In Android's settings, Apps → Termux → Battery: <b>Unrestricted</b>, so it keeps running with the screen off.</li>
+      </ol>
+      <p class="sub" style="margin:0 0 8px">He says hello through the phone when it's working. Leave Termux running (its notification
+        stays while it's listening). Next time, open Termux and type <code>python harald_voice.py</code>. The phone's media volume sets how loud he is,
+        and Bluetooth earphones work too. Only the words he says go to the phone; nothing is kept.</p>
+    </details>
+    <div class="row"><div class="grow">How chatty<div class="sub" id="dotChattyNote"></div></div>
+      <select id="dotChatty" onchange="dotSet('chatty', this.value)">
+        <option value="all">Everything</option><option value="big">Big moments</option>
+        <option value="recap">Welcome-home recap only</option><option value="silent">Silent (ring only)</option>
+        <option value="adventure">Adventure mode</option></select></div>
+    <div class="row"><div class="grow">Volume<div class="sub">The speaker's own volume: 50 is 12 dB below full</div></div><input type="range" min="0" max="100" step="5" id="dotVolume"
+      oninput="$('dotVolumeV').textContent=this.value" onchange="dotSet('volume', this.value)"><span class="val" id="dotVolumeV"></span></div>
+    <div class="row"><div class="grow">Adventure volume<div class="sub">Used instead in Adventure mode, out and about</div></div><input type="range" min="0" max="100" step="5" id="dotAdvVolume"
+      oninput="$('dotAdvVolumeV').textContent=this.value" onchange="dotSet('adv_volume', this.value)"><span class="val" id="dotAdvVolumeV"></span></div>
+    <div class="row"><div class="grow">Ring brightness<div class="sub">0 turns the ring off</div></div><input type="range" min="0" max="100" step="5" id="dotBrightness"
+      oninput="$('dotBrightnessV').textContent=this.value" onchange="dotSet('brightness', this.value)"><span class="val" id="dotBrightnessV"></span></div>
+    <div class="row wrap"><div class="grow full">Quiet hours<div class="sub">No talking; the ring glows a dim night blue</div></div>
+      <div class="times"><input type="time" id="dotQFrom" onchange="dotSet('quiet_from', this.value)"><span>to</span>
+      <input type="time" id="dotQTo" onchange="dotSet('quiet_to', this.value)"></div></div>
+    <div class="row"><input type="text" id="dotSayText" maxlength="300" placeholder="Something for him to say"
+      onkeydown="if(event.key==='Enter') dotSay()"><button onclick="dotSay()">Say it</button></div>
+    <details class="subtools"><summary><b>His voice</b> <span class="sub">· pitch, speed and pauses</span></summary>
+      <div class="row"><div class="grow">Pitch<div class="sub">Lower is deeper and more dragonish (needs SoX)</div></div><input type="range" min="-8" max="8" step="0.5" id="dotPitch"
+        oninput="$('dotPitchV').textContent=this.value" onchange="dotSet('pitch', this.value)"><span class="val" id="dotPitchV"></span></div>
+      <div class="row"><div class="grow">Speed</div><input type="range" min="0.6" max="1.6" step="0.05" id="dotSpeed"
+        oninput="$('dotSpeedV').textContent=this.value" onchange="dotSet('speed', this.value)"><span class="val" id="dotSpeedV"></span></div>
+      <div class="row"><div class="grow">Pause between remarks<div class="sub">Seconds, at least</div></div><input type="range" min="0" max="60" step="1" id="dotGap"
+        oninput="$('dotGapV').textContent=this.value" onchange="dotSet('gap', this.value)"><span class="val" id="dotGapV"></span></div>
+    </details>
+    <details class="subtools"><summary><b>Ring colors</b> <span class="sub">· balance the colors by eye</span></summary>
+      <p class="sub" style="margin:0 0 6px">The ring's green and blue lights are brighter than its red ones. Press
+        <i>Show test colors</i> (red, orange, gold, green, blue, white, in pairs) and turn green and blue down until the gold looks gold and the white looks white.</p>
+      <div class="row"><div class="grow">Red</div><input type="range" min="0" max="100" step="5" id="dotRed"
+        oninput="$('dotRedV').textContent=this.value" onchange="dotSet('red', this.value)"><span class="val" id="dotRedV"></span></div>
+      <div class="row"><div class="grow">Green</div><input type="range" min="0" max="100" step="5" id="dotGreen"
+        oninput="$('dotGreenV').textContent=this.value" onchange="dotSet('green', this.value)"><span class="val" id="dotGreenV"></span></div>
+      <div class="row"><div class="grow">Blue</div><input type="range" min="0" max="100" step="5" id="dotBlue"
+        oninput="$('dotBlueV').textContent=this.value" onchange="dotSet('blue', this.value)"><span class="val" id="dotBlueV"></span></div>
+      <div class="actions" style="margin-top:8px">
+        <button onclick="dotRing('ev_test')">Show test colors</button>
+        <button onclick="dotRing('ev_storm')">Storm</button><button onclick="dotRing('ev_level')">Level up</button>
+        <button onclick="dotRing('ev_species')">New species</button><button onclick="dotRing('ev_star')">Star</button>
+        <button onclick="dotRing('ev_landmark')">Landmark</button>
+      </div>
+    </details>
+    <details class="subtools" id="dt-ask"><summary><b>Questions and timers</b> <span class="sub">· press the Dot's action button and ask</span></summary>
+      <div class="row"><div class="grow">Answer questions<div class="sub" id="askNote"></div></div>
+        <label class="sub"><input type="checkbox" id="dotListen" onchange="dotSet('listen', this.checked)"> On</label></div>
+      <div class="row"><div class="grow">Wake word: "Hey dragon"<div class="sub" id="wakeNote"></div></div>
+        <label class="sub"><input type="checkbox" id="dotWake" onchange="dotSet('wake', this.checked)"> On</label></div>
+      <div class="row wrap"><div class="grow full sub">Listen for it between (the microphones stay on during these hours; nothing is saved, and with Harald's Debian on the Dot the sound never leaves it)</div>
+        <div class="times"><input type="time" id="dotWFrom" onchange="dotSet('wake_from', this.value)"><span>and</span>
+        <input type="time" id="dotWTo" onchange="dotSet('wake_to', this.value)"></div></div>
+      <div class="row"><div class="grow">Home town for the weather<div class="sub" id="homeNote">Used when your phone's GPS isn't linked. A big town or city is enough.</div></div></div>
+      <div class="row" style="border:0"><input type="text" id="dotHome" maxlength="40" placeholder="e.g. Toronto"
+        onkeydown="if(event.key==='Enter') dotSet('home_town', this.value)">
+        <button onclick="dotSet('home_town', $('dotHome').value)">Save</button></div>
+      <div class="row"><input type="text" id="askText" maxlength="200" placeholder="Ask: what time is it in Tokyo?"
+        onkeydown="if(event.key==='Enter') askTyped()"><button onclick="askTyped()">Ask</button></div>
+      <div class="row" style="border:0"><div class="grow sub" id="askLast"></div></div>
+      <div id="timerList"></div>
+      <div class="row"><div class="grow">Voice profiles<div class="sub">Say "Set a voice profile" to the Dot and he'll learn who you are,
+        then sometimes use your name. Voice prints (how a voice sounds, not recordings) stay on the Pi.
+        "Who am I?" checks he knows you.</div></div></div>
+      <div id="voiceList"></div>
+    </details>
+    <details class="subtools"><summary><b>Setup-mode rescue</b> <span class="sub">· after the Dot restarts</span></summary>
+      <p class="sub" style="margin:0 0 6px">After a restart an unregistered Echo goes into setup mode (spinning orange ring), switches
+        your hotspot off and broadcasts an open network of its own. With its name below, <span class="pname">Harald</span> hops onto it
+        for a moment, checks it's your Dot, switches your hotspot back on and hops home. Look for the name in your phone's
+        Wi-Fi list while the ring is orange (like "Amazon-XY7").</p>
+      <div class="row"><input type="text" id="dotSetupNet" maxlength="20" placeholder="Amazon-…"
+        onkeydown="if(event.key==='Enter') dotSet('setup_network', this.value)">
+        <button onclick="dotSet('setup_network', $('dotSetupNet').value)">Save</button></div>
+      <div class="row"><div class="grow sub" id="dotRescueNote"></div>
+        <button onclick="dotRescue()">Rescue now</button></div>
+    </details>
+    <div class="actions" style="margin-top:10px">
+      <button onclick="cmd('DOTFIND', true)">Look for the Dot now</button>
+      <button class="danger" onclick="dotForget()">Forget this Dot</button>
+    </div>
+    </details>
+  </section>
+
+  <section data-arrange="adventures">
+    <h2>Adventures today</h2>
+    <div class="stats">
+      <div class="stat"><b id="aWalk">0</b><span>on foot together</span></div>
+      <div class="stat"><b id="aRide">0</b><span>riding together</span></div>
+      <div class="stat"><b id="aTold">0</b><span>told about</span></div>
+    </div>
+    <div class="stats" style="margin-top:8px">
+      <div class="stat"><b id="aLands">0</b><span>new lands</span></div>
+      <div class="stat"><b id="aClimb">0 m</b><span>climbed</span></div>
+      <div class="stat"><b id="aStars">0</b><span>stars seen</span></div>
+    </div>
+    <p class="sub" id="aTrip" hidden style="margin:10px 0 0"></p>
+    <div class="sub" id="aDone" hidden style="margin:6px 0 0"></div>
+    <p class="sub" id="aNote"></p>
+    <p class="sub" id="aWeather" style="margin:4px 0 0"></p>
+  </section>
+
+  <section data-arrange="conquests">
+    <h2>Conquests</h2>
+    <p style="margin:0"><b id="cLands">0</b> <span id="cLandsW">lands</span> in <b id="cRealms">0</b> <span id="cRealmsW">realms</span> claimed
+      <span class="sub">(squares of the map about 250 m and 1 km across)</span></p>
+    <details style="margin-top:8px"><summary>Star chart: <span id="cStars">0</span> satellites seen</summary>
+      <p class="sub">Satellites need GPSd Forwarder or GPS2IP; SensorServer doesn't pass them on.</p>
+      <div id="starChart"></div></details>
+    <details style="margin-top:8px"><summary>Landmarks: <span id="cLm">0</span> famous places seen</summary>
+      <p class="sub">Famous places (on Wikipedia in many languages) are looked up for each new realm.
+        Ones you haven't been near yet are listed too, and shown on the map: go and see them!</p>
+      <div id="lmList"></div></details>
+    <details style="margin-top:8px"><summary>Green spaces: <span id="cGr">0</span> discovered</summary>
+      <p class="sub">Named parks, woods, nature reserves, commons and gardens from OpenStreetMap, looked up for each
+        new realm. Step inside one to discover it; ones you haven't been in yet are listed too, and drawn dashed on the map.</p>
+      <div id="grList"></div></details>
+    <details style="margin-top:8px" id="wpBox"><summary>Find him by Wi-Fi <span class="sub">(no GPS)</span>: <span id="wpOn">off</span></summary>
+      <p class="sub">For a dragon with no GPS. He sends the list of Wi-Fi networks he can hear to
+        <a href="https://beacondb.net" target="_blank" rel="noopener" style="color: var(--ink)">beaconDB</a>,
+        a free community service that knows roughly where routers are, and it answers with roughly where he is.</p>
+      <p class="sub" style="color: var(--rune)"><b>Less private:</b> the networks around you <i>are</i> where you are.
+        Every lookup tells beaconDB where he is, to within tens of meters, and its server logs keep your internet address
+        and the time for 28 days. It only runs while there's no GPS and he's on your hotspot, at most every two minutes,
+        and not while the same networks are around.</p>
+      <p class="sub">A Wi-Fi position claims lands and realms, spots landmarks and discovers green spaces. It never counts
+        towards walk distances, walks, runs or rides, and nothing found this way is uploaded to WiGLE.</p>
+      <div class="row" style="border:0"><div class="grow"><span class="sub" id="wpStatus"></span></div>
+        <label class="sub"><input type="checkbox" id="wpCheck" onchange="wifiPosSet(this.checked)"> On</label></div>
+    </details>
+    <div class="actions" style="margin-top:10px">
+      <a href="/map" target="_blank"><button class="primary">Open the map</button></a>
+      <button class="danger" onclick="forgetMap()">Forget my map</button>
+    </div>
+  </section>
+
+  <section data-arrange="wigle">
+    <h2>WiGLE</h2>
+    <div class="row"><div class="grow"><span id="wPending">0</span> sightings waiting
+      <div class="sub" id="wLast"></div></div></div>
+    <div class="actions">
+      <button class="primary" onclick="cmd('UPLOAD', true)">Upload now</button>
+      <a href="/api/export.csv"><button>Download CSV</button></a>
+    </div>
+  </section>
+
+  </div>
+  <p class="sub" style="text-align:center; margin:18px 0 0">
+    <button onclick="toggleArrange()" id="arrangeBtn">Arrange the den</button>
+    <button onclick="resetArrange()" id="arrangeReset" hidden>Back to the usual order</button></p>
+</main>
+<div id="toast"></div>
+<script>
+const $ = id => document.getElementById(id);
+// folded lists stay as you left them (on this phone or computer)
+document.addEventListener('DOMContentLoaded', () => document.querySelectorAll('details.fold').forEach(d => {
+  try { d.open = localStorage.getItem(d.id) === 'open'; } catch (e) {}
+  d.addEventListener('toggle', () => { try { localStorage.setItem(d.id, d.open ? 'open' : 'shut'); } catch (e) {} });
+}));
+// ---- arranging the den: the order is remembered on this phone or computer
+const ARRANGE_KEY = 'den-order';
+const arrangeables = () => [...document.querySelectorAll('#arrange > section[data-arrange]')];
+function applyOrder() {
+  let saved = null;
+  try { saved = JSON.parse(localStorage.getItem(ARRANGE_KEY) || 'null'); } catch (e) {}
+  if (!Array.isArray(saved)) return;
+  const box = $('arrange'), byKey = Object.fromEntries(arrangeables().map(x => [x.dataset.arrange, x]));
+  saved.forEach(k => { if (byKey[k]) { box.appendChild(byKey[k]); delete byKey[k]; } });
+  Object.values(byKey).forEach(x => box.appendChild(x));      // sections added by an update: at the end
+}
+function saveOrder() {
+  try { localStorage.setItem(ARRANGE_KEY, JSON.stringify(arrangeables().map(x => x.dataset.arrange))); } catch (e) {}
+}
+function moveSection(sec, dir) {
+  const sib = dir < 0 ? sec.previousElementSibling : sec.nextElementSibling;
+  if (!sib) return;
+  if (dir < 0) sec.parentNode.insertBefore(sec, sib); else sec.parentNode.insertBefore(sib, sec);
+  saveOrder();
+  sec.scrollIntoView({block: 'nearest', behavior: 'smooth'});
+}
+function toggleArrange() {
+  const on = document.body.classList.toggle('arranging');
+  $('arrangeBtn').textContent = on ? 'Done arranging' : 'Arrange the den';
+  $('arrangeReset').hidden = !on;
+}
+function resetArrange() {
+  try { localStorage.removeItem(ARRANGE_KEY); } catch (e) {}
+  location.reload();
+}
+document.addEventListener('DOMContentLoaded', () => {
+  arrangeables().forEach(sec => {
+    const h = sec.querySelector('h2');
+    const bar = document.createElement('div');
+    bar.className = 'arrange-bar';
+    bar.innerHTML = `<b>Move this section</b><span>
+      <button title="Move up">↑</button> <button title="Move down">↓</button></span>`;
+    const [up, down] = bar.querySelectorAll('button');
+    up.onclick = () => moveSection(sec, -1);
+    down.onclick = () => moveSection(sec, 1);
+    sec.prepend(bar);
+  });
+  applyOrder();
+});
+const PAGE_ID = "__PAGEID__";
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const FONT = /*RUNEFONT*/;
+function toRunes(s) {
+  let out = '', t = s.toLowerCase();
+  for (let i = 0; i < t.length; i++) {
+    const pair = t.substr(i, 2);
+    if (FONT.digraphs[pair]) { out += FONT.digraphs[pair]; i++; continue; }
+    out += FONT.letters[t[i]] || '';
+  }
+  return out;
+}
+function runeSvg(text) {  // carved strokes on a 5x9 grid, like the e-ink banner
+  const runes = [...text], cell = 8, w = runes.length * cell;
+  let paths = '';
+  runes.forEach((r, i) => (FONT.strokes[r] || []).forEach(line => {
+    const pts = line.map(([x, y]) => `${i * cell + x + 0.5},${y + 0.5}`);
+    paths += line.length === 1 ? `<circle cx="${pts[0].split(',')[0]}" cy="${pts[0].split(',')[1]}" r="0.6"/>`
+                               : `<polyline points="${pts.join(' ')}"/>`;
+  }));
+  return `<svg viewBox="0 0 ${w} 10" height="34" aria-label="${esc(text)}" fill="currentColor" stroke="currentColor"
+    stroke-width="0.9" stroke-linecap="square" stroke-linejoin="miter" fill-opacity="1">${paths}</svg>`;
+}
+let tracking = null;
+let PET = 'Harald';  // the dragon's current name, filled in from his status
+
+function toast(t) { const e = $('toast'); e.textContent = t; e.style.display = 'block';
+  clearTimeout(toast.t); toast.t = setTimeout(() => e.style.display = 'none', 3500); }
+
+async function cmd(c, show) {
+  try {
+    const r = await fetch('/api/cmd', {method: 'POST', body: c});
+    const j = await r.json();
+    if (show) toast(j.lines[0] === 'OK' ? 'Done' : j.lines[0].replace(/^(OK|ERR) /, ''));
+    return j.lines.filter(l => l !== 'END');
+  } catch (e) { if (show) toast(PET + ' is not answering'); return []; }
+}
+const split = l => l.split('|');
+const ago = s => s < 0 ? 'never' : s < 60 ? 'just now' : s < 3600 ? Math.round(s/60) + ' min ago'
+  : s < 86400 ? Math.round(s/3600) + ' h ago' : Math.round(s/86400) + ' days ago';
+
+async function refresh() {
+  $('screen').src = '/screen.png?' + Date.now();
+  try {
+    const v = await (await fetch('/api/status')).json();
+    if (v.page && v.page !== PAGE_ID) { location.reload(); return; }  // Harald was updated
+    $('headlessNote').hidden = !v.headless;
+    if (v.headless) $('headlessNote').textContent = 'No e-ink screen: this is his screen. ' +
+      (v.headless_why ? '(' + v.headless_why.charAt(0).toUpperCase() + v.headless_why.slice(1) + '.)' : '');
+    $('runes').innerHTML = runeSvg(toRunes(v.name));
+    $('napBox').hidden = !v.napping;
+    document.body.classList.toggle('napping', !!v.napping);
+    if (v.napping) {
+      const mins = Math.max(0, Math.round((Date.now() / 1000 - v.nap_since) / 60));
+      $('napFor').textContent = v.nap_since > 1e9 ? (mins < 60 ? `for ${mins} min` : `for ${Math.floor(mins / 60)} h ${mins % 60} min`) : '';
+    }
+    PET = v.name; document.querySelectorAll('.pname').forEach(e => e.textContent = v.name);
+    $('title').textContent = v.name + "'s den · level " + v.level;
+    document.title = v.name + "'s Den";
+    $('sMeals').textContent = v.session_meals; $('sSpecies').textContent = v.species;
+    $('sTreats').textContent = v.session_treats; $('hunger').style.width = v.hunger + '%';
+    $('joy').style.width = v.joy + '%';
+    $('nowFood').textContent = v.hunger; $('nowJoy').textContent = v.joy;
+    $('packNow').textContent = v.pack; $('packCap').textContent = v.pack_cap; $('packBar').style.width = Math.min(100, v.pack * 100 / Math.max(1, v.pack_cap)) + '%'; $('nowPack').textContent = v.pack + ' food';
+    $('nowXp').textContent = `${v.xp.toLocaleString()} XP, level ${v.level} (next at ${v.next_xp.toLocaleString()})`;
+    $('feeling').textContent = v.feeling.charAt(0) + v.feeling.slice(1).toLowerCase();
+    const km = m => m >= 100 ? (m / 1000).toFixed(1) + ' km' : Math.round(m) + ' m';
+    $('aWalk').textContent = km(v.walked_today); $('aRide').textContent = km(v.rode_today);
+    $('aTold').textContent = km(v.told_today);
+    $('aTrip').hidden = !v.trip;
+    if (v.trip) $('aTrip').innerHTML = `<b style="color:var(--ink)">This ${esc(v.trip.label.toLowerCase())}:</b> ` +
+      `${esc(v.trip.dist)} in ${esc(v.trip.time)}, since ${esc(v.trip.start)}`;
+    const done = v.exercise_today || [];
+    $('aDone').hidden = !done.length;
+    $('aDone').innerHTML = done.length ? '<b style="color:var(--ink)">Done today:</b><br>' + done.map(esc).join('<br>') : '';
+    $('aNote').textContent = (v.moving && v.moving !== 'still' ? `Right now: ${v.moving}. ` : '') +
+      (v.steps_link ? 'Step counter linked.' : 'Step counter not linked (SensorServer app).') +
+      (v.baro_link ? ' Barometer linked.' : '') +
+      (v.light_link ? ' Light sensor linked' + (v.lux !== null ? ` (${v.lux.toLocaleString()} lux now).` : '.') : '');
+    $('aLands').textContent = v.lands_today; $('aClimb').textContent = v.climbed_today + ' m';
+    $('aStars').textContent = v.stars_today;
+    $('cLands').textContent = v.lands.toLocaleString(); $('cRealms').textContent = v.realms.toLocaleString();
+    $('cLandsW').textContent = v.lands === 1 ? 'land' : 'lands'; $('cRealmsW').textContent = v.realms === 1 ? 'realm' : 'realms';
+    $('cStars').textContent = v.stars;
+    $('netNow').textContent = v.network || 'Not connected';
+    $('netWhich').textContent = v.network_rank === null ? (v.network ? 'Not one of his saved networks' : '')
+      : v.network_rank === 0 ? 'Main hotspot' : 'Backup ' + v.network_rank;
+    if (v.moon) { $('moonBox').hidden = false; drawMoon(v.moon, v.south); }
+    if (v.pressure) {
+      const t = v.tendency, inhg = (v.pressure * 0.02953).toFixed(2);
+      const trend = t === null ? 'needs 3 hours in one place to judge the weather'
+        : Math.abs(t) < 1 ? 'steady' : (t < 0 ? 'falling ' : 'rising ') + Math.abs(t).toFixed(1) + ' hPa in 3 hours';
+      $('aWeather').textContent = `Air pressure ${v.pressure} hPa (${inhg} inHg), ${trend}.`;
+    } else $('aWeather').textContent = '';
+    awakeBase = v.awake; awakeAt = Date.now();
+    $('vitals').textContent = `CPU ${Math.round(v.cpu)}% · Memory ${Math.round(v.mem)}% · ` +
+      `${Math.round(v.temp)}°C (${Math.round(v.temp * 9 / 5 + 32)}°F)`;
+    $('meta').textContent = `Face: ${v.mood} · ${v.nearby} devices in range · GPS ${v.gps} · ` +
+      `${v.total_meals} snacks and ${v.total_treats} treats all-time`;
+    $('wPending').textContent = v.wigle_pending;
+  } catch (e) {}
+  const now = Date.now() / 1000;
+
+  const alerts = await cmd('ALERTS');
+  $('alerts').hidden = !alerts.length;
+  $('alertList').innerHTML = alerts.map(l => { const [id, since, label] = split(l);
+    return `<div class="row"><div class="grow"><b>${esc(label)}</b><div class="sub">near you since
+      ${new Date(since*1000).toLocaleTimeString()}</div></div>
+      <button onclick="cmd('DISMISS ${+id}', true).then(refresh)">Dismiss</button></div>`; }).join('');
+
+  const pals = await cmd('PALS');
+  $('pals').innerHTML = pals.length ? pals.map(l => { const [mac, rssi, a, name] = split(l);
+    return `<div class="row"><div class="grow"><b>${esc(name)}</b><div class="sub">${rssi && +rssi > -127 ? 'in range, ' + rssi +
+      ' dBm' : 'last seen ' + ago(+a)} · ${mac}</div></div>
+      <button onclick="startTrack('${mac}', '${esc(name).replace(/'/g, '')}')">Find</button>
+      <button class="danger" onclick="if(confirm('Forget ${esc(name).replace(/'/g, '')}?')) cmd('DELPAL ${mac}').then(refresh)">✕</button></div>`;
+  }).join('') : '<p class="empty">No pals yet. Mark your own gadgets below.</p>';
+
+  const fr = await cmd('FRIENDS');
+  $('friends').innerHTML = fr.length ? fr.map(l => { const [id, name, level, here, meetings, last] = split(l);
+    return `<div class="row"><div class="grow"><b>${esc(name)}</b> <span class="sub">level ${+level}</span>
+      <div class="sub">${here === '1' ? 'here right now!' : 'last met ' + ago(now - last)} · met ${+meetings}×</div></div>
+      <button class="danger" onclick="if(confirm('Unfriend ${esc(name).replace(/'/g, '')}?')) cmd('UNFRIEND ${id}').then(refresh)">✕</button></div>`;
+  }).join('') : '<p class="empty">No dragon friends yet. When another BT Dragon comes near, they\'ll meet.</p>';
+
+  const near = await cmd('NEARBY');
+  $('nearby').innerHTML = near.length ? near.map(l => { const [mac, rssi, pal, label, name] = split(l);
+    return `<div class="row"><div class="grow"><b>${esc(name || label)}</b><div class="sub">${esc(label)} ·
+      ${rssi} dBm · ${mac}</div></div>${pal === '1' ? '<span class="sub">your pal</span>' :
+      `<button onclick="addPal('${mac}', '${esc(name).replace(/'/g, '')}')">It's mine</button>`}</div>`;
+  }).join('') : '<p class="empty">Nothing with a fixed address nearby right now.</p>';
+  $('nearbyCount').textContent = `(${near.length} nearby)`;
+
+  const treats = await cmd('TREATS 15');
+  $('treats').innerHTML = treats.length ? treats.map(l => { const [bssid, rssi, auth, ssid] = split(l);
+    return `<div class="row"><div class="grow"><b>${esc(ssid || '(hidden network)')}</b>
+      <div class="sub">${esc(auth)} · best ${rssi} dBm</div></div></div>`; }).join('')
+    : '<p class="empty">No Wi-Fi treats yet.</p>';
+  $('treatsCount').textContent = `(the last ${treats.length})`;
+
+  const stars = await cmd('STARS');
+  const byConst = {};
+  let inView = 0;
+  stars.forEach(l => { const [key, c, prn, , , now] = split(l); inView += +now;
+    (byConst[c] = byConst[c] || []).push({prn, now: +now}); });
+  // satellites he can hear right now are bold and bright; the rest of his chart stays dim
+  $('starChart').innerHTML = Object.keys(byConst).length ?
+    `<p class="sub" style="margin:4px 0">${inView ? `<b style="color: var(--ink)">${inView}</b> in view right now, shown in bold`
+                                                 : 'None in view right now'}</p>` +
+    Object.entries(byConst).map(([c, sats]) => {
+      const n = sats.filter(x => x.now).length;
+      return `<div class="row"><div class="grow"><b>${esc(c)}</b><div class="sub" style="line-height:1.7">${sats.map(x => x.now
+        ? `<b style="color: var(--rune); font-weight: 800">${esc(x.prn)}</b>` : esc(x.prn)).join(' · ')}</div></div>
+        <span class="sub">${n ? `<b style="color: var(--rune)">${n}</b> / ` : ''}${sats.length}</span></div>`;
+    }).join('') : '<p class="empty">No stars yet.</p>';
+
+  const lms = (await cmd('LANDMARKS')).map(l => split(l));
+  const seenLm = lms.filter(x => +x[3] > 0);
+  $('cLm').textContent = seenLm.length;
+  $('lmList').innerHTML = lms.length ? lms.map(([qid, title, langs, first, visits]) =>
+    `<div class="row"><div class="grow">${+first ? '<b>' + esc(title) + '</b>' : esc(title)}
+      <div class="sub">${+first ? 'Seen ' + new Date(first * 1000).toLocaleDateString() + (visits > 1 ? ` · ${visits} visits` : '')
+                                : 'Not seen yet'} · ${langs} languages</div></div></div>`).join('')
+    : '<p class="empty">None nearby yet. New realms are looked up while the dragon is on your hotspot.</p>';
+
+  const grs = (await cmd('GREENS')).map(l => split(l));
+  $('cGr').textContent = grs.filter(x => +x[3] > 0).length;
+  const times = (n, one, many) => +n ? `${n} ${+n === 1 ? one : many}` : '';
+  $('grList').innerHTML = grs.length ? grs.sort((a, b) => (+b[3] > 0) - (+a[3] > 0) || a[1].localeCompare(b[1]))
+    .map(([id, name, kind, first, visits, walks, runs, rides]) =>
+    `<div class="row"><div class="grow">${+first ? '<b>' + esc(name) + '</b>' : esc(name)}
+      <div class="sub">${esc(kind)} · ${+first ? ['Discovered ' + new Date(first * 1000).toLocaleDateString(),
+        times(visits, 'visit', 'visits'), times(walks, 'walk', 'walks'), times(runs, 'run', 'runs'),
+        times(rides, 'ride', 'rides')].filter(x => x).join(' · ') : 'Not discovered yet'}</div></div></div>`).join('')
+    : '<p class="empty">None nearby yet. New realms are looked up while the dragon is on your hotspot.</p>';
+  loadWifiPos();
+
+  try {
+    const files = await (await fetch('/api/diary-files')).json();
+    $('diaryFiles').hidden = !files.length;
+    if (files.length) {
+      $('dToday').href = '/diary/' + files[0].name;
+      const kb = b => b < 1024 ? b + ' bytes' : Math.round(b / 1024) + ' KB';
+      $('dCount').textContent = files.length - 1;
+      $('dList').innerHTML = files.slice(1).map(f => `<div class="row"><div class="grow">
+        <a href="/diary/${esc(f.name)}" style="color: var(--ink)">${esc(f.name.slice(6, 16))}</a></div>
+        <span class="sub">${kb(f.bytes)}</span></div>`).join('') || '<p class="empty">Only today so far.</p>';
+    }
+  } catch (e) {}
+
+  const nets = (await cmd('NETWORK')).map(l => split(l));
+  $('netList').innerHTML = nets.map(([rank, ssid, on]) => `<div class="row"><div class="grow">${+on ? '<b>' + esc(ssid) + '</b>' : esc(ssid)}
+    <div class="sub">${+rank === 0 ? 'Main hotspot' : 'Backup ' + rank}</div></div>
+    <span class="sub">${+on ? 'connected' : ''}</span></div>`).join('');
+
+  const sp = await cmd('SPECIES');
+  $('species').innerHTML = sp.map(l => { const [meals, kind, label] = split(l);
+    return `<div class="row"><div class="grow">${esc(label)} <span class="sub">(${esc(kind)})</span></div>
+      <span class="sub">${meals}×</span></div>`; }).join('') || '<p class="empty">Nothing yet.</p>';
+
+  const log = await cmd('LOG 25');
+  $('log').innerHTML = log.map(l => { const [ts, kind, ...t] = split(l);
+    return `<div class="row"><div class="grow">${esc(t.join('|'))}</div><span class="sub">
+      ${new Date(ts*1000).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span></div>`; }).join('');
+  $('logCount').textContent = log.length ? `(the last ${log.length}; newest: ${new Date(+split(log[0])[0] * 1000).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})})` : '(none yet)';
+
+  const st = await cmd('STATUS');
+  const up = st.find(l => l.startsWith('upload='));
+  $('wLast').textContent = up && up.length > 7 ? 'Last upload: ' + up.slice(7) : '';
+}
+
+async function searchGadgets() {
+  await cmd('SEARCH', true);
+  $('searchNote').hidden = false;
+  const t0 = Date.now();
+  const poll = setInterval(() => {
+    refresh();
+    if (Date.now() - t0 > 33000) { clearInterval(poll); $('searchNote').hidden = true; }
+  }, 4000);
+}
+async function addPal(mac, name) {
+  const n = prompt('Name this gadget', name || 'My headphones');
+  if (n === null) return;
+  await cmd(`ADDPAL ${mac} ${n}`, true); refresh();
+}
+async function rename() {
+  const n = prompt('New name for your dragon (up to 10 letters)');
+  if (n) { await cmd('NAME ' + n, true); refresh(); }
+}
+async function napNow() {
+  if (!confirm('Put ' + PET + ' down for a nap? Everything stops as if he were switched off, except this den, '
+               + 'where you can wake him. He stays napping even if he loses power or restarts.')) return;
+  await cmd('NAP', true); refresh();
+}
+async function wakeUp() { await cmd('WAKE', true); refresh(); }
+async function loadVoices() {
+  const v = await cmd('VOICES');
+  $('voiceList').innerHTML = v.length ? v.map(l => { const [id, name, samples, secs] = split(l);
+    return `<div class="row"><div class="grow"><b>${esc(name)}</b> <span class="sub">${samples} samples, ${secs} s of speech</span></div>
+      <button onclick="renameVoice(${+id}, '${esc(name).replace(/'/g, '')}')">Rename</button>
+      <button class="danger" onclick="if(confirm('Forget ${esc(name).replace(/'/g, '')}\'s voice?')) cmd('VOICEDEL ${+id}', true).then(loadVoices)">✕</button></div>`;
+  }).join('') : '<p class="empty">No voices yet.</p>';
+}
+async function renameVoice(id, old) {
+  const n = prompt('Name for this voice', old);
+  if (n) { await cmd(`VOICENAME ${id} ${n}`, true); loadVoices(); }
+}
+async function sleepNow() {
+  if (!confirm('Put ' + PET + ' to sleep? Wait for the sleeping face on the e-ink, then it is safe to unplug.')) return;
+  await cmd('SLEEP', true);
+}
+let findSession = 0;
+async function startTrack(mac, name) {
+  findSession++;
+  tracking = null;  // no polling until Harald has started a fresh Find
+  $('trackName').textContent = name; $('track').hidden = false;
+  // wipe whatever the last Find showed, so nothing old is mistaken for a new answer
+  $('trackRssi').textContent = '--'; $('trackBar').style.width = '0%';
+  $('trackHow').textContent = 'Listening for it...'; $('trackHint').hidden = false;
+  const mine = findSession;
+  await cmd('FIND ' + mac);
+  if (mine === findSession) tracking = mac;
+}
+function stopTrack() { findSession++; tracking = null; $('track').hidden = true; }
+async function trackTick() {
+  if (tracking) {
+    const mine = findSession;
+    const r = await cmd('RSSI ' + tracking);
+    if (mine !== findSession) { setTimeout(trackTick, 700); return; }  // answer for an older Find
+    const v = r[0] ? r[0].split(' ')[2] : 'none';
+    const c = (r.find(l => l.startsWith('CLASSIC ')) || '').split(' ');
+    const how = c[2] || 'ble';
+    let big = v === 'none' ? '--' : v, pct = v === 'none' ? 0 : Math.max(0, Math.min(100, (+v + 100) * 100 / 65));
+    let note = '';
+    if (how === 'pairing') note = 'Heard it in pairing mode (signal updates every ~10 seconds).';
+    else if (how === 'ping') {
+      big = 'HERE'; pct = 100;
+      note = `It answered a knock (${c[3]} ms round trip): switched on and within range, roughly 10 m or less ` +
+             'through walls. No signal strength this way, so move around and watch whether it keeps answering.';
+    }
+    else if (how === 'silent') note = 'Not answering: out of range, switched off, or connected to a phone. ' +
+             'Put it in pairing mode for a signal reading.';
+    else if (how === 'listening') note = 'Listening for it...';
+    else if (how === 'searching') note = 'Not advertising. Searching for it in pairing mode...';
+    else if (how === 'checking') { big = $('trackRssi').textContent; pct = parseFloat($('trackBar').style.width) || 0;
+      note = $('trackHow').textContent; }  // keep showing the last answer while the next knock goes out
+    else if (how === 'starting') note = `Not advertising, so ${PET} is asking it directly (Classic Bluetooth)...`;
+    $('trackRssi').textContent = big;
+    $('trackBar').style.width = pct + '%';
+    $('trackHow').textContent = note;
+    // the "closer to 0" hint only makes sense when there's a signal-strength number
+    $('trackHint').hidden = how === 'ping' || how === 'silent';
+  }
+  setTimeout(trackTick, 700);
+}
+// ---------------------------------------------------------------- developer tools
+async function loadKnobs() {
+  const lines = await cmd('TUNE');
+  const bySection = {food: '', joy: '', xp: '', detect: ''};
+  for (const l of lines) {
+    const [key, section, label, value, dflt, unit, help] = split(l);
+    if (!(section in bySection)) continue;
+    const changed = +value !== +dflt;
+    bySection[section] += `<div class="row knob${changed ? ' changed' : ''}" id="k-${key}">
+      <div class="grow">${esc(label)}<div class="sub">${help ? esc(help) + ' ' : ''}Default ${esc(dflt)}</div></div>
+      <input type="number" min="0" step="any" inputmode="decimal" value="${esc(value)}"
+             onchange="setKnob('${key}', this.value)" onkeydown="if(event.key==='Enter') this.blur()">
+      <span class="unit">${esc(unit)}</span>
+      <button title="Back to default" onclick="setKnob('${key}', 'default')">↺</button></div>`;
+  }
+  for (const s in bySection) $('knobs-' + s).innerHTML = bySection[s];
+  const changedN = {food: 0, joy: 0, xp: 0, detect: 0};
+  lines.forEach(l => { const [key, section, , value, dflt] = split(l);
+    if (section in changedN && +value !== +dflt) changedN[section]++; });
+  for (const s in changedN) $('chg-' + s).textContent = changedN[s] ? `${changedN[s]} changed` : '';
+  const cap = lines.find(l => l.startsWith('pack_cap|'));
+  if (cap) $('packCap').textContent = cap.split('|')[3];
+  const curve = +(lines.find(l => l.startsWith('xp_curve|')) || '|||50').split('|')[3];
+  $('levelTable').textContent = 'With this curve: ' + [2, 3, 4, 5, 10, 20].map(
+    lv => `level ${lv} at ${Math.ceil(curve * (lv - 1) ** 2).toLocaleString()} XP`).join(' · ');
+  refresh();
+}
+async function setKnob(key, value) {
+  if (value === '') return loadKnobs();
+  const r = await cmd(`TUNE ${key} ${value}`);
+  toast(r[0] && r[0].startsWith('OK') ? 'Set ' + r[0].slice(3).replace('=', ' = ') : (r[0] || PET + ' is not answering').replace(/^ERR /, ''));
+  loadKnobs();
+}
+async function setMeter(which) {
+  const box = $({food: 'setFood', joy: 'setJoy', xp: 'setXp', pack: 'setPack'}[which]);
+  if (box.value === '') return toast({xp: 'Type an amount of XP first', pack: 'Type an amount of food first'}[which]
+                                     || 'Type a percentage first');
+  await cmd(`METER ${which} ${box.value}`, true);
+  box.value = ''; refresh();
+}
+function drawMoon(m, south) {
+  // A dark disk with the sunlit part on top. The lit part is bounded by the edge of the
+  // moon on one side and by the terminator (day/night line), an ellipse, on the other.
+  const r = 44, c = 50, f = m.frac, k = Math.cos(2 * Math.PI * f), rx = Math.abs(k) * r;
+  const waxing = f < 0.5, crescent = k > 0;
+  // in the Northern Hemisphere a waxing moon is lit on the right; in the Southern, the left
+  const right = waxing !== !!south;
+  const limb = right ? 1 : 0;                       // sweep along the edge, top to bottom
+  const term = right ? (crescent ? 0 : 1) : (crescent ? 1 : 0);  // back up the terminator
+  const d = `M ${c} ${c - r} A ${r} ${r} 0 0 ${limb} ${c} ${c + r} A ${rx} ${r} 0 0 ${term} ${c} ${c - r} Z`;
+  $('moonSvg').innerHTML =
+    `<defs><radialGradient id="mg" cx="40%" cy="38%"><stop offset="0" stop-color="#3a3833"/><stop offset="1" stop-color="#1a1917"/></radialGradient>
+       <clipPath id="litclip"><path d="${d}"/></clipPath></defs>
+     <circle cx="${c}" cy="${c}" r="${r}" fill="url(#mg)" stroke="#3d3a35"/>` + (m.lit < 0.005 ? '' :
+    `<path d="${d}" fill="#ece6da"/>
+     <g fill="#000" opacity="0.08" clip-path="url(#litclip)"><circle cx="38" cy="36" r="7"/><circle cx="60" cy="58" r="9"/>
+       <circle cx="44" cy="66" r="5"/><circle cx="64" cy="34" r="4"/></g>`);
+  const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+  $('moonName').textContent = cap(m.name);
+  $('moonLit').textContent = `${Math.round(m.lit * 100)}% lit · day ${Math.floor(m.frac * 29.53) + 1} of 29.5`;
+  const nice = {new: 'New moon', full: 'Full moon', 'first quarter': 'First quarter', 'last quarter': 'Last quarter'};
+  $('moonNext').innerHTML = m.next.slice(0, 2).map(p => `${nice[p.name]}: ${new Date(p.ts * 1000).toLocaleDateString([],
+    {weekday: 'short', month: 'short', day: 'numeric'})}, ${new Date(p.ts * 1000).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}`).join('<br>');
+}
+async function reconnect() {
+  if (!confirm(PET + ' will drop his current network and join the best one in range. If that\'s a different ' +
+               'network, this page will lose him until your phone is on that network too. Go ahead?')) return;
+  await cmd('RECONNECT', true);
+}
+async function restoreBackup(input) {
+  const f = input.files[0];
+  input.value = '';
+  if (!f) return;
+  if (!confirm(`Restore ${PET} from "${f.name}"?\n\nEverything he has now (his level, diary, lands, lists, settings) ` +
+               `is replaced by what's in the backup. What's there now is kept aside on the Pi in case you change your mind. ` +
+               `He restarts to do it.`)) return;
+  $('restoreNote').textContent = 'Sending the backup…';
+  try {
+    const r = await fetch('/api/restore', {method: 'POST', body: f});
+    const j = await r.json();
+    if (!j.ok) { $('restoreNote').textContent = j.error || 'That didn\'t work.'; return; }
+    const made = j.made ? new Date(j.made * 1000).toLocaleString([], {dateStyle: 'medium', timeStyle: 'short'}) : 'an unknown date';
+    $('restoreNote').textContent = `Restoring the backup of ${j.name || PET} made ${made}. He's restarting: this page reloads by itself in about half a minute.`;
+    setTimeout(function wait() {
+      fetch('/api/status').then(r => r.ok ? location.reload() : setTimeout(wait, 3000)).catch(() => setTimeout(wait, 3000));
+    }, 15000);
+  } catch (e) {
+    $('restoreNote').textContent = 'The dragon is not answering, so nothing was restored.';
+  }
+}
+
+async function forgetMap() {
+  if (!confirm('Forget every land and realm ' + PET + ' has claimed, and which landmarks and green spaces he has seen? This can\'t be undone.')) return;
+  await cmd('FORGETMAP', true); refresh();
+}
+async function resetKnobs() {
+  if (!confirm('Put every food, joy and XP number back to its default? (Your meters and XP stay as they are.)')) return;
+  await cmd('TUNERESET all', true); loadKnobs();
+}
+async function loadDot() {
+  const d = {};
+  (await cmd('DOT')).forEach(l => { const i = l.indexOf('='); if (i > 0) d[l.slice(0, i)] = l.slice(i + 1); });
+  if (!('state' in d)) return;
+  const on = d.connected === 'True';
+  $('dotState').innerHTML = on ? `<span class="dot-on">●</span> Talking through the Echo Dot` : `<span class="dot-off">○</span> ${esc(d.state.charAt(0).toUpperCase() + d.state.slice(1))}`;
+  const voice = d.voice === 'piper' ? 'Piper voice ' + d.voice_name : d.voice === 'espeak' ? 'eSpeak voice (Piper not installed)' : 'no voice installed';
+  $('dotSub').textContent = [on ? d.ip : '', voice, d.adb === 'False' ? 'adb missing' : '',
+    d.quiet_now === 'True' ? 'quiet hours now' : '', +d.spoken ? `${d.spoken} remarks so far` : ''].filter(x => x).join(' · ');
+  const keep = el => document.activeElement === el;
+  if (!keep($('dotOn'))) $('dotOn').checked = d.enabled === 'True';
+  if (!keep($('phoneOn'))) $('phoneOn').checked = d.phone === 'True';
+  if (!keep($('phoneBackup'))) $('phoneBackup').checked = d.phone_backup === 'True';
+  $('phoneNote').textContent = (d.phone_listening === 'True' ? 'A phone is listening.' : 'No phone listening yet: see "Set up the phone voice" below.')
+    + (d.phone_route === 'phone' && d.phone !== 'True' ? ' Standing in for the Dot right now.' : '');
+  $('phoneCmd').textContent = `curl -O http://${location.host}/phone/harald_voice.py && python harald_voice.py`;
+  if (!keep($('dotChatty'))) $('dotChatty').value = d.chatty;
+  $('dotChattyNote').textContent = {all: 'He speaks every message from his screen', big: 'New species, landmarks, storms, level-ups...',
+    recap: 'Only a summary when he comes home', silent: 'The ring still shows his moods',
+    adventure: 'Out and about: distance, climbing, lands, realms, famous places, sunshine, stars, level-ups and a full pack. Nothing about gadgets or Wi-Fi.'}[d.chatty] || '';
+  for (const [k, id] of [['volume', 'dotVolume'], ['adv_volume', 'dotAdvVolume'], ['brightness', 'dotBrightness'], ['pitch', 'dotPitch'], ['speed', 'dotSpeed'],
+                         ['gap', 'dotGap'], ['red', 'dotRed'], ['green', 'dotGreen'], ['blue', 'dotBlue']]) {
+    if (!keep($(id))) { $(id).value = d[k]; $(id + 'V').textContent = d[k]; }
+  }
+  if (!keep($('dotSetupNet'))) $('dotSetupNet').value = d.setup_network || '';
+  if (!keep($('dotListen'))) $('dotListen').checked = d.listen === 'True';
+  if (!keep($('dotHome'))) $('dotHome').value = d.home_town || '';
+  if (!keep($('dotWake'))) $('dotWake').checked = d.wake === 'True';
+  if (!keep($('dotWFrom'))) $('dotWFrom').value = d.wake_from.padStart(5, '0');
+  if (!keep($('dotWTo'))) $('dotWTo').value = d.wake_to.padStart(5, '0');
+  $('wakeNote').textContent = d.wake !== 'True' ? 'Off: press the action button to ask.'
+    : (d.wake_active === 'True' ? 'Listening now.' : `Not listening right now: ${d.wake_why || 'starting up'}.`)
+      + (+d.wake_heard ? ` Heard ${d.wake_heard} time${d.wake_heard === '1' ? '' : 's'}, last at ${new Date(+d.wake_last * 1000).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}.` : '')
+      + (d.wake_where === 'Dot' && d.wake_strict !== undefined && d.wake_strict !== '' ? ` Strictness ${d.wake_strict}% (Dev Tools).`
+         + (d.wake_conf !== '' ? ` Last time he was ${d.wake_conf}% sure.` : '')
+         + (+d.wake_turned_down ? ` Turned down ${d.wake_turned_down} near-miss${d.wake_turned_down === '1' ? '' : 'es'}${d.wake_last_no ? ` (last: ${d.wake_last_no})` : ''}.` : '')
+         + (+d.wake_unasked ? ` Woke ${d.wake_unasked} time${d.wake_unasked === '1' ? '' : 's'} with no question after: probably false alarms.` : '') : '')
+      + (d.wake_cpu !== '' ? ` Uses about ${Math.round(+d.wake_cpu * 100)}% of one of the ${d.wake_where === 'Dot' ? "Dot's" : "Pi's"} cores.` : '')
+      + (d.wake_where === 'Dot' ? ' Listening happens on the Dot: the sound never leaves it.' : '');
+  $('homeNote').textContent = d.home_lat && d.home_lat !== 'None'
+    ? `Found: ${d.home_town}. Used when your phone's GPS isn't linked.`
+    : (d.home_town ? 'Looking it up... (needs the internet)' : "Used when your phone's GPS isn't linked. A big town or city is enough.");
+  $('askNote').textContent = (d.ears === 'True'
+    ? (d.mic_muted === 'True' ? 'The microphones are switched off (red ring).' : 'Press the action button (the dot), then ask.')
+    : 'The speech recognizer isn\'t installed yet: run install-voice.sh on the Pi. Typed questions still work.')
+    + (d.ears_where === 'Dot' ? ' Listening happens on the Dot: the sound never leaves it.' : '')
+    + (d.ears_note ? ` (The Dot's ears: ${d.ears_note}.)` : '');
+  $('askLast').textContent = d.heard ? `Last question: "${d.heard}". ${d.answered}` + (d.timing ? ` (Took: ${d.timing}.)` : '')
+    + (d.heard_from ? ` Voice: ${d.heard_from}.` : '') : '';
+  loadVoices();
+  loadTimers(d.alarm === 'True');
+  $('dotRescueNote').textContent = d.rescuing === 'True' ? 'Rescuing now...'
+    : +d.last_rescue ? 'Last rescue: ' + new Date(+d.last_rescue * 1000).toLocaleString([], {dateStyle: 'medium', timeStyle: 'short'})
+    : (d.setup_network ? 'Ready. No rescues yet.' : 'Off until you enter the name.');
+  if (!keep($('dotQFrom'))) $('dotQFrom').value = d.quiet_from.padStart(5, '0');
+  if (!keep($('dotQTo'))) $('dotQTo').value = d.quiet_to.padStart(5, '0');
+}
+async function dotSet(key, value) {
+  const r = await cmd(`DOTSET ${key} ${value}`);
+  if (r[0] !== 'OK') toast((r[0] || PET + ' is not answering').replace(/^ERR /, ''));
+  loadDot();
+}
+async function loadWifiPos() {
+  const d = {};
+  (await cmd('WIFIPOS')).forEach(l => { const i = l.indexOf('='); if (i > 0) d[l.slice(0, i)] = l.slice(i + 1); });
+  if (!('on' in d)) return;
+  const on = d.on === '1';
+  if (document.activeElement !== $('wpCheck')) $('wpCheck').checked = on;
+  $('wpOn').textContent = on ? 'on' : 'off';
+  $('wpStatus').textContent = on ? d.status.charAt(0).toUpperCase() + d.status.slice(1)
+    + (+d.lookups ? ` · ${d.lookups} lookups since he started` : '') : 'Off';
+}
+async function wifiPosSet(on) {
+  if (on && !confirm('Find him by Wi-Fi?\n\nWhile there is no GPS, the Wi-Fi networks he can hear are sent to beaconDB, '
+      + 'which tells it where he is to within tens of meters. Its server logs keep your internet address for 28 days.')) {
+    $('wpCheck').checked = false; return;
+  }
+  const r = await cmd('WIFIPOSSET ' + (on ? 'on' : 'off'));
+  if (r[0] !== 'OK') toast((r[0] || PET + ' is not answering').replace(/^ERR /, ''));
+  loadWifiPos();
+}
+async function phoneSet(on) {
+  // Ticking the phone switches the Dot's voice off; tick the Dot again to have both.
+  if (on && $('dotOn').checked) { $('dotOn').checked = false; await cmd('DOTSET enabled false'); }
+  await dotSet('phone', on);
+}
+async function dotSay() {
+  const t = $('dotSayText').value.trim();
+  if (!t) return toast('Type something for him to say');
+  const r = await cmd('DOTSAY ' + t);
+  toast(r[0] === 'OK' ? 'Speaking in a moment' : (r[0] || PET + ' is not answering').replace(/^ERR /, ''));
+  if (r[0] === 'OK') $('dotSayText').value = '';
+}
+async function dotRing(name) { const r = await cmd('DOTRING ' + name); if (r[0] !== 'OK') toast((r[0] || '').replace(/^ERR /, '')); }
+async function askTyped() {
+  const t = $('askText').value.trim();
+  if (!t) return toast('Type a question first');
+  const r = await cmd('ASK ' + t);
+  $('askLast').textContent = `"${t}": ` + (r[0] || PET + ' is not answering').replace(/^(OK|ERR) /, '');
+  $('askText').value = '';
+}
+async function loadTimers(ringing) {
+  const lines = await cmd('TIMERS');
+  const fmt = s => s >= 3600 ? `${Math.floor(s / 3600)} h ${Math.floor(s / 60) % 60} min` : s >= 60 ? `${Math.floor(s / 60)} min ${s % 60} s` : `${s} s`;
+  let h = ringing ? `<div class="row"><div class="grow"><b>A timer is ringing!</b></div><button class="primary" onclick="cmd('ALARMSTOP', true)">Stop</button></div>` : '';
+  for (const l of lines) {
+    const [name, left] = split(l);
+    h += `<div class="row"><div class="grow">${esc(name && !name.startsWith('timer ') ? name.charAt(0).toUpperCase() + name.slice(1) + ' timer' : name ? name.charAt(0).toUpperCase() + name.slice(1) : 'Timer')}<div class="sub">${fmt(+left)} left</div></div>
+      <button onclick="cmd('TIMERCANCEL ${esc(name)}', true).then(loadDot)">Cancel</button></div>`;
+  }
+  $('timerList').innerHTML = h || '<div class="sub" style="padding-top:6px">No timers running.</div>';
+}
+async function dotRescue() {
+  if (!confirm(PET + ' will leave your hotspot for up to a minute to switch the Dot\'s Wi-Fi back on. ' +
+               'This page loses him meanwhile. Go ahead?')) return;
+  await cmd('DOTRESCUE', true);
+}
+async function dotForget() {
+  if (!confirm(PET + ' will stop using this Echo Dot and hand it back to Alexa (her services start again). ' +
+               'He will claim the next Dot he finds. Go ahead?')) return;
+  await cmd('DOTFORGET', true); loadDot();
+}
+loadDot(); setInterval(loadDot, 10000);
+loadKnobs();
+
+let awakeBase = 0, awakeAt = Date.now();
+function tickAwake() {  // HH:MM:SS, hours grow to three digits like Sub-GHz Sleuth's
+  const s = awakeBase + Math.floor((Date.now() - awakeAt) / 1000);
+  const p = n => String(n).padStart(2, '0');
+  $('awake').textContent = `${p(Math.min(999, Math.floor(s / 3600)))}:${p(Math.floor(s / 60) % 60)}:${p(s % 60)}`;
+}
+refresh(); setInterval(refresh, 10000); trackTick(); setInterval(tickAwake, 1000);
+</script>
+</body>
+</html>

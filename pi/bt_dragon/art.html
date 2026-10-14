@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Artwork</title>
+<style>
+  :root { --stone: #1d1c1a; --stone2: #282623; --line: #3d3a35; --ink: #ece6da; --dim: #a69f92;
+          --rune: #d9a441; --ember: #c8553d; --moss: #7fbf5f; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--stone); color: var(--ink);
+               font: 16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 0 16px 48px; }
+  header { padding: 14px 0 10px; border-bottom: 3px double var(--line); }
+  h1 { margin: 0; font-size: 13px; letter-spacing: 2px; text-transform: uppercase; color: var(--rune); }
+  h2 { font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--rune); margin: 0; font-weight: 600; }
+  .sub { color: var(--dim); font-size: 13.5px; }
+  .intro { margin: 14px 0; }
+  .intro p { margin: 0 0 8px; }
+  code { background: var(--stone2); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; font-size: 13px;
+         overflow-wrap: anywhere; }
+  .problems { border: 1px solid var(--ember); border-radius: 8px; padding: 10px 12px; margin: 12px 0; }
+  .problems b { color: var(--ember); }
+  .mood { border-top: 1px solid var(--line); padding: 16px 0 6px; }
+  .mood-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+  .frames { display: flex; gap: 14px; flex-wrap: wrap; }
+  .frame { flex: 1 1 140px; max-width: 192px; min-width: 0; }
+  .frame img { display: block; width: 100%; aspect-ratio: 96 / 86; image-rendering: pixelated;
+               background: #fff; border: 4px solid #e9e4d8; border-radius: 4px; }
+  .tag { font-size: 12.5px; margin: 6px 0 4px; min-height: 1.3em; }
+  .tag.yours { color: var(--moss); }
+  .tag.err { color: var(--ember); }
+  .btns { display: flex; gap: 6px; flex-wrap: wrap; }
+  button, .btn { background: transparent; color: var(--ink); border: 1px solid var(--rune); border-radius: 6px;
+           padding: 6px 10px; font: inherit; font-size: 13px; cursor: pointer; text-decoration: none; display: inline-block; }
+  button.quiet, .btn.quiet { border-color: var(--line); color: var(--dim); }
+  details.variants { margin: 10px 0 4px; }
+  details.variants summary { cursor: pointer; color: var(--dim); font-size: 13.5px; }
+  details.variants .frames { margin-top: 10px; }
+  #msg { position: sticky; top: 0; background: var(--stone); padding: 6px 0; min-height: 1.6em; color: var(--rune);
+         font-size: 14px; z-index: 1; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>__NAME__'s artwork</h1>
+    <div class="sub">Your own pictures in place of the drawn placeholder</div>
+  </header>
+  <div class="intro sub">
+    <p>Each picture is <b style="color:var(--ink)">96 × 86 pixels</b>, <b style="color:var(--ink)">black and white</b>,
+      saved as <b style="color:var(--ink)">PNG</b> (JPEG blurs edges into grey). One per mood; a second frame is optional,
+      and he alternates the two on screen updates (blinking, chomping, drifting Zzz). Moods without a picture keep the
+      drawn version, so you can replace them one at a time. Anything the drawn one adds on top (Zzz, sparkles, sweat,
+      speed lines) is part of your picture.</p>
+    <p>On the panel every pixel is ink or paper: transparent counts as paper, and grey becomes black if darker than half
+      way, white if lighter. The previews below show exactly what the screen will show.</p>
+    <p><b>Template</b> downloads the drawn placeholder at actual size, to draw over. <b>Upload</b> saves a picture into
+      <code id="folder">harald-art</code> on the card's boot partition; you can also copy files there from Windows,
+      named like <code>happy.png</code>, <code>happy_1.png</code> (second frame), <code>happy-hungry.png</code>.</p>
+  </div>
+  <div id="problems" class="problems" hidden></div>
+  <div id="msg"></div>
+  <div id="list">Loading…</div>
+  <input type="file" id="picker" accept="image/png" hidden onchange="upload(this)">
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'})[c]);
+let data = null, stamp = Date.now(), target = null;
+
+async function load() {
+  try { data = await (await fetch('/api/art')).json(); }
+  catch (e) { $('list').textContent = 'The dragon is not answering.'; return; }
+  draw();
+}
+
+function tile(r) {
+  const q = `mood=${r.mood}&frame=${r.frame}&belly=${r.belly}`;
+  const label = r.frame ? 'Second frame' : (r.belly ? (r.belly === 'hungry' ? 'Hungry' : 'Stuffed') : 'First frame');
+  let tag, cls = '';
+  if (r.problem && !r.used) { tag = r.problem; cls = 'err'; }
+  else if (r.used === 'yours') { tag = 'Yours' + (r.problem ? ': ' + r.problem : ''); cls = r.problem ? 'err' : 'yours'; }
+  else if (r.used === 'built in') tag = 'Built in';
+  else if (r.shown) tag = `Not drawn: shows ${r.shown}`;
+  else tag = 'The drawn placeholder';
+  return `<div class="frame">
+    <div class="sub">${label}</div>
+    <img src="/art/preview.png?${q}&t=${stamp}" alt="${esc(r.name)}">
+    <div class="tag ${cls}">${esc(tag)}</div>
+    <div class="btns">
+      <button onclick="pick('${r.name}')">Upload</button>
+      <a class="btn quiet" href="/art/template.png?${q}" download="${esc(r.name)}">Template</a>
+      ${r.used === 'yours' ? `<button class="quiet" onclick="removeArt('${r.name}')">Remove</button>` : ''}
+    </div>
+    <div class="sub" style="font-size:12px;margin-top:4px">${esc(r.name)}</div>
+  </div>`;
+}
+
+function draw() {
+  $('folder').textContent = data.folder || 'harald-art';
+  const other = Object.entries(data.other_problems || {});
+  $('problems').hidden = !other.length;
+  $('problems').innerHTML = other.length ? '<b>Files not used:</b><br>' +
+    other.map(([f, p]) => `${esc(f)}: ${esc(p)}`).join('<br>') : '';
+  const byMood = {};
+  data.rows.forEach(r => (byMood[r.mood] = byMood[r.mood] || []).push(r));
+  let html = '';
+  for (const [mood, rows] of Object.entries(byMood)) {
+    const main = rows.filter(r => !r.belly), extra = rows.filter(r => r.belly);
+    const mine = rows.filter(r => r.used === 'yours').length;
+    html += `<div class="mood"><div class="mood-head"><h2>${esc(mood)}</h2>
+      <span class="sub">${esc(data.notes[mood] || '')}${mine ? ` · ${mine} of yours` : ''}</span></div>
+      <div class="frames">${main.map(tile).join('')}</div>`;
+    if (extra.length) {
+      html += `<details class="variants"${extra.some(r => r.used) ? ' open' : ''}><summary>Optional: when his belly is empty or full</summary>
+        <div class="frames">${extra.map(tile).join('')}</div></details>`;
+    }
+    html += '</div>';
+  }
+  $('list').innerHTML = html;
+}
+
+function pick(name) { target = name; $('picker').click(); }
+
+async function upload(input) {
+  const f = input.files[0];
+  input.value = '';
+  if (!f || !target) return;
+  $('msg').textContent = `Saving ${target}…`;
+  try {
+    const r = await fetch('/api/art?name=' + encodeURIComponent(target), {method: 'POST', body: f});
+    const j = await r.json();
+    $('msg').textContent = j.ok ? `Saved ${target}. It's on his screen the next time that mood shows.` : j.error;
+  } catch (e) { $('msg').textContent = 'The dragon is not answering.'; }
+  stamp = Date.now();
+  load();
+}
+
+async function removeArt(name) {
+  if (!confirm(`Remove your ${name}? That picture goes back to the drawn one.`)) return;
+  const r = await fetch('/api/cmd', {method: 'POST', body: 'ARTDEL ' + name});
+  const line = ((await r.json()).lines || [''])[0];
+  $('msg').textContent = line === 'OK' ? `Removed ${name}.` : line.replace(/^ERR /, '');
+  stamp = Date.now();
+  load();
+}
+
+load();
+</script>
+</body>
+</html>

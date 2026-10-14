@@ -1,0 +1,141 @@
+# ᛒᛏ·ᛞᚱᚨᚷᛟᚾ  BT Dragon settings
+#
+# This file lives on the SD card's boot partition ("bootfs"), so you can edit it from
+# any computer. Changes take effect the next time your dragon starts.
+# (Your dragon is called Harald until you rename him.)
+# Lines starting with # are comments and are ignored.
+
+[pet]
+name = "Harald"            # up to 10 characters; only used the very first time (rename later from the den page)
+hunger_minutes = 150       # how long a full belly lasts with nothing to eat (smaller = hungrier dragon).
+                           # Developer Tools in the den can override this while he runs.
+
+[home_wifi]
+# His main network: your home Wi-Fi, or your phone's hotspot if he goes out with you.
+# Use a PRIVATE network that only you control: the den has no password, so anyone on the
+# same network can open it (see "Keep him on a private network" in the README).
+# It MUST be 2.4 GHz (most home routers broadcast 2.4 GHz alongside 5 GHz). For a phone
+# hotspot: on iPhone turn on "Maximize Compatibility", on Android set the band to 2.4 GHz.
+ssid = "YourNetworkName"
+password = "YourNetworkPassword"
+# On first start the password is replaced with its hashed WPA2 key (psk_hash).
+# If your hotspot is WPA3-only, the hash won't work: set this to false.
+hash_password = true
+
+# Backup networks, for when the main one above isn't around (for example, your home Wi-Fi
+# above and your phone's hotspot here, or someone else taking your dragon for a walk). Copy the block for each one; the
+# first listed is preferred over the second, and so on. Passwords are hashed on first
+# start, like the main one. Remove the # at the start of the three lines to use it.
+# [[backup_wifi]]
+# ssid = "FriendsHotspot"
+# password = "FriendsPassword"
+
+[network]
+return_to_better = true    # on a backup, move back to a better network by itself when it's in range
+
+[wigle]
+# From wigle.net: log in, then Account > "Show my token". Use the "API Name" and "API Token"
+# (NOT your login password). Leave blank to just collect, without uploading.
+api_name = ""
+api_token = ""
+auto_upload = true
+# WiGLE limits how many uploads you make per day, so he sends a few big ones:
+# every 3 hours, once at least 50 sightings are waiting (or after a day, whatever's there).
+upload_every_minutes = 240   # 4 hours; 60 is the shortest allowed
+min_batch = 50
+donate = false             # true lets WiGLE share your uploads with its commercial partners
+
+[gps]
+# Location comes from your phone over the hotspot. TESTED: Android with the SensorServer
+# app (F-Droid), the same app that shares your steps (see [activity]). Turn on its
+# "Listen on 0.0.0.0" option and press Start; your dragon connects to it by himself.
+# UNTESTED suggestions (they should work, but nobody has tried them yet):
+#   Android: "GPSd Forwarder". Target = the dragon's IP address, port 29998.
+#   iPhone:  "GPS2IP". Turn on Socket Mode (TCP), port 11123.
+# "auto" tries all three.
+source = "auto"            # auto, sensorserver, udp, tcp or off
+udp_port = 29998
+tcp_host = ""              # blank = the phone running the hotspot
+tcp_port = 11123
+# A USB GPS receiver (a "G-mouse" such as the VK-162 or VK-172, u-blox inside) plugged into
+# the Pi's data port with a micro-USB OTG adapter. UNTESTED. "auto" finds one by itself.
+usb = "auto"               # auto, off, or a port such as "/dev/ttyACM0"
+prefer = "phone"           # with both sending positions: "phone" or "usb" wins; the other fills in
+
+[own_devices]
+# Your own gadgets ("pals") that your dragon can help you find. Easiest is to add them from the
+# den page ("It's mine"), but you can list them here too:
+# "AA:BB:CC:DD:EE:FF" = "My headphones"
+
+[trackers]
+# Unknown-tracker warning: an item tracker away from its owner that stays with you this long...
+alert_after_minutes = 30
+# ...while you've moved at least this far (only checked when GPS is available)
+min_moved_meters = 250
+
+[activity]
+# Walks earn your dragon JOY. With GPS shared (see [gps]) he can tell walking from driving.
+# For step counts, install "SensorServer" (F-Droid, Android only) on your phone, turn on its
+# "Listen on 0.0.0.0" option and start it. Steps taken while he's off become stories you
+# tell him when he next hears from your phone.
+enabled = true
+steps_host = ""            # blank = the phone running the hotspot
+steps_port = 8080          # Sensor Server's port (shown in the app)
+stride_m = 0.75            # your step length in meters, to turn steps into distance
+
+[friends]
+# Dragons find each other over Bluetooth and become friends, like Pwnagotchis do.
+# The beacon carries a random ID so friends recognize your dragon next time. Anyone listening
+# could also notice that ID, so switch it off if you'd rather he only listened.
+# (He still meets dragons that do broadcast.)
+beacon = true
+
+[diary]
+# Every diary entry is also saved as a spreadsheet file (CSV) on the Pi, one per day:
+# /var/lib/bt-dragon/diary/diary-YYYY-MM-DD.csv. Download them from the den's Diary section.
+files = true
+keep_days = 90             # older files are deleted automatically (~0.1-0.5 MB per busy day)
+location = true            # include where each entry happened (when GPS is working)
+
+[sky]
+# Extra things to find with your phone's help (see "Lands, stars and weather" in the README).
+lands = true               # claim squares of the map you visit (kept on the Pi; "Forget my map" in the den)
+stars = true               # collect navigation satellites (needs GPSd Forwarder or GPS2IP; untested)
+barometer = true           # climbing and weather, from your phone's barometer via SensorServer
+landmarks = true           # point out famous places; looks up each new ~1 km square on Wikipedia
+greens = true              # parks and woods: looks up each new ~1 km square on OpenStreetMap
+moon = true                # celebrate new, quarter and full moons (worked out on the Pi, no internet)
+
+[dot]
+# Harald's voice and light ring, through a rooted Echo Dot (2nd generation) on the same
+# hotspot. See "A voice for Harald" in the README. Volume, brightness, how chatty he is and
+# quiet hours are set in the den. Without a Dot this does nothing.
+enabled = true
+address = ""               # the Dot's IP address, or "" to find it on the hotspot by itself
+networks = []              # extra network names to look for it on (the main hotspot always counts)
+voice = ""                 # Piper voice file name in /opt/bt-dragon/voices ("" = the installed one)
+audio_device = 23          # the Dot's speaker chip (card 0, output 23)
+amp_on_after = 0.3         # seconds after the sound starts playing to switch the amplifier on
+                           # (each sentence starts with 0.6 s of silence). Raise a little if
+                           # you hear a pop before he speaks.
+recap_after_minutes = 30   # apart for at least this long? He tells you what he did when he's back.
+# Amazon services paused while Harald uses the Dot (restarting the Dot brings them back).
+# If your Dot drops off Wi-Fi once Harald connects, remove names from this list.
+stop_services = ["puffin", "ahe", "oobed_on_boot", "commsd"]
+
+[privacy]
+skip_nomap = true          # never upload networks whose name ends in _nomap (the owner's opt-out)
+upload_hidden = false      # don't upload networks that hide their name
+
+[display]
+enabled = true
+model = "V4"               # your Waveshare 2.13" panel: "V4" (tested), "V3" or "V2" (untested).
+                           # The version is printed on the back of the screen's circuit board.
+rotate = 180               # 180 for Pwnagotchi-style cases; 0 if your dragon appears upside down
+full_refresh_minutes = 20  # full black/white flash to clear ghosting
+min_seconds_between_updates = 12
+
+[link]
+port = 5151                # control link (a simple text protocol; see the README)
+discovery_port = 5150
+web_port = 8080            # the den page: http://bt-dragon.local:8080

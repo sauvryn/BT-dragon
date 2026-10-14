@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shopping list</title>
+<style>
+  :root { --stone: #1d1c1a; --stone2: #282623; --line: #3d3a35; --ink: #ece6da; --dim: #a69f92;
+          --rune: #d9a441; --ember: #c8553d; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--stone); color: var(--ink);
+               font: 16px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 560px; margin: 0 auto; padding: 0 16px 40px; }
+  header { padding: 14px 0 10px; border-bottom: 3px double var(--line); }
+  h1 { margin: 0; font-size: 13px; letter-spacing: 2px; text-transform: uppercase; color: var(--rune); }
+  .sub { color: var(--dim); font-size: 13.5px; }
+  .add { display: flex; gap: 8px; margin: 14px 0 6px; }
+  input[type=text] { flex: 1; min-width: 0; background: var(--stone2); color: var(--ink); border: 1px solid var(--line);
+                     border-radius: 6px; padding: 9px 10px; font: inherit; }
+  button { background: transparent; color: var(--ink); border: 1px solid var(--rune); border-radius: 6px;
+           padding: 8px 12px; font: inherit; font-size: 14px; cursor: pointer; }
+  button.quiet { border-color: var(--line); color: var(--dim); }
+  h2 { font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--rune);
+       margin: 20px 0 4px; font-weight: 600; }
+  ul { list-style: none; margin: 0; padding: 0; }
+  li { display: flex; align-items: center; gap: 6px; border-bottom: 1px solid var(--line); min-height: 46px; }
+  .name { flex: 1; min-width: 0; padding: 10px 0; cursor: pointer; display: flex; align-items: center; gap: 10px;
+          overflow-wrap: anywhere; -webkit-tap-highlight-color: transparent; }
+  .box { flex: none; width: 20px; height: 20px; border: 1.5px solid var(--dim); border-radius: 4px;
+         display: grid; place-items: center; font-size: 14px; color: var(--stone); }
+  li.done .box { background: var(--dim); border-color: var(--dim); }
+  li.done .label { text-decoration: line-through; color: var(--dim); }
+  select.move { flex: none; width: 64px; background: transparent; color: var(--dim); border: 1px solid var(--line);
+                border-radius: 6px; padding: 5px 2px; font-size: 13px; }
+  .trolley { flex: none; border: 0; color: var(--dim); padding: 8px 4px; line-height: 0; }
+  .trolley svg { width: 20px; height: 20px; }
+  .label .info { display: block; color: var(--rune); font-size: 13px; text-decoration: none; }
+  li.done .label .info { color: var(--dim); }
+  li.editing { flex-wrap: wrap; }
+  .editor { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 0 0 12px 30px; }
+  .editor input { flex: 1 1 120px; min-width: 0; background: var(--stone2); color: var(--ink); border: 1px solid var(--line);
+                  border-radius: 6px; padding: 8px 9px; font: inherit; font-size: 15px; }
+  .editor label { font-size: 12.5px; color: var(--dim); flex-basis: 100%; margin-bottom: -4px; }
+  .del { flex: none; border: 0; color: var(--dim); font-size: 18px; padding: 8px 6px; }
+  .empty { color: var(--dim); padding: 24px 0; text-align: center; }
+  .foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 20px;
+          flex-wrap: wrap; }
+  #msg { min-height: 1.4em; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>__NAME__'s shopping list</h1>
+    <div class="sub" id="count">Loading…</div>
+  </header>
+  <div class="add">
+    <input type="text" id="item" maxlength="60" placeholder="Add an item, e.g. eggs" autocomplete="off"
+           onkeydown="if (event.key === 'Enter') add()">
+    <button onclick="add()">Add</button>
+  </div>
+  <div class="sub" id="msg"></div>
+  <div id="list"></div>
+  <div class="foot">
+    <span class="sub">Tap an item to cross it off (tap again to bring it back).</span>
+    <button class="quiet" id="clear" onclick="clearDone()">Clear crossed-off items</button>
+  </div>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const HINT = 'Or press the Dot\'s button and say "Add eggs to the shopping list".';
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'})[c]);
+let data = null, busy = false, editing = null;
+const TROLLEY = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h3l2.4 11.2a1 1 0 0 0 1 .8h9.2a1 1 0 0 0 1-.8L20.5 7H6.2"/><circle cx="9.5" cy="19.5" r="1.5"/><circle cx="17" cy="19.5" r="1.5"/></svg>';
+const qtyText = q => !q ? '' : /^\d+$/.test(q) ? '×' + q : q;
+
+async function cmd(c) {
+  try {
+    const r = await fetch('/api/cmd', {method: 'POST', body: c});
+    return ((await r.json()).lines || [])[0] || '';
+  } catch (e) { return 'ERR the dragon is not answering'; }
+}
+
+async function load() {
+  if (busy || editing !== null || document.activeElement && document.activeElement.tagName === 'SELECT') return;
+  try { data = await (await fetch('/api/shopping')).json(); }
+  catch (e) { $('count').textContent = 'The dragon is not answering.'; return; }
+  draw();
+}
+
+function draw() {
+  const left = data.items.filter(i => !i.done).length, done = data.items.length - left;
+  $('count').textContent = data.items.length
+    ? `${left} to get` + (done ? ` · ${done} crossed off` : '') : 'Nothing on the list yet.';
+  $('clear').style.visibility = done ? 'visible' : 'hidden';
+  let html = '';
+  for (const s of data.sections) {
+    const items = data.items.filter(i => i.section === s)
+      .sort((a, b) => (a.done - b.done) || a.name.localeCompare(b.name));
+    if (!items.length) continue;
+    html += `<h2>${esc(s)}</h2><ul>`;
+    for (const i of items) {
+      const opts = data.sections.filter(x => x !== s).map(x => `<option value="${esc(x)}">${esc(x)}</option>`).join('');
+      const info = [qtyText(i.qty), i.store].filter(Boolean).join(' · ');
+      html += `<li class="${i.done ? 'done' : ''}${editing === i.id ? ' editing' : ''}">
+        <div class="name" onclick="toggle(${i.id})"><span class="box">${i.done ? '✓' : ''}</span>
+          <span class="label">${esc(i.name)}${info ? `<span class="info">${esc(info)}</span>` : ''}</span></div>
+        <button class="trolley" title="How many, and where to buy it" onclick="edit(${i.id})">${TROLLEY}</button>
+        <select class="move" title="Move to another section" onchange="move(${i.id}, this.value)">
+          <option value="" selected disabled>Move</option>${opts}</select>
+        <button class="del" title="Remove" onclick="del(${i.id})">✕</button>
+        ${editing === i.id ? `<div class="editor">
+          <label>How many, and where you buy it</label>
+          <input id="eQty" maxlength="20" placeholder="How many: 2, 500 g, a big bag" value="${esc(i.qty || '')}">
+          <input id="eStore" maxlength="24" list="stores" placeholder="Shop: e.g. the market" value="${esc(i.store || '')}">
+          <button onclick="saveEdit(${i.id})">Save</button><button class="quiet" onclick="editing = null; draw()">Cancel</button>
+        </div>` : ''}</li>`;
+    }
+    html += '</ul>';
+  }
+  $('list').innerHTML = (html || '<div class="empty">Your list is empty.</div>')
+    + `<datalist id="stores">${(data.stores || []).map(x => `<option value="${esc(x)}">`).join('')}</datalist>`;
+  if (editing !== null && $('eQty')) $('eQty').focus();
+}
+
+async function act(c) { busy = true; const r = await cmd(c); busy = false; await load(); return r; }
+async function add() {
+  const name = $('item').value.trim();
+  if (!name) return;
+  const r = await act('SHOPADD ' + name);
+  $('item').value = '';
+  $('msg').textContent = r.startsWith('OK already') ? `"${name}" is already on the list.`
+    : r.startsWith('OK back') ? `"${name}" is back on the list.` : r.startsWith('OK') ? HINT : r.replace(/^ERR /, '');
+  $('item').focus();
+}
+const toggle = id => act('SHOPTOGGLE ' + id);
+const del = id => act('SHOPDEL ' + id);
+function edit(id) { editing = editing === id ? null : id; draw(); }
+async function saveEdit(id) {
+  const d = {qty: $('eQty').value, store: $('eStore').value};
+  editing = null;
+  await act(`SHOPEDIT ${id} ` + JSON.stringify(d));
+}
+const move = (id, s) => { document.activeElement.blur(); act(`SHOPMOVE ${id} ${s}`); };
+const clearDone = () => act('SHOPCLEAR');
+
+$('msg').textContent = HINT;
+load();
+setInterval(load, 3000);     // things said to the Dot show up by themselves
+</script>
+</body>
+</html>

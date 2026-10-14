@@ -1,0 +1,18 @@
+[Unit]
+Description=BT Dragon (Harald the Bluetooth-eating dragon)
+After=bluetooth.target NetworkManager.service time-sync.target
+Wants=bluetooth.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/bt-dragon
+ExecStartPre=-/usr/sbin/rfkill unblock all
+ExecStart=/opt/bt-dragon/venv/bin/python -m bt_dragon
+Restart=on-failure
+RestartSec=10
+# give Harald time to draw his sleeping face when the Pi shuts down
+TimeoutStopSec=30
+KillSignal=SIGTERM
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calendar</title>
+<style>
+  :root { --stone: #1d1c1a; --stone2: #282623; --line: #3d3a35; --ink: #ece6da; --dim: #a69f92;
+          --rune: #d9a441; --ember: #c8553d; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--stone); color: var(--ink);
+               font: 16px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 560px; margin: 0 auto; padding: 0 16px 40px; }
+  header { padding: 14px 0 10px; border-bottom: 3px double var(--line); display: flex; align-items: flex-end;
+           justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+  h1 { margin: 0; font-size: 13px; letter-spacing: 2px; text-transform: uppercase; color: var(--rune); }
+  .sub { color: var(--dim); font-size: 13.5px; }
+  button { background: transparent; color: var(--ink); border: 1px solid var(--rune); border-radius: 6px;
+           padding: 8px 12px; font: inherit; font-size: 14px; cursor: pointer; }
+  button.quiet { border-color: var(--line); color: var(--dim); }
+  button.danger { border-color: var(--ember); color: var(--ember); }
+  input, select { background: var(--stone2); color: var(--ink); border: 1px solid var(--line); border-radius: 6px;
+                  padding: 8px 9px; font: inherit; font-size: 15px; min-width: 0; color-scheme: dark; }
+  #form { background: var(--stone2); border: 1px solid var(--rune); border-radius: 8px; padding: 14px; margin: 14px 0; }
+  #form h2 { margin: 0 0 10px; font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--rune); }
+  .field { margin: 0 0 12px; }
+  .field > label { display: block; font-size: 13px; color: var(--dim); margin-bottom: 4px; }
+  .line { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .line > input[type=text] { flex: 1; }
+  .rem { display: flex; gap: 6px; align-items: center; margin-bottom: 6px; flex-wrap: wrap; }
+  .rem select { flex: 1; min-width: 150px; }
+  .x { border: 0; color: var(--dim); font-size: 18px; padding: 6px; }
+  .buttons { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+  h3 { font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--rune); margin: 20px 0 4px; font-weight: 600; }
+  ul { list-style: none; margin: 0; padding: 0; }
+  li { display: flex; gap: 12px; align-items: baseline; border-bottom: 1px solid var(--line); padding: 11px 0; cursor: pointer; }
+  .when { flex: none; width: 64px; color: var(--dim); font-size: 14px; font-variant-numeric: tabular-nums; }
+  .what { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+  .what .sub { font-size: 12.5px; }
+  .empty { color: var(--dim); padding: 24px 0; text-align: center; }
+  #msg { min-height: 1.3em; margin-top: 8px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div><h1>__NAME__'s calendar</h1><div class="sub" id="count">Loading…</div></div>
+    <button onclick="openForm()">Add an event</button>
+  </header>
+
+  <div id="form" hidden>
+    <h2 id="formTitle">New event</h2>
+    <div class="field"><label for="fTitle">What</label>
+      <input type="text" id="fTitle" maxlength="80" placeholder="e.g. Dental appointment" style="width:100%"></div>
+    <div class="field"><label for="fDate">When</label>
+      <div class="line"><input type="date" id="fDate"><input type="time" id="fTime">
+        <label class="sub"><input type="checkbox" id="fAllDay" onchange="allDay()"> All day</label></div></div>
+    <div class="field"><label for="fRepeat">Repeats</label>
+      <select id="fRepeat"><option value="none">Never</option><option value="weekly">Every week</option>
+        <option value="monthly">Every month</option><option value="yearly">Every year (birthdays)</option></select></div>
+    <div class="field"><label>Reminders</label>
+      <div id="rems"></div>
+      <button class="quiet" onclick="addRem()">+ Add a reminder</button>
+      <div class="sub" style="margin-top:6px">His screen just says "Reminder: event in 1 hour!"; the Dot says what it is.</div></div>
+    <div class="buttons">
+      <button onclick="save()">Save</button>
+      <button class="quiet" onclick="closeForm()">Cancel</button>
+      <button class="danger" id="fDelete" onclick="del()" hidden>Delete</button>
+    </div>
+    <div class="sub" id="msg"></div>
+  </div>
+
+  <div id="list"></div>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'})[c]);
+const KINDS = [['m15', '15 minutes before'], ['m30', '30 minutes before'], ['m60', '1 hour before'],
+               ['m120', '2 hours before'], ['d0', 'On the day, at…'], ['d1', 'The day before, at…'],
+               ['d2', '2 days before, at…'], ['d7', 'A week before, at…']];
+let data = null, editing = null;
+
+async function cmd(c) {
+  try { const r = await fetch('/api/cmd', {method: 'POST', body: c}); return ((await r.json()).lines || [])[0] || ''; }
+  catch (e) { return 'ERR the dragon is not answering'; }
+}
+async function load() {
+  if (!$('form').hidden) return;               // don't redraw under your fingers
+  try { data = await (await fetch('/api/calendar')).json(); } catch (e) { $('count').textContent = 'The dragon is not answering.'; return; }
+  draw();
+}
+
+const fmtTime = t => { if (!t) return 'All day'; const [h, m] = t.split(':').map(Number);
+  return `${h % 12 || 12}${m ? ':' + String(m).padStart(2, '0') : ''} ${h < 12 ? 'am' : 'pm'}`; };
+const remText = r => r.minutes !== undefined
+  ? (r.minutes % 60 ? `${r.minutes} min before` : `${r.minutes / 60} h before`)
+  : `${r.days === 0 ? 'on the day' : r.days === 1 ? 'the day before' : r.days + ' days before'} at ${fmtTime(r.at)}`;
+function dayName(iso) {
+  const d = new Date(iso + 'T12:00'), t = new Date(data.today + 'T12:00');
+  const diff = Math.round((d - t) / 86400000);
+  if (diff === 0) return 'Today';
+  if (diff === 1) return 'Tomorrow';
+  return d.toLocaleDateString(undefined, {weekday: 'long', day: 'numeric', month: 'long'});
+}
+
+function draw() {
+  const byId = Object.fromEntries(data.events.map(e => [e.id, e]));
+  $('count').textContent = data.events.length ? `${data.events.length} event${data.events.length === 1 ? '' : 's'} · next 90 days below`
+    : 'No events yet.';
+  let html = '';
+  for (const day of data.upcoming) {
+    html += `<h3>${esc(dayName(day.date))}</h3><ul>`;
+    for (const id of day.ids) {
+      const e = byId[id];
+      const extra = [e.repeat !== 'none' ? '↻ ' + {weekly: 'every week', monthly: 'every month', yearly: 'every year'}[e.repeat] : '',
+                     ...(e.reminders || []).map(r => '🔔 ' + remText(r))].filter(Boolean).join(' · ');
+      html += `<li onclick="openForm(${e.id})"><span class="when">${fmtTime(e.time)}</span>
+        <span class="what">${esc(e.title)}${extra ? `<div class="sub">${esc(extra)}</div>` : ''}</span></li>`;
+    }
+    html += '</ul>';
+  }
+  $('list').innerHTML = html || '<div class="empty">Nothing coming up. Add an event, and ask Harald "What events do I have today?"</div>';
+}
+
+function remRow(r) {
+  const key = r ? (r.minutes !== undefined ? 'm' + r.minutes : 'd' + r.days) : 'm60';
+  const known = KINDS.some(k => k[0] === key);
+  const opts = (known ? KINDS : [...KINDS, [key, remText(r)]]).map(([k, t]) => `<option value="${k}"${k === key ? ' selected' : ''}>${esc(t)}</option>`).join('');
+  const div = document.createElement('div');
+  div.className = 'rem';
+  div.innerHTML = `<select onchange="this.nextElementSibling.hidden = !this.value.startsWith('d')">${opts}</select>
+    <input type="time" value="${r && r.at ? r.at : '09:00'}" ${key.startsWith('d') ? '' : 'hidden'}>
+    <button class="x" title="Remove" onclick="this.parentElement.remove()">✕</button>`;
+  $('rems').appendChild(div);
+}
+const addRem = () => remRow(null);
+const allDay = () => { $('fTime').disabled = $('fAllDay').checked; };
+
+function openForm(id) {
+  editing = id ?? null;
+  const e = id ? data.events.find(x => x.id === id) : null;
+  $('formTitle').textContent = e ? 'Change event' : 'New event';
+  $('fTitle').value = e ? e.title : '';
+  $('fDate').value = e ? e.date : (data ? data.today : '');
+  $('fTime').value = e && e.time ? e.time : '';
+  $('fAllDay').checked = e ? !e.time : false; allDay();
+  $('fRepeat').value = e ? e.repeat : 'none';
+  $('rems').innerHTML = '';
+  (e ? e.reminders : []).forEach(remRow);
+  $('fDelete').hidden = !e; $('msg').textContent = '';
+  $('form').hidden = false; $('fTitle').focus();
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+function closeForm() { $('form').hidden = true; editing = null; load(); }
+
+async function save() {
+  const ev = {title: $('fTitle').value, date: $('fDate').value, repeat: $('fRepeat').value,
+              time: $('fAllDay').checked ? null : ($('fTime').value || null), reminders: []};
+  if (!ev.time && !$('fAllDay').checked) { $('msg').textContent = 'Choose a time, or tick "All day".'; return; }
+  for (const row of $('rems').children) {
+    const k = row.querySelector('select').value, at = row.querySelector('input').value || '09:00';
+    ev.reminders.push(k.startsWith('m') ? {minutes: +k.slice(1)} : {days: +k.slice(1), at});
+  }
+  if (editing) ev.id = editing;
+  const r = await cmd('CALSAVE ' + JSON.stringify(ev));
+  if (!r.startsWith('OK')) { $('msg').textContent = r.replace(/^ERR /, ''); return; }
+  closeForm();
+}
+async function del() {
+  if (!editing || !confirm('Delete this event?')) return;
+  await cmd('CALDEL ' + editing);
+  closeForm();
+}
+
+load();
+setInterval(load, 10000);
+</script>
+</body>
+</html>
