@@ -22,7 +22,7 @@ BT Dragon turns a Raspberry Pi Zero 2 W (on its own, or as part of an old Pwnago
 >
 > **If you're uncomfortable using AI-assisted code for any reason, please don't use this program.** That is your choice, it is perfectly reasonable, and this disclaimer is here so you can make it before downloading (if you're reading this on GitHub) or installing anything. That being said, please respect that the project author has been completely open and honest about the contents of this disclaimer and the fact of its inclusion, especially in a world where more and more individuals are attempting to pass off partially or completely AI-generated work as their own, either through direct deceit or by omission of fact.
 >
->Are you still interested? Cool. Moving on...
+>If you're still interested in learning about Harald and what he can do, let's move on...
 
 ![Harald's screen](docs/screen.png)
 
