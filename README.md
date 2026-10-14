@@ -301,7 +301,7 @@ Take him with you: a **USB power bank** for power, and **your smartphone's hotsp
 
 ### Adding your hotspot 
 
-**(THE BACKUP WI-FI FEATURE IS CURRENTLY NOT WORKING AND IS AWAITING A BUGFIX)**
+**(THE BACKUP WI-FI FEATURE IS CURRENTLY NOT WORKING AND IS AWAITING A BUGFIX. For now, put your hotspot as his home wifi if you wang to take him on walks. This has been tested and works.)**
 
 He can know several networks and joins the best one in range. Put your home Wi-Fi under `[home_wifi]` and your hotspot as a backup, below it in `bt-dragon.toml`:
 
