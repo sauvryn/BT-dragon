@@ -2,7 +2,7 @@
 
 **A Bluetooth-eating Viking dragon for a Raspberry Pi Zero 2 W.**
 
-BT Dragon turns a Raspberry Pi Zero 2 W (on its own, or as part of an old Pwnagotchi with its e-ink screen) into a different kind of pocket pet: a cartoon Viking dragon who snacks on the Bluetooth gadgets around you, treats himself to Wi-Fi networks, goes on walks with you (with the use of an external battery), and makes friends with other dragons. He's called **Harald** unless you rename him in the Den (his control panel), in which case the new name is used everywhere the old one was. The rest of this document assumes the default name.
+BT Dragon turns a Raspberry Pi Zero 2 W (on its own, or as part of an old Pwnagotchi with its e-ink screen) into a different kind of pocket pet: a cartoon Viking dragon who snacks on the Bluetooth gadgets around you, treats himself to Wi-Fi networks, goes on walks with you (with the use of an external battery), and makes friends with other dragons. He's called **Harald** unless you rename him in the Den (his control panel), in which case the new name is used everywhere the old one was. The rest of this document assumes the default name. Optional GPS integration unlocks the ability to "conquer" squares on a real-world map by traveling through them with Harald, "visiting" real public-access historic landmarks and green spaces (major parks, etc.) by passing near them, and participating in the Wigle.net wireless access point discovery "point-scoring" leaderboards and rankings. If connected to the sensors of a user's smartphone, Harald can pass on interesting information about the types and numbers of navigational satellites he can see (using the phone's GPS) which are added to his "star" collection, changes in weather (detected via the phone's air pressure sensor), and other features. There is even an included way to connect him to an old 2nd Gen Echo Dot that has been unlocked and rooted, giving the user a way to ask Harald some basic questions and issue certain commands, either by pressing the action button or by using a hands-free wake word (with lots of room for additional development).
 
 **Why Harald?** He's named after **Harald "Bluetooth" Gormsson**, a Viking king of Denmark who died around 986. He's remembered for uniting Denmark's tribes under one crown, for bringing Christianity to the Danes, and for the great runestone he raised at Jelling, which Danes still call their country's birth certificate. Nobody knows for sure where his nickname came from: perhaps a dead, dark tooth, or an older word meaning "dark chieftain". In 1997, engineers from Intel, Ericsson and Nokia were looking for a working name for a new short-range radio standard that would unite phones and computers, the way Harald had united the Danes. They called it Bluetooth, and the name stuck. The Bluetooth logo is Harald's initials in runes: ᚼ (H) and ᛒ (B), joined together. Thus, this Bluetooth-eating dragon is Viking-themed and named Harald in honor of that legacy.
 
@@ -14,9 +14,7 @@ BT Dragon turns a Raspberry Pi Zero 2 W (on its own, or as part of an old Pwnago
 
 > ### 🤖 AI disclaimer
 > **The project author's personal ethics on AI use and the author's intentions.**
-> The project author's personal stance on anything they create with mostly or wholly AI-generated code is that the code must be free and open source to all and the end product must benefit humanity in some way. Harald was created as a way to re-use old hardware (reducing potential e-waste) in an educational and fun way for the user that promotes curiosity about the invisible signals that surround us and to encourage the physical activity of the user by finding new and novel signals to "feed" their dragon.
->
-> Optional GPS integration unlocks the ability to "conquer" squares on a real-world map by traveling through them with Harald, "visiting" real public-access historic landmarks and green spaces (major parks, etc.) by passing near them, and participating in the Wigle.net wireless access point discovery "point-scoring" leaderboards and rankings. If connected to the sensors of a user's smartphone, Harald can pass on interesting information about the types and numbers of navigational satellites he can see (using the phone's GPS) which are added to his "star" collection, changes in weather (detected via the phone's air pressure sensor), and other features. There is even an included way to connect him to an old 2nd Gen Echo Dot that has been unlocked and rooted, giving the user a way to ask Harald some basic questions and issue certain commands, either by pressing the action button or by using a hands-free wake word (with lots of room for additional development). It is the project author's sincere hope that their intentions behind the creation of Harald are understood and respected even if their choice to use AI for this project is ultimately not.
+>The project author's education backgrounds are in traditional art, biology, and psychology - not computer science, therefore AI was heavily used to code this project. The project author is aware of the risks and environmental consequences associated with AI use, therefore their personal stance on anything they create with mostly or wholly AI-generated code is that the code must be free and open source (FOSS) to all and the end product must benefit human users in a long-term, tangible manner that also respects user's privacy at every turn. Harald was created as a way to re-use old hardware (reducing potential e-waste) inexpensively and in a fun way that promotes curiosity and education about the invisible signals that surround us. Harald also encourages the physical activity of the user towards finding real new and novel signals to "feed" their dragon (which a GPS link enchances by adding "lands" to conquer by real-world exploration with Harald and the WiGLE account upload feature). It is the project author's sincere hope that their intentions behind the creation of Harald are understood and respected even if their choice to use AI for this project is ultimately not.
 >
 > **BT Dragon was written with Claude, Anthropic's AI assistant.** Claude wrote essentially all of the code, the dragon's current placeholder pixel art and the original documentation, working from detailed conversations with the project's author. This document was written by Claude but then edited by the project author for content and accuracy before being uploaded to GitHub.
 >
@@ -68,18 +66,21 @@ A Raspberry Pi Zero 2 W on your home Wi-Fi, with no screen, no phone and nothing
 - **A shopping list and a calendar.** Each has its own page in the Den (*Shopping list and calendar*). A calendar reminder shows on his screen (and the Den's copy of it) only as **"REMINDER: EVENT IN 1 HOUR!"**, so anyone glancing at him can't read your plans. Asking about them out loud needs ears (Level 4), but adding things, ticking them off and reminders all work now.
 - **Ask Harald: typed questions and kitchen timers.** In the Den's **Ask Harald** section, type a question and his answer appears underneath: the time here or in a big city, the date, the shopping list, what's on the calendar, or the weather. "Set a pasta timer for twelve minutes" works too: when it ends, his screen says **TIMER DONE!** and the Den shows a **Stop** button. If the answer is short enough for his screen, it shows there too, as **"ANSWER: IT'S 14°C (57°F) AT THE LAIR"**; a longer one shows **"ANSWER: A LONG RESPONSE. CHECK THE DEN."** (that's for the screen only: if he has a voice, he says the whole answer as usual). He only knows a set range of questions (the full list is under [Asking him questions](#what-he-gains-1) in Level 4), and his answers don't come from a search engine: for anything else, use a real search engine (DuckDuckGo, for example) or an assistant that uses one (Hey Google, Siri, Alexa and so on).
 - **Harald's Lair: the weather at home.** In the Den's **Harald's Lair** section, enter a place (a city, "city, state", or a zip or postcode) and its country. That's home, as far as the weather is concerned: ask him "What's the temperature at home?", or about the humidity, air pressure, pollen count (Europe only), UV index, air quality, sunrise or sunset there. The country matters because there's more than one London and Toronto in the world. He keeps the Lair only to within about 10 km, and a postcode is cut down to its area before it's looked up, so your full postcode never leaves the Pi (how, exactly, is in [the privacy section](#the-lair-and-your-postcode)). Both need the internet.
-- **Local announcements** (in the Lair section). **CURRENTLY NEEDS BUGFIXING - NOT ALL OF THESE WORK PROPERLY**  While he's online, he keeps an eye on the weather at home, each kind of news at its own time so they never pile up:
+- **Local announcements** (in the Lair section). While he's online, he keeps an eye on the weather at home, each kind of news at its own time so they never pile up:
   - **on the hour:** how warm it is, **"It's 14°C (57°F) outside at the Lair."** (no joy for this one, and not during quiet hours);
   - **a quarter past:** when the air pressure there is falling or rising fast, **"There's a storm coming at the Lair!"** or **"The weather is changing at the Lair!"**, with the same joy as when he feels a storm himself through your phone's barometer (Level 3);
   - **half past:** when the pollen count is high, he sneezes: **"Achoo! The grass pollen is high at the Lair."**, or, if it was already high and has gone up since the hour before, **"Achoo! The grass pollen is higher at the Lair! It's very high now."** (Europe only: see [pollen outside Europe](#pollen-outside-europe));
   - **a quarter to:** when the UV index is high, he puts his sunglasses on: **"Sunglasses on! The UV index at the Lair is 7, that's high."** (or **"…is higher! It's 8 now"**);
+  - **half past, too:** when the air quality is poor or worse, he sneezes again: **"The air quality at the Lair is poor, with a European air quality index of 65."** (in the US, from "unhealthy for sensitive groups" on the US index);
   - **sunrise and sunset**, as they happen, with a little joy: **"The sun is rising at the Lair!"**
   - **official weather warnings**, checked every 15 minutes (at 5, 20, 35 and 50 past) and announced once each, with his alarmed face: **"AMBER WARNING: WIND AT THE LAIR"**. In the United Kingdom they come from the Met Office, for the Lair's region (worked out from the county; the Den lets you change it if the guess is wrong). In the United States they come from the National Weather Service, for the Lair's forecast zone and county. Other countries aren't covered yet, as each publishes its warnings its own way. Ask him **"Are there any weather warnings at home?"** for the ones in force.
 
-  High pollen and high UV show on his screen every hour they're high. **What he says out loud is up to you**: if he has a voice (the phone, or the Dot at Level 4), the Den's *Voice and light ring* section has **Weather information: Lair**, with a tick box for each kind of news (Temperature, Storm or change, Weather warnings, High pollen, High UV, Sunrise/sunset). High pollen and High UV each have a choice of **Increased readings only** (the default: said when the reading goes up, so a long sunny day isn't a reminder every hour) or **All high readings**. There's a matching **Weather information: Phone sensors** for the storms and sunshine his phone's barometer and light sensor notice (Level 3). Untick anything and he still shows it on his screen, just quietly.
-- **Optional: his voice, through an Android phone.** It needs none of the phone's sensors, only the phone on the same Wi-Fi as him: see [His voice through your phone](#his-voice-through-your-phone-tested).
+  High pollen and high UV show on his screen every hour they're high. **What he says out loud is up to you**: if he has a voice (the phone, or the Dot at Level 4), the Den's *Voice and light ring* section has **Weather information: Lair**, with a tick box for each kind of news (Temperature, Storm or change, Weather warnings, Poor air quality, High pollen, High UV, Sunrise/sunset). A ticked box is said even in *Big moments* mode. Poor air quality, High pollen and High UV each have a choice of **Increased readings only** (the default: said when the reading goes up, so a long sunny day isn't a reminder every hour) or **All high readings**. There's a matching **Weather information: Phone sensors** for the storms and sunshine his phone's barometer and light sensor notice (Level 3). Untick anything and he still shows it on his screen, just quietly.
 
-What he can't do yet: anything that needs to know where he is (walks, wardriving, the map). That's Level 3, or Level 2 with a [USB GPS receiver](#optional-a-usb-gps-receiver) or [finding him by Wi-Fi](#no-gps-at-all-finding-him-by-wi-fi-untested).
+  **Testing so far:** setting the Lair, sunset, official warnings (announced once, with the alarmed face) and the Den's Lair section are confirmed. The hourly temperature wasn't heard in testing, because *Big moments* mode skipped it; ticked boxes are now said in that mode too, but this hasn't been re-tested yet. Storms, high pollen, high UV and poor air quality haven't happened yet to test, and sunrise hasn't been watched for.
+- **Optional: his voice, through an Android phone.** It needs none of the phone's sensors, only the phone on the same Wi-Fi as him: see [His voice through your phone](#his-voice-through-your-phone-partly-tested).
+
+What he can't do yet: anything that needs to know where he is (walks, wardriving, the map). That's Level 3, or Level 2 with a [USB GPS receiver](#optional-a-usb-gps-receiver-untested) or [finding him by Wi-Fi](#no-gps-at-all-finding-him-by-wi-fi-untested).
 
 ### What you need
 
@@ -94,6 +95,8 @@ What he can't do yet: anything that needs to know where he is (walks, wardriving
 If your computer (or your router) runs a VPN, pause it for the install and for every update. A VPN can send your computer's traffic somewhere else, so it can't find the Pi on your home network, and it can block or slow down the Pi's downloads. Turn it back on when you're done.
 
 ### Install, step by step
+
+> **Testing so far:** updating an existing install with `update-bt-dragon.bat` (Windows) is confirmed. A fresh install from a blank card hasn't been re-run since this version's changes, and `update-bt-dragon.sh` (macOS and Linux) hasn't been tested yet.
 
 You don't need any Linux experience. You'll copy files onto the card, plug in the Pi, and type two commands.
 
@@ -194,7 +197,7 @@ If your Pi is part of an old **Pwnagotchi** with a **Waveshare 2.13" e-ink scree
 
 | Screen | Status |
 |---|---|
-| Waveshare 2.13" e-ink **V4** | ✅ Tested |
+| Waveshare 2.13" e-ink **V4** | ✅ Tested. Not yet: your own artwork on the panel, and the faces that need a particular moment (sleepy, sneezing, sunglasses, dazzled) |
 | Waveshare 2.13" e-ink **V3** / **V2** | ❓ Supported but untested. Set `model = "V3"` or `"V2"` under `[display]` |
 | Other Pwnagotchi screens (Inky, 2.7", etc.) | ❌ Not supported |
 | No screen ("headless") | ❓ Supported but untested. Noticed by Harald himself at start-up |
@@ -239,7 +242,7 @@ Every one of these numbers can be changed while he runs, from **Developer Tools*
 
 **Levels:** level = 1 + √(XP ÷ 50), so level 2 at 50 XP, 3 at 200, 5 at 800 and 10 at 4,050.
 
-**His face:** joy picks the eyes (happy, content, bored, sad), and his belly can change the mouth (drooling when hungry, a contented wobble when stuffed). Short reactions, like a feast, an adventure or riding with the wind in his face, take over for a moment. A small joy boost gets his **excited** face; a big one (8 joy or more, adjustable) gets his **ecstatic** face, with big starry eyes and sparkles. High pollen at home makes him **sneeze**, and sunshine or a high UV index gets his **sunglasses** on (round ones, so they're never mistaken for a Pwnagotchi's square ones).
+**His face:** joy picks the eyes (happy, content, bored, sad), and his belly can change the mouth (drooling when hungry, a contented wobble when stuffed). Short reactions, like a feast, an adventure or riding with the wind in his face, take over for a moment. A small joy boost gets his **excited** face; a big one (8 joy or more, adjustable) gets his **ecstatic** face, with big starry eyes and sparkles. High pollen or poor air at home makes him **sneeze**, sunshine gets his **sunglasses** on (round ones, so they're never mistaken for a Pwnagotchi's square ones), and a high UV index gets the sunglasses with a startled "oh!" (**dazzled**). His **sleepy** face shows between 1 and 6 in the morning when his joy is under 70.
 
 ![Harald's moods](docs/moods.png)
 
@@ -279,7 +282,7 @@ To restore, use **Restore from a backup…** in the Den and pick the file. It's 
 **Customizing your dragon's artwork.** The Harald in this repository for purposes of testing the prototype is an AI-generated placeholder, drawn by code from simple shapes. To use your own art or art you have permission to use, open **Artwork** in the Den's *Care* section. Each mood is shown as it will look on the screen, with buttons to **Upload** a picture, download a **Template** (the placeholder at actual size, to draw over) or **Remove** yours again.
 
 - **96 × 86 pixels, black and white, PNG.** The screen is two-colour, so each pixel ends up ink or paper: transparent counts as paper, and grey becomes black if darker than half way, white if lighter. The page shows the result and points out grey pixels and wrong sizes. (JPEG blurs every edge into grey: use PNG.)
-- **One picture per mood**, named after it: `content`, `happy`, `bored`, `lonely`, `sleepy`, `asleep`, `eating`, `treat`, `stuffed`, `hungry`, `starving`, `excited`, `ecstatic`, `proud`, `alarmed`, `uploading`, `adventure`, `riding`, `sneezing`, `sunglasses` (`happy.png` and so on). Optionally a second frame (`happy_1.png`), which he alternates with the first on screen updates, and, for the five everyday moods, versions for an empty or full belly (`happy-hungry.png`, `happy-stuffed.png`). Anything the placeholder adds on top (Zzz, sparkles, sweat drops, speed lines) belongs in your picture.
+- **One picture per mood**, named after it: `content`, `happy`, `bored`, `lonely`, `sleepy`, `asleep`, `eating`, `treat`, `stuffed`, `hungry`, `starving`, `excited`, `ecstatic`, `proud`, `alarmed`, `uploading`, `adventure`, `riding`, `sneezing`, `sunglasses`, `dazzled` (`happy.png` and so on). Optionally a second frame (`happy_1.png`), which he alternates with the first on screen updates, and, for the five everyday moods, versions for an empty or full belly (`happy-hungry.png`, `happy-stuffed.png`). Anything the placeholder adds on top (Zzz, sparkles, sweat drops, speed lines) belongs in your picture.
 - **Moods without a picture keep the placeholder**, so you can replace them one at a time. Pictures are kept in a `harald-art` folder on **bootfs**, so you can also copy them there from your computer.
 
 From pencil to pixels, if you prefer traditional art methods (like the project author does): sketch the drawing in pencil, carefully go over the drawing in black pen and then erase as much of the pencil as you can (pencil turns patchy when forced to black and white), photograph or scan it to make it digital, then in GIMP, Paint.NET or Photopea raise the contrast, scale it down to 96 × 86 with no smoothing, and switch to a 1-bit black and white palette without dithering. At this size the best final results usually come from the addition of pixel art tracing: use the faded photo on a layer underneath and draw your pixels on top using your computer mouse with a 1-pixel pencil (LibreSprite is specifically made for this if you want to give it a try!). Look up online tutorials for additional guidance.
@@ -297,11 +300,11 @@ Take him with you: a **USB power bank** for power, and **your smartphone's hotsp
 - A **USB power bank** and a micro-USB cable to the Pi's **PWR** port.
 - **Your own phone's hotspot**, set to 2.4 GHz:
   - **iPhone:** Settings → Personal Hotspot → turn on **Maximize Compatibility**.
-  - **Android:** Hotspot settings → **AP band** → 2.4 GHz (the wording varies by phone).
+  - **Android:** Hotspot settings → **AP band** → 2.4 GHz (the wording varies by phone). A Pixel has no 2.4 GHz-only choice: **2.4 and 5 GHz** works (tested), as he simply uses the 2.4 GHz half.
 
 ### Adding your hotspot 
 
-**(THE BACKUP WI-FI FEATURE IS CURRENTLY NOT WORKING AND IS AWAITING A BUGFIX. For now, put your hotspot as his home wifi if you want to take him on walks. This has been tested and works.)**
+**(THE BACKUP WI-FI FEATURE DIDN'T WORK IN TESTING. A FIX IS IN THIS VERSION BUT HASN'T BEEN CONFIRMED YET. Until it is, put your hotspot as his home Wi-Fi if you want to take him on walks. That has been tested and works.)** If a backup network won't join, the Den's **Network** section now shows whether each of his networks is in range, its security, and the reason the last attempt failed.
 
 He can know several networks and joins the best one in range. Put your home Wi-Fi under `[home_wifi]` and your hotspot as a backup, below it in `bt-dragon.toml`:
 
@@ -332,9 +335,9 @@ Add the Den to your phone's home screen for quick access. It only works while he
 ### Power
 
 - **Put him to sleep before unplugging** (Den → *Care* → **Put to sleep**), so the card isn't being written to when the power goes.
-- **Nap** is the gentler option: as good as switched off (no Bluetooth or Wi-Fi feeding, meters frozen, nothing written to the card), but he stays on the network so you can wake him from the Den. He's safe to unplug mid-nap, and keeps napping through a restart until you wake him.
+- **Nap** is the gentler option: as good as switched off (no Bluetooth or Wi-Fi feeding, meters frozen until he wakes (then they drop by however long he napped, just as after sleeping), nothing written to the card), but he stays on the network so you can wake him from the Den. He's safe to unplug mid-nap, and keeps napping through a restart until you wake him.
 
-### Optional: a USB GPS receiver
+### Optional: a USB GPS receiver (untested)
 
 A small USB GPS receiver gives him most of [Level 3](#level-3-your-phones-senses) without any phone apps: a "G-mouse" receiver with a u-blox chip (the VK-162 and VK-172 are common), plugged into the Pi's **data** port (the middle micro-USB, marked USB) with a micro-USB OTG adapter. He finds it by himself. It needs to be outdoors. Receivers like these can generally hear the satellites through a bag or backpack, so it can travel tucked away with him, but your experience may vary depending on the make and model you try. Indoors they struggle, and the first fix after switching on can take a minute or two.
 
@@ -344,7 +347,7 @@ A small USB GPS receiver gives him most of [Level 3](#level-3-your-phones-senses
 
 ### No GPS at all: finding him by Wi-Fi (untested)
 
-Level 3 brings **conquering the map**: the world is cut into squares about 250 m across ("lands"), grouped into squares about 1 km across ("realms"), and he claims each one you take him into. Normally that uses a GPS: your phone's, or [a USB receiver](#optional-a-usb-gps-receiver). If you can't, or would rather not, give him one, he can still claim land from Level 2, by working out roughly where he is from the Wi-Fi networks around him. It's off unless you switch it on in the Den: **Conquests → Find him by Wi-Fi**.
+Level 3 brings **conquering the map**: the world is cut into squares about 250 m across ("lands"), grouped into squares about 1 km across ("realms"), and he claims each one you take him into. Normally that uses a GPS: your phone's, or [a USB receiver](#optional-a-usb-gps-receiver-untested). If you can't, or would rather not, give him one, he can still claim land from Level 2, by working out roughly where he is from the Wi-Fi networks around him. It's off unless you switch it on in the Den: **Conquests → Find him by Wi-Fi**.
 
 **How it works.** Every Wi-Fi router announces itself about ten times a second with a unique hardware address, and he already hears those announcements. Routers almost never move, so a service that knows roughly where millions of them are can turn "I can hear these networks, this loudly" into "then you're about here". It takes the known positions of the routers he hears and averages them, counting the louder ones for more, because a loud router is usually a near one. In a town that's usually within 20 to 50 m. In the countryside, with only one or two networks about, it often can't tell at all. The service is [beaconDB](https://beacondb.net), free and community-built. He only *asks* it: he never sends it sightings of his own.
 
@@ -365,7 +368,7 @@ How precise a Wi-Fi position must be to claim land is **Lands: ignore Wi-Fi posi
 
 Your phone has a GPS, a step counter, a barometer and a light sensor. Shared with Harald over the hotspot, they let him know where he is, how you're moving, how high you've climbed and when the sun is out.
 
-> ⚠️ **Tested with Android only:** a **Google Pixel 7 Pro** with the apps below, all from **F-Droid** (an app store for free, open-source Android apps). Other Android phones with the same sensors should work. iPhone options are listed further down, untested.
+> ⚠️ **Tested with Android only:** a **Google Pixel 7 Pro** running **Android 17**, with the apps below, all from **F-Droid** (an app store for free, open-source Android apps). Other Android phones with the same sensors should work. iPhone options are listed further down, untested.
 >
 > **Google's developer verification may affect this.** Google has announced that, during 2027, apps on certified Android phones will have to come from developers who have registered their identity with Google, including apps installed from outside the Play Store. Some F-Droid developers have said they won't register (SherpaTTS, used below, already shows a notice saying so). Google has described a one-time "advanced" setting for installing apps from unverified developers, and installing over `adb` from a computer isn't affected, but details may change. Apps you've already installed may or may not keep working. Check the current situation before relying on this level.
 
@@ -380,12 +383,14 @@ Your phone has a GPS, a step counter, a barometer and a light sensor. Shared wit
 - **Wardriving.** Every network he hears is logged with a location and uploaded to [WiGLE](https://wigle.net) under **your own account**, if you add your WiGLE **API Name** and **API Token** under `[wigle]` in the settings file (wigle.net → Account → "Show my token"; these are not your login password). WiGLE limits uploads per day, so he batches them: at most every 4 hours, once at least 50 sightings are waiting. Networks whose name ends in `_nomap`, and hidden networks, are never uploaded. The Den has **Upload now** and **Download CSV**.
 - **Weather and climbing.** Air pressure drops about 0.12 hPa for every meter you go up. A quick change over a minute or two is you climbing stairs or a hill; a slow change over hours is the weather. A fall of about 3 hPa in 3 hours usually means wind and rain on the way. He only judges the weather while you've stayed in roughly the same place, so a hill can't fool him.
 - **Sunshine.** When your phone's light sensor reads 30,000 lux or more for 30 seconds (indoors is 100 to 500), he puts on his round sunglasses and cheers: **"Wow! It's sunny out today!"**
-- **Stars.** Your phone's GPS chip hears navigation satellites from GPS (USA), Galileo (EU), GLONASS (Russia), BeiDou (China), QZSS (Japan), NavIC (India) and others. Each one is a star he collects in the Den's **Star chart**, and his first of a new constellation is a big one. After that, a star cheers him up again whenever it *rises*: heard low over the horizon after an hour or more out of earshot (**"A STAR RISES! GALILEO 19"**). Satellites you simply lose indoors don't count when you step back outside, because they come back at whatever height they happen to be. This needs **GPSd Forwarder** (set up below) or a [USB GPS receiver](#optional-a-usb-gps-receiver): SensorServer doesn't pass satellite details on.
+- **Stars.** Your phone's GPS chip hears navigation satellites from GPS (USA), Galileo (EU), GLONASS (Russia), BeiDou (China), QZSS (Japan), NavIC (India) and others. Each one is a star he collects in the Den's **Star chart**, and his first of a new constellation is a big one. After that, a star cheers him up again whenever it *rises*: heard low over the horizon after an hour or more out of earshot (**"A STAR RISES! GALILEO 19"**). Satellites you simply lose indoors don't count when you step back outside, because they come back at whatever height they happen to be. This needs **GPSd Forwarder** (set up below) or a [USB GPS receiver](#optional-a-usb-gps-receiver-untested): SensorServer doesn't pass satellite details on.
 - **A better tracker warning.** With GPS, an unknown tracker only raises the alarm once it has stayed with you while you've moved 250 m.
 
 Every distance, time and reward here is adjustable in **Developer Tools**. Each feature can be switched off under `[sky]` in the settings file (`lands`, `landmarks`, `greens`, `stars`, `barometer`, `moon`).
 
-### Setting up SensorServer (tested)
+### Setting up SensorServer (partly tested)
+
+**Testing so far:** GPS, staying connected with the phone's screen off, reconnecting after the hotspot drops, and stories (steps while apart) are confirmed. Climbing registers but hasn't been checked against a known height; weather changes are confirmed but a storm hasn't happened yet. Walks were confirmed on an earlier build and are being re-checked. Walking without a GPS fix (counted from steps) and sunshine haven't been tested yet.
 
 One free app supplies GPS, steps, the barometer and the light sensor: **SensorServer**, on F-Droid.
 
@@ -397,6 +402,8 @@ One free app supplies GPS, steps, the barometer and the light sensor: **SensorSe
 On his screen (or the Den's copy of it), `GPS WAIT` means data is arriving but there's no satellite fix yet, and `GPS FIX` means it's working.
 
 ### Setting up GPSd Forwarder, for stars (tested)
+
+**Testing so far:** collecting stars and rising stars are confirmed. The bigger joy for a new constellation hasn't come up yet: each constellation counts only once, ever.
 
 **GPSd Forwarder** (free, on F-Droid) sends your phone's GPS readings to Harald in the standard format GPS receivers use, satellite reports included, which is what lets him collect stars. It runs alongside SensorServer: keep both.
 
@@ -411,9 +418,11 @@ Within a minute of a GPS fix outdoors, the Den's **Star chart** under *Conquests
 ### Other ways to share a position (untested)
 
 - **iPhone, GPS only: GPS2IP** (App Store). Turn on Socket Mode (TCP) on port `11123`. iOS limits what apps can do in the background, so it may stop when the screen locks. There's no step counting on iPhone yet.
-- **A USB GPS receiver** needs no phone app at all: see [Level 2](#optional-a-usb-gps-receiver).
+- **A USB GPS receiver** needs no phone app at all: see [Level 2](#optional-a-usb-gps-receiver-untested).
 
-### His voice through your phone (tested)
+### His voice through your phone (partly tested)
+
+**Testing so far:** speaking through Termux, SherpaTTS with his Piper voice, the phone in a pocket with the screen off, and *Big moments* mode are confirmed. Quiet hours worked on an earlier build. Bluetooth earphones, the phone as a backup for the Dot, *Welcome-home recap only* mode and using it at Level 1 (the phone on the same Wi-Fi rather than its own hotspot) haven't been tested yet.
 
 Harald can talk through your phone's speaker (or Bluetooth earphones), with the screen off and the phone in your pocket. This works at **any level**, even Level 1: none of the phone's sensors are used, it only needs to be on the same network as him (your home Wi-Fi, or its own hotspot). Tested on the Pixel 7 Pro with **Termux** and **Termux:API** (both from F-Droid; the Play Store versions don't work together), and with **SherpaTTS** (F-Droid) to give the phone his own Piper voice.
 
@@ -429,13 +438,13 @@ Next time, open Termux and type `python harald_voice.py`. How it works: a web pa
 
 ## Level 4: A voice and ears (Echo Dot)
 
-> ⚠️ **EXPERIMENTAL PHASE, and only for an Echo Dot which is already unlocked and rooted.** Tested on one unlocked and rooted **Echo Dot 2nd generation** ("biscuit", Fire OS) running Fire OS 6 on the phone hotspot of a Google Pixel 7 Pro. How to root a Dot is outside the scope of this project, and rooting may be impossible on some units. **Do not ask the project author for help with rooting your Dot.** The project author used a UK Echo Dot, specifically the 2nd gen Echo Dot (biscuit) released in 2016 (RS03QR) and [this guide on XDA](https://xdaforums.com/t/unlock-root-twrp-unbrick-amazon-echo-dot-2nd-gen-2016-biscuit.4761416/)
+> ⚠️ **EXPERIMENTAL PHASE, and only for an Echo Dot which is already unlocked and rooted.** Tested on one unlocked and rooted **Echo Dot 2nd generation** ("biscuit", Fire OS) running Fire OS 6 on the phone hotspot of a Google Pixel 7 Pro (Android 17). Most of what's below was confirmed on an earlier build of this prototype and is being re-checked on this one; the welcome-home recap, "how far have we gone?", the color balance settings and telling two voice profiles apart haven't been tested yet. How to root a Dot is outside the scope of this project, and rooting may be impossible on some units. **Do not ask the project author for help with rooting your Dot.** The project author used a UK Echo Dot, specifically the 2nd gen Echo Dot (biscuit) released in 2016 (RS03QR) and [this guide on XDA](https://xdaforums.com/t/unlock-root-twrp-unbrick-amazon-echo-dot-2nd-gen-2016-biscuit.4761416/)
 
 With a rooted Echo Dot that he controls on the same network, Harald speaks, listens and shows his moods on the Dot's light ring. The Dot can stay at home or travel with you using a suitable power bank and data/power cable (use the one the Dot came with, if possible). You can see a brief video of Harald connecting to his Dot and responding to wake word questions and commands [at this YouTube link](https://youtu.be/Rvm9zZaws60?is=vN3Kk3ljDANmPETG)
 
 ### What he gains
 
-- **He speaks his news** ("Treat! Coffee shop guest!", "A storm is coming!") through the Dot, in an offline voice ([Piper](https://github.com/rhasspy/piper)). In the Den you choose how chatty he is: *Everything*, *Big moments*, *Welcome-home recap only*, *Silent* or *Adventure mode*.
+- **He speaks his news** ("Treat! Coffee shop guest!", "A storm is coming!") through the Dot, in an offline voice ([Piper](https://github.com/rhasspy/piper)). In the Den you choose how chatty he is: *Everything*, *Big moments*, *Welcome-home recap only*, *No announcements* (he still answers your questions out loud, and the Dot's ring still shows his moods) or *Adventure mode*.
 - **Adventure mode**, for taking the Dot out on a power bank: only adventure news, at its own quieter volume. How far you've walked today, how high you've climbed, new lands and realms, landmarks, green spaces, sunshine, stars, level-ups, and "Smashing! My pack is full up!". Never anything about Bluetooth or Wi-Fi.
 - **Welcome-home recap.** When you take Harald out and the Dot stays home, he tells you what he did once he's back in range.
 - **Mood ring.** The ring glows in his mood's color and plays a short animation when something happens: lightning for a storm, twinkles for a satellite, a gold sweep for a level-up, the moon's phase on moon days.
@@ -456,7 +465,7 @@ With a rooted Echo Dot that he controls on the same network, Harald speaks, list
 - *with a GPS (Level 3, or a USB GPS):* **how far have we gone**: "How far have we gone on this walk?";
 - **going to sleep**: "Go to sleep" or "Take a nap". He checks first ("Shall I go to sleep now?") and only a clear "yes" counts.
 
-You can also **type** these questions in the Den, from Level 1 (all except voice profiles and going to sleep, which need him to hear you). The answer appears under the box, and he also says it out loud if he has a voice: the Dot, or the phone.
+The questions about home (humidity, air pressure, pollen, UV, air quality, sunrise and sunset, and weather warnings) are tested typed in the Den but not yet asked out loud. You can also **type** these questions in the Den, from Level 1 (all except voice profiles and going to sleep, which need him to hear you). The answer appears under the box, and he also says it out loud if he has a voice: the Dot, or the phone.
 
 **"Hey dragon."** Tick the wake word in the Den and choose the hours. A tiny speech recognizer on the Dot listens only for "hey dragon"; when it hears it, the ring changes to cyan and your question is recorded. **Wake word: how strict** in Developer Tools trades false alarms against missed wake word calls, and the Den shows how sure he was each time to help you choose.
 
