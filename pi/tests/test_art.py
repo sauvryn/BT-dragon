@@ -67,7 +67,7 @@ open(os.path.join(builtin, "content.png"), "wb").write(png(0))
 open(os.path.join(builtin, "happy.png"), "wb").write(png(255))
 a.refresh(force=True)
 assert "must be 96 x 86" in a.problems["sleepy.png"] and a.frame("sleepy") is None
-assert "not a mood name" in a.problems["Harald big.png"]
+assert "not a mood or sleep screen name" in a.problems["Harald big.png"]
 assert a.frames["content.png"][1] == "built in" and a.frames["happy.png"][1] == "yours"   # yours win
 rows = {r["name"]: r for r in a.table()}
 assert rows["happy.png"]["used"] == "yours" and rows["content.png"]["used"] == "built in"
