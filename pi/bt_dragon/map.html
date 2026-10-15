@@ -18,6 +18,7 @@
   header { padding: 10px 16px; border-bottom: 3px double var(--line); display: flex; flex-wrap: wrap;
            align-items: center; gap: 8px 14px; }
   h1 { margin: 0; font-size: 13px; letter-spacing: 2px; text-transform: uppercase; color: var(--rune); }
+  .score { font-size: 13px; color: var(--ink); margin: 2px 0 4px; }
   .stats { color: var(--dim); font-size: 13.5px; flex: 1; min-width: 180px; }
   .stats b { color: var(--ink); }
   button { background: transparent; color: var(--ink); border: 1px solid var(--rune); border-radius: 6px;
@@ -33,7 +34,8 @@
 </head>
 <body>
 <header>
-  <h1>__NAME__'s conquests</h1>
+  <div><h1>__NAME__'s conquests</h1>
+  <div class="score" id="score"></div></div>
   <div class="stats" id="stats">Loading…</div>
   <label><input type="checkbox" id="fog" checked> Fog</label>
   <button onclick="centerOnMe()">Where am I?</button>
@@ -55,6 +57,7 @@ let data = null, map = null, layers = [], first = true;
 async function load() {
   try { data = await (await fetch('/api/lands')).json(); } catch (e) { $('stats').textContent = 'The dragon is not answering.'; return; }
   const n = data.lands.length, r = data.realms.length;
+  $('score').innerHTML = `<b>${(data.conquest || 0).toLocaleString()}</b> Conquest points · <b>${esc(data.conquest_title || '')}</b>`;
   $('stats').innerHTML = `<b>${n.toLocaleString()}</b> land${n === 1 ? '' : 's'} in <b>${r.toLocaleString()}</b> ` +
     `realm${r === 1 ? '' : 's'} · <b>${data.today}</b> new today`;
   if (typeof L === 'undefined') return drawFallback();

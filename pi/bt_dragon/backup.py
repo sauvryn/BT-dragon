@@ -23,12 +23,13 @@ snapshot instead, here straight into memory, so nothing extra is written to the 
 
 Restoring: the den's "Restore" button sends the file to the Pi, which keeps it as
 restore-pending.tar.gz and restarts him. Or, without the den, copy a backup onto the
-card's boot partition (the one Windows can open) named  harald-restore.tar.gz. Either
+card's boot partition (the one Windows can open) named  bt-dragon-restore.tar.gz (or the older
+name, harald-restore.tar.gz). Either
 way, the next time he starts, before anything else, the file is checked (it must be one
 of his backups, with nothing in it but the expected files, and a database that passes
 SQLite's own check), what's there now is put aside in before-restore/ in case you change
 your mind, and the backup takes its place. The file is then removed (or, on the boot
-partition, renamed to harald-restore.done.tar.gz) so it only happens once.
+partition, renamed to bt-dragon-restore.done.tar.gz) so it only happens once.
 """
 import io
 import json
@@ -46,7 +47,8 @@ from . import __version__
 log = logging.getLogger("backup")
 
 KIND = "bt-dragon-backup"
-BOOT_NAME = "harald-restore.tar.gz"
+BOOT_NAME = "bt-dragon-restore.tar.gz"
+BOOT_NAMES = (BOOT_NAME, "harald-restore.tar.gz")     # the older name still works
 PENDING = "restore-pending.tar.gz"
 MAX_BYTES = 300 * 1024 * 1024
 ALLOWED = re.compile(r"^(manifest\.json|dragon\.db|bt-dragon\.toml|adb/adbkey(\.pub)?|"
@@ -242,8 +244,9 @@ def apply_pending(cfg):
     data_dir, config_path = cfg["data_dir"], cfg.get("_path")
     candidates = [(os.path.join(data_dir, PENDING), None)]
     if config_path:
-        boot = os.path.join(os.path.dirname(config_path), BOOT_NAME)
-        candidates.append((boot, os.path.join(os.path.dirname(config_path), "harald-restore.done.tar.gz")))
+        for name in BOOT_NAMES:
+            boot = os.path.join(os.path.dirname(config_path), name)
+            candidates.append((boot, boot.replace(".tar.gz", ".done.tar.gz")))
     for path, done in candidates:
         if not os.path.isfile(path):
             continue

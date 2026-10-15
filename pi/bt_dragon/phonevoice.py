@@ -3,7 +3,7 @@ Harald's voice through your phone's speaker (or whatever it's playing through: B
 earphones too), with the screen off.
 
 How it works: a web page can't keep talking with the screen off (Android pauses it), so a
-tiny program runs in Termux on the phone instead (phone/harald_voice.py, which the den
+tiny program runs in Termux on the phone instead (phone/bt_dragon_voice.py, which the den
 offers for download). It asks Harald "anything new to say?" and he holds the question open
 for up to a minute until there is something (a "long poll": one waiting request rather than
 asking every second). Each remark comes back as text, and the phone's own text-to-speech
@@ -63,6 +63,6 @@ class PhoneVoice:
 def script(address):
     """The Termux program, with this dragon's address filled in."""
     import os
-    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "phone", "harald_voice.py")
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "phone", "bt_dragon_voice.py")
     with open(path, encoding="utf-8") as f:
         return f.read().replace("__ADDRESS__", address)

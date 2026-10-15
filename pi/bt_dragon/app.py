@@ -28,6 +28,7 @@ from .garden import Garden
 from . import garden as gardenmod
 from . import garden_page
 from . import lang as langmod
+from . import conquest
 from .diary import DiaryFiles
 from .dot import DotLink
 from . import moon as moonmod
@@ -206,6 +207,34 @@ class Dragon:
     def _lair_code(self):
         return (self.lair.s or {}).get("code") or ""
 
+    # ================================================================ conquest points
+    def conquest_score(self, fresh=False):
+        """(score, title); counted from what's been claimed, at most every 20 s."""
+        now = time.time()
+        if fresh or now - getattr(self, "_cq_at", 0) > 20:
+            self._cq = conquest.score(self.store, tuning.get("landmark_langs"))
+            self._cq_at = now
+        return self._cq, conquest.title(self._cq)
+
+    def _conquered(self, text, pts, kind="land"):
+        """A claim for the diary, with its points; and any new title it brings."""
+        self.event(kind, f"{text} +{pts} Conquest point{'s' if pts != 1 else ''}.")
+        s, _ = self.conquest_score(fresh=True)
+        for name in conquest.new_titles(self.store, s):
+            self.pet.say([f"NEW CONQUEST TITLE: {name.upper()}!", f"NEW TITLE: {name.upper()}!"], "proud", 30)
+            self.event("land", f"New conquest title: {name}")
+
+    def _lair_clock(self, now):
+        """The time at the Lair, as it's said: "7:12 in the morning" (in the Lair's own time zone)."""
+        from . import ask
+        tz = (self.lair.s or {}).get("tz")
+        try:
+            from zoneinfo import ZoneInfo
+            dt = datetime.datetime.fromtimestamp(now, ZoneInfo(tz)) if tz else datetime.datetime.fromtimestamp(now)
+        except Exception:
+            dt = datetime.datetime.fromtimestamp(now)
+        return ask._clock(dt)
+
     def lang(self):
         """gb, us or ca: the English his screen and the Den are written in."""
         return self.language.current(self._lair_code())
@@ -285,9 +314,17 @@ class Dragon:
             line = f"{'A new' if info.get('new') else 'A'} {name} emerged in the Butterfly Garden"
             if form:
                 line += f" ({form.lower()})"
+            self.event("garden", line + ". Add it to the Collection from the Den.")
+        elif kind == "collect":
+            form = gardenmod.FORM_WORD.get(info.get("form") or "", "")
+            where = gardenmod.COUNTRY_NAME.get(info["country"], "")
+            self.pet.say([f"{name.upper()} ADDED TO THE COLLECTION!", f"{name.upper()} COLLECTED!"], "happy", 20,
+                         speak=False)
+            line = (f"Added {'a new' if info.get('new') else 'a'} {name}{' (' + form.lower() + ')' if form else ''} "
+                    f"to the {where} collection.")
             if info.get("habitat"):
-                line += f", and a new habitat opened: {gardenmod.habitat_name(info['country'], info['habitat'])}"
-            self.event("garden", line)
+                line += f" A new habitat opened: {gardenmod.habitat_name(info['country'], info['habitat'])}."
+            self.event("garden", f"{line} +{info.get('points', 0)} Butterfly Garden points.")
 
     def garden_page(self, c=""):
         c = c if c in gardenmod.COUNTRY_NAME else self.garden.country(self._lair_code())
@@ -757,7 +794,11 @@ class Dragon:
 
     def _sky_view(self, now):
         lands, realms = self.store.land_counts() if self.lands else (0, 0)
+        cq, cq_title = self.conquest_score()
+        nxt = conquest.next_title(cq)
         v = {"lands": lands, "realms": realms, "lands_today": self.pet.lands_today,
+             "conquest": cq, "conquest_title": cq_title, "conquest_next": nxt[1] if nxt else "",
+             "conquest_next_at": nxt[0] if nxt else 0,
              "stars": len(self.stars.known) if self.stars else 0, "stars_today": len(self.stars.today) if self.stars else 0,
              "climbed_today": round(self.pet.climbed_today), "baro_link": self.baro_link.connected,
              "light_link": self.light_link.connected,
@@ -853,13 +894,16 @@ class Dragon:
             if new or risen:
                 self.pet.stars(new, new_consts, risen)
                 for c in new_consts:
-                    self.event("star", f"{self.pet.name} saw a first {c} satellite: a new constellation!")
+                    self._conquered(f"{self.pet.name} saw a first {c} satellite: a new constellation!",
+                                    conquest.points("star") + conquest.points("constellation"), "star")
                     self.dot.adventure("constellation", name=c)
                 if len(new) > len(new_consts):
                     self.dot.adventure("stars", n=len(new) - len(new_consts))
                 if new and len(new) > len(new_consts):
+                    n = len(new) - len(new_consts)
                     names = ", ".join(k.replace("-", " ") for k, _ in new[:6]) + (" ..." if len(new) > 6 else "")
-                    self.event("star", f"New star{'s' if len(new) != 1 else ''} in the sky: {names}")
+                    self._conquered(f"New star{'s' if len(new) != 1 else ''} in the sky: {names}.",
+                                    n * conquest.points("star"), "star")
         self._moon_tick(now)
         kinds = self.lair.due(now) if (self.home_ssid or self.simulate) else []
         if kinds:
@@ -896,7 +940,8 @@ class Dragon:
         rows = self.store.lands_all() if self.lands else []
         realms = sorted({r for _, r in rows})
         fix = self.where_now()
-        return {"name": self.pet.name,
+        cq, cq_title = self.conquest_score()
+        return {"name": self.pet.name, "conquest": cq, "conquest_title": cq_title,
                 "lands": [skymod.cell_bounds(c, skymod.LAND_M) for c, _ in rows],
                 "realms": [skymod.cell_bounds(r, skymod.REALM_M) for r in realms],
                 "here": {"lat": round(fix["lat"], 6), "lon": round(fix["lon"], 6),
@@ -919,7 +964,11 @@ class Dragon:
             self.pet.landmark(lm["title"], first)
             self.dot.saw_landmark(lm)
             self.dot.adventure("landmark", title=lm["title"], first=first)
-            self.event("landmark", f"{self.pet.name} saw {lm['title']}" + (" for the first time!" if first else ""))
+            if first:
+                self._conquered(f"{self.pet.name} saw {lm['title']} for the first time!", conquest.points("landmark"),
+                                "landmark")
+            else:
+                self.event("landmark", f"{self.pet.name} saw {lm['title']}")
 
     def _green_tick(self, fix):
         """Parks and woods: ask OpenStreetMap about each new realm, then notice when we're in one."""
@@ -932,7 +981,7 @@ class Dragon:
             if what == "found":
                 self.pet.green_found(g["name"])
                 self.dot.adventure("green_found", name=g["name"])
-                self.event("green", f"{self.pet.name} found a new green space: {g['name']}")
+                self._conquered(f"{self.pet.name} found a new green space: {g['name']}.", conquest.points("green"), "green")
             else:
                 words = visit_words(what, g["name"])
                 self.pet.green_visit(words)
@@ -1009,7 +1058,11 @@ class Dragon:
                 self.event("weather", f"Weather warning at the Lair: {w['spoken']}")
             elif kind in ("sunrise", "sunset"):
                 self.pet.cheer(tuning.get("sun_joy"), 0, "THE SUN IS RISING AT THE LAIR!" if kind == "sunrise"
-                               else "THE SUN IS SETTING AT THE LAIR", "happy", 30, speak=say["say_lair_sun"])
+                               else "THE SUN IS SETTING AT THE LAIR", "happy", 30, speak=False)
+                if say["say_lair_sun"]:
+                    # the place first, then the time, then the news: time to start listening
+                    self.dot.news(f"At the Lair, it is {self._lair_clock(now)} and the sun is "
+                                  f"{'rising' if kind == 'sunrise' else 'setting'}.", big=True)
         if warned and not self.napping:
             # several at once: all are said (and in the diary), and the most serious stays on his screen
             w = next((x for x in warned if x.get("severe")), warned[0])
@@ -1042,9 +1095,12 @@ class Dragon:
         for new_realm in claimed or []:
             self.pet.land(new_realm, riding=self.activity.motion.mode == "vehicle")
             self.dot.adventure("realm" if new_realm else "land")
-            if new_realm:
-                lands, realms = self.store.land_counts()
-                self.event("land", f"{self.pet.name} claimed a new realm (realm {realms}, land {lands})")
+            lands, realms = self.store.land_counts()
+            if new_realm:          # (its first land comes with it)
+                self._conquered(f"{self.pet.name} claimed a new realm (realm {realms}, land {lands}).",
+                                conquest.points("realm") + conquest.points("land"))
+            else:
+                self._conquered(f"{self.pet.name} claimed a new land (land {lands}).", conquest.points("land"))
 
     # ================================================================ activity
     def on_steps(self, total):
@@ -1187,6 +1243,11 @@ class Dragon:
             else:
                 self.garden.lock_again()
             return ["OK"]
+        if cmd == "GARDENCOLLECT":      # an emerged adult into its collection, freeing its spot
+            if not arg.strip().isdigit():
+                return ["ERR which spot?"]
+            err = self.garden.collect(int(arg), self.pet.level())
+            return [f"ERR {err}"] if err else ["OK"]
         if cmd in ("GARDENEGG", "GARDENEMPTY"):     # put an egg in a spot, or take one away
             if not arg.strip().isdigit():
                 return ["ERR which spot?"]
@@ -1403,7 +1464,8 @@ class Dragon:
             self.store.forget_lands()
             self.store.forget_landmarks_seen()
             self.store.forget_greens_seen()
-            self.event("land", "Forgot the map of claimed lands")
+            self.event("land", "Forgot the map of claimed lands (and the Conquest points they earned)")
+            self.conquest_score(fresh=True)
             return ["OK"]
         if cmd == "SPECIES":
             return [f"{s['meals']}|{s['kind']}|{s['label']}" for s in self.store.species_list()] + ["END"]

@@ -363,9 +363,9 @@ def draw_dragon(d: ImageDraw.ImageDraw, ox, oy, mood="content", phase=0, belly=N
 
 
 def draw_sleeping_face(d: ImageDraw.ImageDraw, ox, oy, phase=1):
-    """Just his sleeping face (head, horns, helmet, snout, closed eyes, Zzz): no body, wings
-    or tail. For the sleep screens. Same 96x86 coordinates as draw_dragon; it fills about
-    x 2-96, y 3-69 of them."""
+    """Just his sleeping face (head, horns, helmet, the frills at the sides of the head, snout,
+    closed eyes, Zzz): no body, wings or tail. For the sleep screens. Same 96x86 coordinates as
+    draw_dragon; it fills about x 2-105, y 3-69 of them."""
     class T:
         def __getattr__(self, name):
             fn = getattr(d, name)
@@ -374,6 +374,7 @@ def draw_sleeping_face(d: ImageDraw.ImageDraw, ox, oy, phase=1):
                 return fn(_shift(xy, ox, oy), *a, **k)
             return call
     t = T()
+    _frills(t)
     _head(t)
     _horns(t)
     _helmet(t)
@@ -381,12 +382,12 @@ def draw_sleeping_face(d: ImageDraw.ImageDraw, ox, oy, phase=1):
     _eye_closed(t, 33, 44)
     _eye_closed(t, 63, 44)
     _mouth_smile(t)
-    # Zzz rising beside his cheek (the usual spot, up by the horn, is outside the circle)
+    # Zzz rising up beside the right frill (the usual spot, up by the horn, is outside the circle)
     from .fonts import draw_text
     off = 2 if phase else 0
-    draw_text(t, (84, 57 - off), "Z", scale=1)
-    draw_text(t, (89, 47 - off), "Z", scale=1)
-    draw_text(t, (93, 31 - off), "Z", scale=2)
+    draw_text(t, (91, 46 - off), "Z", scale=1)
+    draw_text(t, (95, 36 - off), "Z", scale=1)
+    draw_text(t, (99, 26 - off), "Z", scale=1)
 
 
 def _speed_lines(d, phase):

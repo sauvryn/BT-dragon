@@ -157,7 +157,7 @@ def build_recap(name, events, meals, treats, away_s):
     marks = []
     for e in events:
         if e["kind"] == "landmark":
-            m = re.match(rf"{re.escape(name)} saw (.*?)( for the first time!)?$", e["text"])
+            m = re.match(rf"{re.escape(name)} saw (.*?)( for the first time!)?( \+\d+ Conquest points?\.)?$", e["text"])
             if m and m.group(1) not in marks:
                 marks.append(m.group(1))
     if marks:

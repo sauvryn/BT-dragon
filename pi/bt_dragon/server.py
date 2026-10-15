@@ -298,12 +298,12 @@ async def web_server(app):
                 reply["rate"] = float(app.dot.s.get("speed", 1.0))
                 reply["pitch"] = round(2 ** (float(app.dot.s.get("pitch", 0.0)) / 12), 3)   # semitones -> factor
                 out = _response("200 OK", json.dumps(reply), "application/json")
-            elif path == "/phone/harald_voice.py":
+            elif path in ("/phone/bt_dragon_voice.py", "/phone/harald_voice.py"):   # (the older name too)
                 from .phonevoice import script
                 host = headers.get("host") or f"{app.my_ip or '127.0.0.1'}:{app.cfg['link']['web_port']}"
                 out = _response("200 OK", script(re.sub(r"[^A-Za-z0-9.:\-\[\]]", "", host)),
                                 "text/x-python; charset=utf-8",
-                                ['Content-Disposition: attachment; filename="harald_voice.py"'])
+                                [f'Content-Disposition: attachment; filename="{path.rsplit("/", 1)[1]}"'])
             elif path == "/api/backup":
                 from . import backup
                 data = await asyncio.to_thread(backup.make, app.data_dir, app.cfg.get("_path"), app.pet.name)

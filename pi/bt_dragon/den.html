@@ -121,6 +121,10 @@
   .askbox { background: var(--stone2); border: 1px solid var(--rune); border-radius: 8px; padding: 14px 16px; max-width: 420px; width: 100%; }
   .askopt { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; border-top: 1px solid var(--line); cursor: pointer; }
   .askopt input { margin-top: 3px; }
+  .lv-row { display: flex; gap: 10px; align-items: center; }
+  .lv-text { flex: 1; min-width: 0; line-height: 1.35; }
+  .gd-art.lv-art { flex: 0 0 110px; width: 110px; margin: 0; }   /* half size: the field notes have it full size */
+  .larva.adult { border-color: var(--rune); }
   .gd-art { max-width: 220px; margin: 0 auto 4px; --leaf: #7fa36b; --leaf-dark: #5d7f4c; --surface-2: #1d1c1a;
             --danger: var(--blood); --accent: var(--rune); --muted: #a69f92; --surface: #282623; --ink: #ece6da; }
   .gd-art svg { display: block; width: 100%; height: auto; }
@@ -280,7 +284,7 @@
       <input type="file" id="restoreFile" accept=".gz,.tgz,application/gzip" style="display:none" onchange="restoreBackup(this)">
     </div>
     <p class="sub" id="restoreNote" style="margin:10px 0 0">Without the den: copy a backup onto the card's boot
-      partition (the one Windows can open), named <b>harald-restore.tar.gz</b>, and <span class="pname" data-nolang>Harald</span> restores it on the next start.</p>
+      partition (the one Windows can open), named <b>bt-dragon-restore.tar.gz</b> (the older name, <b>harald-restore.tar.gz</b>, works too), and <span class="pname" data-nolang>Harald</span> restores it on the next start.</p>
   </section>
 
   <section data-arrange="devtools" class="tools">
@@ -314,6 +318,9 @@
         <button style="visibility:visible; border-color: var(--rune); color: var(--ink)" onclick="setMeter('xp')">Set</button></div>
       <div id="knobs-xp"></div>
       <p class="sub" id="levelTable"></p>
+    </details>
+    <details class="subtools" id="dt-points"><summary><b>Conquest points</b> <span class="sub">· what each claim is worth</span><span class="changedn" id="chg-points"></span></summary>
+      <div id="knobs-points"></div>
     </details>
     <details class="subtools" id="dt-detect"><summary><b>Detection</b> <span class="sub">· thresholds for lands, stars, climbing and weather</span><span class="changedn" id="chg-detect"></span></summary>
       <div id="knobs-detect"></div>
@@ -441,7 +448,7 @@
         <li>In Android's settings, Apps → Termux → Battery: <b>Unrestricted</b>, so it keeps running with the screen off.</li>
       </ol>
       <p class="sub" style="margin:0 0 8px"><span class="pname" data-nolang>Harald</span> says hello through the phone when it's working. Leave Termux running (its notification
-        stays while it's listening). Next time, open Termux and type <code>python harald_voice.py</code>. The phone's media volume sets the loudness,
+        stays while it's listening). Next time, open Termux and type <code>python bt_dragon_voice.py</code> (or <code>python harald_voice.py</code>, if you set it up before the name changed). The phone's media volume sets the loudness,
         and Bluetooth earphones work too. Only the words <span class="pname" data-nolang>Harald</span> says go to the phone; nothing is kept.</p>
     </details>
     <div class="row"><div class="grow">How chatty<div class="sub" id="dotChattyNote"></div></div>
@@ -558,6 +565,8 @@
 
   <section data-arrange="conquests">
     <h2>Conquests</h2>
+    <p style="margin:0 0 8px"><b id="cqScore">0</b> Conquest points · <b id="cqTitle"></b>
+      <span class="sub" id="cqNext"></span></p>
     <p style="margin:0"><b id="cLands">0</b> <span id="cLandsW">lands</span> in <b id="cRealms">0</b> <span id="cRealmsW">realms</span> claimed
       <span class="sub">(squares of the map about 250 m and 1 km across)</span></p>
     <details style="margin-top:8px"><summary>Star chart: <span id="cStars">0</span> satellites seen</summary>
@@ -752,6 +761,8 @@ async function refresh() {
     $('cLands').textContent = v.lands.toLocaleString(); $('cRealms').textContent = v.realms.toLocaleString();
     $('cLandsW').textContent = v.lands === 1 ? 'land' : 'lands'; $('cRealmsW').textContent = v.realms === 1 ? 'realm' : 'realms';
     $('cStars').textContent = v.stars;
+    $('cqScore').textContent = (v.conquest || 0).toLocaleString(); $('cqTitle').textContent = v.conquest_title || '';
+    $('cqNext').textContent = v.conquest_next ? `(${(v.conquest_next_at - v.conquest).toLocaleString()} to ${v.conquest_next})` : '';
     $('netNow').textContent = v.network || 'Not connected';
     $('netWhich').textContent = v.network_rank === null ? (v.network ? 'Not one of the saved networks' : '')
       : v.network_rank === 0 ? 'Main hotspot' : 'Backup ' + v.network_rank;
@@ -1007,7 +1018,7 @@ async function trackTick() {
 // ---------------------------------------------------------------- developer tools
 async function loadKnobs() {
   const lines = await cmd('TUNE');
-  const bySection = {food: '', joy: '', xp: '', detect: ''};
+  const bySection = {food: '', joy: '', xp: '', points: '', detect: ''};
   for (const l of lines) {
     const [key, section, label, value, dflt, unit, help] = split(l);
     if (!(section in bySection)) continue;
@@ -1020,7 +1031,7 @@ async function loadKnobs() {
       <button title="Back to default" onclick="setKnob('${key}', 'default')">↺</button></div>`;
   }
   for (const s in bySection) $('knobs-' + s).innerHTML = bySection[s];
-  const changedN = {food: 0, joy: 0, xp: 0, detect: 0};
+  const changedN = {food: 0, joy: 0, xp: 0, points: 0, detect: 0};
   lines.forEach(l => { const [key, section, , value, dflt] = split(l);
     if (section in changedN && +value !== +dflt) changedN[section]++; });
   for (const s in changedN) $('chg-' + s).textContent = changedN[s] ? `${changedN[s]} changed` : '';
@@ -1123,7 +1134,7 @@ async function loadDot() {
   }
   $('phoneNote').textContent = (d.phone_listening === 'True' ? 'A phone is listening.' : 'No phone listening yet: see "Set up the phone voice" below.')
     + (d.phone_route === 'phone' && d.phone !== 'True' ? ' Standing in for the Dot right now.' : '');
-  $('phoneCmd').textContent = `curl -O http://${location.host}/phone/harald_voice.py && python harald_voice.py`;
+  $('phoneCmd').textContent = `curl -O http://${location.host}/phone/bt_dragon_voice.py && python bt_dragon_voice.py`;
   if (!keep($('dotChatty'))) $('dotChatty').value = d.chatty;
   $('dotChattyNote').textContent = {all: 'Every message on the screen is spoken', big: 'New types, landmarks, storms, level-ups...',
     recap: 'Only a summary on coming home', silent: "No announcements, but questions are still answered out loud. The Dot, if connected, will still display the mood ring lights and animations.",
@@ -1232,38 +1243,52 @@ async function loadGarden() {
     (now ${Math.round(g.belly)}%${bellyFull ? ' ✓' : ''}) and the PACK is full (${g.pack} of ${g.pack_cap}${packFull ? ' ✓' : ''}).`;
   $('gdSpots').textContent = g.slots < g.max ? `${g.slots} of ${g.max} spots: one more opens with each level gained (next at level ${g.level + 1}).`
     : `All ${g.max} spots open. Food is shared between the ones with an egg or a larva in them.`;
+  gardenArtFrame(g.art);
+  const cap1 = t => t.charAt(0).toUpperCase() + t.slice(1);
   const html = g.larvae.map(b => {
     if (b.empty) return `<div class="larva egg"><b>An empty spot</b><div class="sub">Nothing grows here until you put an
       egg in it, so the spare food goes further for the others.</div>
       <div class="actions" style="margin-top:6px"><button onclick="gardenEgg(${b.slot}, true)">Put an egg here</button></div></div>`;
-    if (b.egg) return `<div class="larva egg"><div class="gd-art">${EGG_SVG}</div>
-      <b>An egg</b><div class="sub">Hatches with the next spare food, and only then do we find out what it is.</div>
-      ${b.slot > 0 ? `<div class="actions" style="margin-top:6px"><button onclick="gardenEgg(${b.slot}, false)">Leave this spot empty</button></div>` : ''}</div>`;
+    if (b.egg) return `<div class="larva egg"><div class="lv-row"><div class="lv-text"><b>An egg</b>
+      <div class="sub">Hatches with the next spare food, and only then do we find out what it is.</div>
+      ${b.slot > 0 ? `<div class="actions" style="margin-top:6px"><button onclick="gardenEgg(${b.slot}, false)">Leave this spot empty</button></div>` : ''}</div>
+      <div class="gd-art lv-art">${EGG_SVG}</div></div></div>`;
     const nodes = [];
     for (let k = 1; k <= 10; k++) {
       const at = k >= 10 ? 100 : k === 9 ? b.pupAt : Math.round(k * b.pupAt / 9 * 10) / 10;
       nodes.push(`<span class="node${k === 9 ? ' chrys' : ''}${b.pct >= at ? ' done' : ''}" style="left:${at}%"></span>`);
     }
-    const form = b.caste ? (b.hungry ? `Worker-to-be (${PET}'s belly ran low)` : `Queen-to-be, if ${PET}'s belly never runs low`)
+    const form = b.adult ? ({q: 'Queen', w: 'Worker', m: 'Male', f: 'Female'}[b.form] || '')
+      : b.caste ? (b.hungry ? `Worker-to-be (${PET}'s belly ran low)` : `Queen-to-be, if ${PET}'s belly never runs low`)
       : b.sex === 'm' ? 'Male' : b.sex === 'f' ? 'Female' : '';
-    const pupa = b.pupa.charAt(0).toUpperCase() + b.pupa.slice(1), adult = b.noun.charAt(0).toUpperCase() + b.noun.slice(1);
-    const now = b.stage >= 10 ? adult : b.stage >= 9 ? pupa : b.young;
+    const pupa = cap1(b.pupa), adult = cap1(b.noun);
+    const stage = b.adult || b.stage >= 10 ? adult : b.stage >= 9 ? pupa : cap1(b.young);
     const mood = b.stage >= 9 ? 'content' : g.mood;   // pupae don't feed, so they never get hungry
-    const moodWord = b.stage >= 9 ? 'Pupating' : {content: 'Well fed', hungry: 'Hungry', xhungry: 'Extremely hungry'}[mood];
-    const art = gardenArt(b.species, b.stage, mood);
-    return `<button class="larva" onclick="window.open('/garden?c=${b.country}&notes=${encodeURIComponent(b.species)}&stage=${b.stage}&mood=${mood}', '_blank')">
-      ${art ? `<div class="gd-art art-wrap${b.stage < 9 ? ' crawl' : ''}">${art}</div>` : ''}
-      <b data-nolang>${esc(b.name)}</b> <span class="sub">${esc(now)} · ${esc(b.rarity)}${form ? ' · ' + esc(form) : ''}</span>
-      <span class="sub" style="float:right">${b.pct.toFixed(0)}%</span>
-      <div class="stemlbl top"><span style="left:${b.pupAt}%${b.pupAt > 78 ? ';transform:translateX(-88%)' : ''}">${esc(pupa)} ${b.pupAt}%</span></div>
-      <div class="stem"><span class="track"></span><span class="fill" style="width:${b.pct}%"></span>${nodes.join('')}</div>
-      <div class="stemlbl"><span>0%</span><span>${esc(adult)} 100%</span></div>
-      <div class="sub">${esc(moodWord)} · ${b.fed} of ${b.need} food · tap for field notes</div></button>`;
+    const moodWord = b.adult ? 'Emerged' : b.stage >= 9 ? 'Pupating' : {content: 'Well fed', hungry: 'Hungry', xhungry: 'Extremely hungry'}[mood];
+    const art = gardenArt(b.species, b.adult ? 10 : b.stage, mood);
+    const notes = `/garden?c=${b.country}&notes=${encodeURIComponent(b.species)}&stage=${b.adult ? 10 : b.stage}&mood=${mood}`;
+    const away = b.country !== g.country ? `<div class="sub">From ${esc(b.country_name)}</div>` : '';
+    return `<button class="larva${b.adult ? ' adult' : ''}" onclick="${b.adult ? `gardenCollect(${b.slot}, '${notes}')` : `window.open('${notes}', '_blank')`}">
+      <div class="lv-row"><div class="lv-text">
+        <b data-nolang>${esc(b.name)}</b>
+        <div>${esc(stage)}${form ? ` <span class="sub">· ${esc(form)}</span>` : ''}</div>
+        <div class="sub">${esc(b.rarity)}</div>
+        <div>Progress: <b>${b.adult ? 100 : b.pct.toFixed(0)}%</b></div>${away}
+      </div>${art ? `<div class="gd-art lv-art art-wrap${!b.adult && b.stage < 9 ? ' crawl' : ''}">${art}</div>` : ''}</div>
+      ${b.adult ? '' : `<div class="stemlbl top"><span style="left:${b.pupAt}%${b.pupAt > 78 ? ';transform:translateX(-88%)' : ''}">${esc(pupa)} ${b.pupAt}%</span></div>
+      <div class="stem"><span class="track"></span><span class="fill" style="width:${b.pct}%"></span>${nodes.join('')}</div>`}
+      <div class="sub">${esc(moodWord)}${b.adult ? '' : ` · ${b.fed} of ${b.need} food`} · <b>${b.adult ? 'tap to add to Collection' : 'tap for field notes'}</b></div></button>`;
   }).join('');
   if (html !== gdLast) { gdLast = html; $('gdLarvae').innerHTML = html; }   // redrawn only on a change, so they keep crawling
   $('gdCountryNote').textContent = "Which country's insects:";
   if (!keep($('gdCountry'))) $('gdCountry').value = g.country;
   $('gdCollLink').href = '/garden?c=' + g.country;
+}
+async function gardenCollect(slot, notes) {
+  window.open(notes, '_blank');          // its field notes (opened straight away, so the browser allows it)
+  const r = await cmd('GARDENCOLLECT ' + slot);
+  if (r[0] !== 'OK') toast((r[0] || PET + ' is not answering').replace(/^ERR /, ''));
+  loadGarden();
 }
 async function gardenEgg(slot, lay) {
   const r = await cmd((lay ? 'GARDENEGG ' : 'GARDENEMPTY ') + slot);

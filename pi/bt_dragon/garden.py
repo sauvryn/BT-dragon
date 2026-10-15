@@ -263,7 +263,9 @@ class Garden:
         if food <= 0 or not self.unlocked(level):
             return
         self.sync_slots(level, now)
-        slots = [(i, b) for i, b in enumerate(self.s["slots"][: self.slot_count(level)]) if not b.get("empty")]
+        # an adult waiting to be collected doesn't eat: only eggs and larvae share the food
+        slots = [(i, b) for i, b in enumerate(self.s["slots"][: self.slot_count(level)])
+                 if not b.get("empty") and not b.get("adult")]
         if not slots:
             return
         day = time.strftime("%Y-%m-%d", time.localtime(now))
@@ -286,9 +288,6 @@ class Garden:
             b["stage"] = stage
             if pct >= 100:
                 self._emerge(i, b, now)
-        # an adult's spot: a new egg in the first one, the others left empty
-        self.s["slots"] = [(self._egg(now) if i == 0 else {"empty": True}) if b.get("done") else b
-                           for i, b in enumerate(self.s["slots"])]
         self.sync_slots(level, now)
         self.save()
 
@@ -314,12 +313,31 @@ class Garden:
         self._tell("hatch", b)
 
     def _emerge(self, i, b, now):
+        """The adult emerges: it stays in its spot at 100% until it's collected from the den."""
         c = b["country"]
         sp = data()["countries"][c]["by_id"][b["species"]]
-        form = ("w" if b.get("hungry") else "q") if b.get("caste") else (b.get("sex") or None)
+        b["form"] = ("w" if b.get("hungry") else "q") if b.get("caste") else (b.get("sex") or None)
+        b.update(adult=True, emerged=now, stage=10, fed=b["need"])
+        is_new = not any(e["species"] == sp["id"] for e in self.cdata(c)["collection"])
+        self._tell("emerge", dict(b, new=is_new, name=sp["name"]))
+
+    def collect(self, i, level, now=None):
+        """The den's "tap to add to Collection": the adult joins the collection of the country it
+        hatched in (wherever the garden has moved since), may open a habitat and earns its points.
+        Its spot is freed: the larvae below move up one, and the last spot is left empty (or gets
+        a new egg, if it's the only spot)."""
+        now = now or time.time()
+        slots = self.s["slots"]
+        if not 0 <= i < len(slots) or not slots[i].get("adult"):
+            return "there's no adult in that spot"
+        b = slots[i]
+        c = b["country"]
+        sp = data()["countries"][c]["by_id"][b["species"]]
+        form = b.get("form")
         coll = self.cdata(c)["collection"]
         is_new = not any(e["species"] == sp["id"] for e in coll)
-        entry = {"species": sp["id"], "country": c, "points": data()["points"][sp["rarity"]],
+        points = data()["points"][sp["rarity"]]
+        entry = {"species": sp["id"], "country": c, "points": points,
                  "title": "Raised in the Butterfly Garden", "author": "", "isbn": "", "pages": 0,
                  "started": iso(b.get("hatched")), "date": iso(now)}
         if form:
@@ -328,12 +346,17 @@ class Garden:
         habitat = next((h for h in sp["habitats"] if h not in self.cdata(c)["habitats"]), None)
         if habitat:
             self.cdata(c)["habitats"][habitat] = iso(now)
-        b["done"] = True
-        self._tell("emerge", dict(b, form=form, new=is_new, habitat=habitat, name=sp["name"]))
+        del slots[i]
+        slots.append({"empty": True})
+        self.sync_slots(level, now)          # (the first spot always gets an egg, if it's now empty)
+        self.save()
+        self._tell("collect", dict(b, form=form, new=is_new, habitat=habitat, name=sp["name"], points=points))
         for n, tid, name in TITLES:
             if n > 0 and self.score() >= n and tid not in self.s["titles"]:
                 self.s["titles"][tid] = iso(now)
                 self._tell("title", {"name": name})
+        self.save()
+        return None
 
     def _tell(self, kind, info):
         if self.on_event:
@@ -367,7 +390,9 @@ class Garden:
                 "noun": sp["noun"], "young": sp["young"], "pupa": sp["pupa"], "rarity": b["rarity"],
                 "pct": round(pct, 1), "pupAt": b["pupAt"], "stage": b.get("stage", 0),
                 "sex": b.get("sex"), "caste": b.get("caste"), "hungry": b.get("hungry"),
-                "fed": round(b["fed"], 1), "need": b["need"], "country": b["country"], "slot": i})
+                "fed": round(b["fed"], 1), "need": b["need"], "country": b["country"], "slot": i,
+                "adult": bool(b.get("adult")), "form": b.get("form"),
+                "country_name": COUNTRY_NAME.get(b["country"], "")})
         return out
 
     def _save_for(self, c):
