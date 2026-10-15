@@ -90,7 +90,7 @@ What he can't do yet: anything that needs to know where he is (walks, wardriving
 - A **Raspberry Pi Zero 2 W** (the "2" matters: the older Pi Zero W is much slower and untested).
 - A **microSD card of 8 GB or more.** Everything installed, including the extras for the higher levels, takes roughly 4 GB. The tested card is 16 GB, which leaves plenty of room. If your computer has no card slot, you'll also need a USB card reader.
 - A **micro-USB power supply**, 5 V and at least 2.5 A (an official Raspberry Pi supply is the safe choice).
-- Your **home Wi-Fi**: a private network that you control, broadcasting on **2.4 GHz**. The Pi Zero 2 W's radio can't see 5 GHz networks. Most home routers broadcast both, often under the same name, which works fine.
+- Your **home Wi-Fi**: a private network that you control, broadcasting on **2.4 GHz**. The Pi Zero 2 W's radio can't see 5 GHz networks. Most home routers broadcast both, often under the same name, which works fine. **Note from testing:** if you are using a phone hotspot as your home wi-fi for Harald, ensure that the security is set to WPA2 only. A test with a "WPA3/WPA2" combination prevented the Pi from connecting.
 - A **computer** (Windows, macOS or Linux) on the same home network.
 
 ### Before installing or updating: pause your VPN
@@ -257,7 +257,7 @@ Like Pwnagotchis, dragons make friends. Each BT Dragon sends a small Bluetooth b
 
 **Two dragons on one network:** give the second one a different hostname in Raspberry Pi Imager (say `bt-dragon2`), and if you use an Echo Dot (Level 4), set `enabled = false` under `[dot]` in the second one's settings, or both will try to use it. They'll meet each other as friends.
 
-### The Butterfly Garden (from level 5, untested)
+### The Butterfly Garden (from dragon level 5, testing ongoing)
 
 Once Harald reaches **level 5**, a **Butterfly Garden** opens in the Den. It comes from **Bookworm**, the project author's own (unfinished) reading tracker project, where each book you read raises an insect. Here, instead of pages, the larvae grow on Harald's **spare food**.
 
@@ -339,11 +339,11 @@ Take him with you: a **USB power bank** for power, and **your smartphone's hotsp
 - A **USB power bank** and a micro-USB cable to the Pi's **PWR** port.
 - **Your own phone's hotspot**, set to 2.4 GHz:
   - **iPhone:** Settings → Personal Hotspot → turn on **Maximize Compatibility**.
-  - **Android:** Hotspot settings → **AP band** → 2.4 GHz (the wording varies by phone). A Pixel has no 2.4 GHz-only choice: **2.4 and 5 GHz** works (tested), as he simply uses the 2.4 GHz half.
+  - **Android:** Hotspot settings → **AP band** → 2.4 GHz (the wording varies by phone). A Pixel has no 2.4 GHz-only choice: **2.4 and 5 GHz** works (tested), as he simply uses the 2.4 GHz half. **Note from testing:** ensure that the hotspot security is set to WPA2 only. A test with a "WPA3/WPA2" combination prevented the Pi from connecting.
 
 ### Adding your hotspot 
 
-**(THE BACKUP WI-FI FEATURE DIDN'T WORK IN TESTING. A FIX IS IN THIS VERSION BUT HASN'T BEEN CONFIRMED YET. Until it is, put your hotspot as his home Wi-Fi if you want to take him on walks. That has been tested and works.)** If a backup network won't join, the Den's **Network** section now shows whether each of his networks is in range, its security, and the reason the last attempt failed.
+**If a backup network won't join, the Den's **Network** section now shows whether each of his networks is in range, its security, and the reason the last attempt failed.**
 
 He can know several networks and joins the best one in range. Put your home Wi-Fi under `[home_wifi]` and your hotspot as a backup, below it in `bt-dragon.toml`:
 
