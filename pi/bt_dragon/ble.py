@@ -120,9 +120,6 @@ def address_is_stable(address: str, address_type: str) -> bool:
     return top == 0b11  # random static
 
 
-_POSSESSIVE = re.compile(r"[’']s\b|\bde\s|\bvon\s", re.I)
-
-
 # short brand names that are real words on their own (most names need a 4-letter word)
 SHORT_BRANDS = {"jbl", "lg", "tcl", "akg", "jvc", "htc", "zte", "bmw", "mi", "hp", "b&o", "ue", "jlab", "oppo"}
 
@@ -136,10 +133,15 @@ def meaningful(label: str) -> bool:
 
 
 def species_from_name(name: str):
-    """Turn a broadcast name into a species label, or None if it looks personal."""
+    """Turn a broadcast name into a species label, or None if it's only a code.
+
+    Names are taken as broadcast, including ones with a person's name in ("Sam's AirPods"):
+    a name a gadget shouts to everyone nearby is its owner's choice to share, and dropping
+    them also dropped makers' own default names. Only the numbers are hidden (as #), which
+    keeps every JBL Flip together as one species and never keeps a serial number."""
     name = (name or "").strip()
-    if not name or _POSSESSIVE.search(name):
-        return None  # "Sam's AirPods" names a person, not a species
+    if not name:
+        return None
     if re.fullmatch(r"[0-9A-Fa-f:\-_ ]{6,}", name):
         return None  # just an address or serial
     label = re.sub(r"[0-9A-Fa-f]{4,}", "#", name)  # serials / MAC fragments

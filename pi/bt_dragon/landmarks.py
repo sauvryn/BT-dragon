@@ -132,9 +132,9 @@ class Landmarks:
             places = await asyncio.to_thread(realm_landmarks, realm)
             self.store.save_landmarks(realm, places, time.time())
             famous = [p for p in places if p["langs"] >= tuning.get("landmark_langs")]
-            log.info("realm %s: %d places on Wikipedia, %d famous", realm, len(places), len(famous))
+            log.info("a new realm: %d places on Wikipedia, %d famous", len(places), len(famous))   # (not which realm)
         except Exception as e:      # offline, slow hotspot, Wikipedia busy: try again later
-            log.info("landmark lookup for realm %s failed: %s", realm, e)
+            log.info("landmark lookup failed: %s", e)
             self._failed[realm] = time.time()
         finally:
             self._busy = False

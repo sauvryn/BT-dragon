@@ -176,6 +176,19 @@ class Store:
         # keep uploaded observations a month, then let them go
         self.db.execute("DELETE FROM ap_obs WHERE uploaded=1 AND ts < ?", (time.time() - 30 * 86400,))
 
+    def prune_obs(self, now=None, days=90):
+        """Wardriving sightings are kept 90 days at most, uploaded or not: each one says where
+        you were and when. (Uploaded ones go after a month.) Returns how many went."""
+        cur = self.db.execute("DELETE FROM ap_obs WHERE ts < ?", ((now or time.time()) - days * 86400,))
+        return cur.rowcount
+
+    def forget_obs_where(self, inside):
+        """Delete the sightings not yet uploaded for which inside(lat, lon) is true (the home zone)."""
+        ids = [r[0] for r in self.db.execute("SELECT id, lat, lon FROM ap_obs WHERE uploaded = 0")
+               if inside(r[1], r[2])]
+        self.db.executemany("DELETE FROM ap_obs WHERE id=?", [(i,) for i in ids])
+        return len(ids)
+
     def log_upload(self, rows, ok, message):
         self.db.execute("INSERT INTO uploads (ts, rows, ok, message) VALUES (?, ?, ?, ?)",
                         (time.time(), rows, 1 if ok else 0, message))

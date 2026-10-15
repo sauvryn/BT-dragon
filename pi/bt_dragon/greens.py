@@ -254,9 +254,9 @@ class Greens:
         try:
             found = await asyncio.to_thread(self.fetcher, realm)
             self.store.save_greens(realm, found, time.time())
-            log.info("realm %s: %d green spaces", realm, len(found))
+            log.info("a new realm: %d green spaces", len(found))   # (not which realm: the log is no map)
         except Exception as e:      # offline, slow hotspot, Overpass busy: try again later
-            log.info("green space lookup for realm %s failed: %s", realm, e)
+            log.info("green space lookup failed: %s", e)
             self._failed[realm] = time.time()
         finally:
             self._busy = False

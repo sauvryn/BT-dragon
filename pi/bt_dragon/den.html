@@ -218,6 +218,18 @@
     <h2>Recent treats</h2>
     <details class="fold" id="fold-treats"><summary>Show the list <span class="sub" id="treatsCount"></span></summary>
       <div id="treats" data-nolang></div></details>
+    <div class="row" style="margin-top:10px"><div class="grow">Exclude home zone (extra privacy)
+      <div class="sub">A circle around home where wardriving sightings (each network with where you heard it) are never
+        recorded, so they're never uploaded to WiGLE. Without it, your sightings start and end at your door. The circle's
+        middle is moved a random distance from home, so nobody can find home by finding the middle of the empty patch.
+        Your home's own position is never stored. Networks inside still count as treats.
+        Switch it on <b>at home</b>, with the GPS working.</div>
+      <div class="sub" id="hzStatus"></div></div>
+      <label class="sub"><input type="checkbox" id="hzOn" onchange="homeZoneSet(this.checked)"> On</label></div>
+    <div id="hzSizeRow" hidden style="margin-top:6px">
+      <select id="hzSize" aria-label="Home zone size" style="max-width:100%"><option value="250">250 m</option>
+        <option value="500">500 m (recommended)</option><option value="1000">1 km</option></select>
+      <div class="actions" style="margin-top:8px"><button onclick="homeZoneHere()">Set home to here</button></div></div>
   </section>
 
   <section data-arrange="life">
@@ -855,6 +867,7 @@ async function refresh() {
         times(rides, 'ride', 'rides')].filter(x => x).join(' · ') : 'Not discovered yet'}</div></div></div>`).join('')
     : '<p class="empty">None nearby yet. New realms are looked up while the dragon is on your hotspot.</p>';
   loadWifiPos();
+  loadHomeZone();
   loadLair();
   loadGarden();
 
@@ -1183,6 +1196,31 @@ async function dotSet(key, value) {
   const r = await cmd(`DOTSET ${key} ${value}`);
   if (r[0] !== 'OK') toast((r[0] || PET + ' is not answering').replace(/^ERR /, ''));
   loadDot();
+}
+async function loadHomeZone() {
+  const d = {};
+  (await cmd('HOMEZONE')).forEach(l => { const i = l.indexOf('='); if (i > 0) d[l.slice(0, i)] = l.slice(i + 1); });
+  if (!('on' in d)) return;
+  const on = d.on === '1';
+  if (document.activeElement !== $('hzOn')) $('hzOn').checked = on;
+  if (document.activeElement !== $('hzSize')) $('hzSize').value = d.r;
+  $('hzSizeRow').hidden = !on;
+  $('hzStatus').textContent = on ? `On: ${(+d.r >= 1000 ? +d.r / 1000 + ' km' : d.r + ' m')} around home.` : 'Off.';
+}
+function homeZoneDone(r, what) {
+  if (r[0] && r[0].startsWith('OK')) {
+    const n = +(r[0].split(' ')[1] || 0);
+    toast(what + (n ? ` ${n} sighting${n === 1 ? '' : 's'} inside it deleted.` : ''));
+  } else toast((r[0] || PET + ' is not answering').replace(/^ERR /, ''));
+  loadHomeZone();
+}
+async function homeZoneSet(on) {
+  if (!on) { homeZoneDone(await cmd('HOMEZONESET off'), 'Home zone off.'); return; }
+  homeZoneDone(await cmd('HOMEZONESET on'), 'Home zone on.');
+}
+async function homeZoneHere() {
+  if (!confirm('Set the home zone around where ' + PET + ' is now?\n\nDo this at home: the circle goes around this spot.')) return;
+  homeZoneDone(await cmd('HOMEZONESET here ' + $('hzSize').value), 'Home zone set.');
 }
 async function loadWifiPos() {
   const d = {};

@@ -13,6 +13,19 @@ How other devices talk to Harald over the hotspot.
 
 Anyone on your hotspot can reach these. A phone hotspot normally has only your own
 devices on it, which is the assumption here.
+
+Web pages on the internet are kept out, though. A page you open on your phone can try to
+send requests to devices on your own network, three ways, and each is closed:
+  * Cross-site requests: a page on another site POSTs a command to the Den. Browsers say
+    where a request came from (the Origin header), so the Den turns away any change that
+    didn't come from its own pages.
+  * DNS rebinding: a site points its own name at the Pi's address, so the browser thinks
+    the Den *is* that site and lets the page read the answers. Every request names the site
+    it's for (the Host header); the Den only answers to an address, a .local name or a
+    one-word name, never to a site on the internet.
+  * Cross-protocol: a page sends an ordinary web request to the control link's port, hoping
+    the lines of its body are run as commands. The control link hangs up on anything that
+    starts like a web request.
 """
 import asyncio
 import gzip
@@ -61,6 +74,11 @@ async def control_server(app):
                 text = line.decode(errors="replace").strip()
                 if not text:
                     continue
+                if looks_like_http(text):
+                    # a web request sent to the wrong port (by a web page, on purpose or not):
+                    # never run the lines of its body as commands
+                    log.info("link client %s sent a web request; hanging up", peer)
+                    break
                 for out in await app.command(text, writer):
                     writer.write((out + "\n").encode())
                 await writer.drain()
@@ -78,6 +96,37 @@ async def control_server(app):
 
 
 # ---------------------------------------------------------------- the den (HTTP)
+
+_LOCAL_SUFFIXES = (".local", ".lan", ".home", ".home.arpa", ".internal", ".localdomain")
+
+
+def host_ok(host):
+    """Is this Host header a name for the Pi on your own network? An IP address, a one-word
+    name ("bt-dragon"), or a local-only name ("bt-dragon.local") is; a site on the internet
+    ("example.com", which could have been pointed at the Pi's address) isn't."""
+    h = (host or "").strip().lower()
+    if h.startswith("["):                              # an IPv6 address, [fe80::1]:8080
+        return "]" in h
+    h = h.rsplit(":", 1)[0] if h.count(":") == 1 else h
+    if not h:
+        return True                                   # HTTP/1.0 without a Host: not a browser
+    if re.fullmatch(r"[0-9.]+", h) or ":" in h:
+        return True
+    return "." not in h.rstrip(".") or h.rstrip(".").endswith(_LOCAL_SUFFIXES)
+
+
+def origin_ok(origin, host):
+    """A change (POST) is only taken from the Den's own pages: no Origin (not a browser), or
+    an Origin naming the same host and port."""
+    if not origin:
+        return True
+    o = urllib.parse.urlparse(origin)
+    return bool(o.netloc) and o.netloc.lower() == (host or "").strip().lower()
+
+
+def looks_like_http(line):
+    return bool(re.match(r"^[A-Z]{3,10} \S+ HTTP/\d", line))
+
 
 def _response(status, body, ctype="text/plain; charset=utf-8", extra=None, cache="no-store"):
     if isinstance(body, str):
@@ -177,6 +226,15 @@ async def web_server(app):
                 headers[k.strip().lower()] = v.strip()
             body = b""
             path = urllib.parse.urlparse(target).path
+            if not host_ok(headers.get("host")):
+                writer.write(_response("421 Misdirected Request",
+                                       "The Den only answers to its own address on your network."))
+                await writer.drain()
+                return
+            if method != "GET" and not origin_ok(headers.get("origin"), headers.get("host")):
+                writer.write(_response("403 Forbidden", "Changes only come from the Den's own pages."))
+                await writer.drain()
+                return
             limit = (210 * 1024 if path == "/api/art" else 256 * 1024 if path == "/api/garden/seen"
                      else 4096)                                          # a picture, sightings, or a command
             n = min(int(headers.get("content-length", "0") or 0), limit)

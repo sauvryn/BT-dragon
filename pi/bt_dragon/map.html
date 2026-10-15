@@ -6,7 +6,10 @@
 <title>__NAME__'s Conquests</title>
 <!-- Leaflet draws the map. It and the map tiles come from the internet through your phone's
      own connection; the dragon only supplies the squares. -->
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<!-- integrity: the browser refuses these if even one byte differs from Leaflet 1.9.4 as published,
+     so a tampered copy on the CDN could never run in the Den -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
 <style>
   :root { --stone: #1d1c1a; --stone2: #282623; --line: #3d3a35; --ink: #ece6da; --dim: #a69f92;
           --rune: #d9a441; --blood: #e8735c; --moss: #7fbf5f; }
@@ -46,7 +49,8 @@
   green spaces: solid once you've been in them, dashed if not yet.
   The fog hides everywhere you haven't taken __NAME__ yet. Map tiles load from OpenStreetMap over your phone's own
   connection.</div>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 <script>
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'})[c]);

@@ -866,7 +866,7 @@ class DotLink:
                            max(0, self.app.pet.total_treats - c.get("treats", 0)), now - c["ts"])
         if text:
             self.recap_pending = text
-            log.info("recap ready: %s", text)
+            log.info("recap ready (%d characters)", len(text))
 
     def _deliver_recap(self):
         if self.recap_pending and self.s["enabled"] and self.s["chatty"] not in ("silent", "adventure") \
@@ -1277,7 +1277,7 @@ class DotLink:
                 return
             await self.once("ev_think")
             self.heard = text
-            log.info("heard (on the %s): %r", where, text)
+            log.info("heard a question on the %s (%d words)", where, len(text.split()))   # never what was said
             first_voice = self._voice
             self.speaker, pct, guess = self.voices.identify(*first_voice)
             self.heard_from = (self.speaker + f" ({pct}% alike)" if self.speaker else
@@ -1336,7 +1336,7 @@ class DotLink:
         self.heard = f"{'go to sleep' if which == 'sleep' else 'take a nap'}, then: {text or '(nothing)'}"
         if not ask.is_yes(text):
             self.answered = ""
-            log.info("%s: no clear yes (%r), staying awake", which, text)
+            log.info("%s: no clear yes, staying awake", which)
             return
         self.answered = ("Going to sleep now. Good night!" if which == "sleep"
                          else "I'll have a lie down for a bit. Wake me up later.")
@@ -1578,7 +1578,7 @@ class DotLink:
         try:
             g = await asyncio.to_thread(ask.geocode, name)
         except Exception as e:
-            log.warning("couldn't look up %s: %s", name, e)
+            log.warning("couldn't look up a place: %s", e)
             g = None
         if g and self.s["home_town"] == name:
             self.s["home_town"], self.s["home_lat"], self.s["home_lon"] = g
@@ -1646,7 +1646,7 @@ class DotLink:
             text, where, _, _ = await self._hear("stop.wav", 4, words=self.STOP_WORDS)
             if self.alarm and text:
                 words = text.split()
-                log.info("while ringing, heard (on the %s): %r", where, text)
+                log.info("while ringing, heard something on the %s", where)
                 if any(w in ("stop", "okay", "ok", "enough", "thanks", "thank", "cancel", "quiet") for w in words):
                     self.stop_alarm()
         except Exception as e:

@@ -35,6 +35,7 @@ from . import moon as moonmod
 from . import tuning
 from .pet import _n, berry_value, hunger_word, joy_word, xp_for
 from . import friends as friendsmod
+from .homezone import HomeZone, SIZES as HOME_SIZES
 from .dragon import MOODS
 from .gps import Gps
 from .wifipos import WifiPosition
@@ -84,7 +85,7 @@ class Dragon:
         self._known_species = {r["key"] for r in self.store.species_list()}
         self.ble = BleWatcher()
         self.ble.import_state(self.store.get("ble_today"))
-        self.dragon_id = friendsmod.load_dragon_id(self.store)
+        self.dragon_id = friendsmod.DragonId(self.store)       # a new one every day
         self.friends = friendsmod.FriendBook(self.store, self.dragon_id)
         self._pwna_last = 0.0
         self.activity = actmod.Activity(self.store, cfg["activity"]["stride_m"])
@@ -142,6 +143,8 @@ class Dragon:
         # when each pal was last around, so a restart doesn't cheer "there's my pal!" again
         self._pal_present = {k: float(v) for k, v in (self.store.get("pal_present", {}) or {}).items()}
         self._obs_last = {}
+        self.home_zone = HomeZone(self.store)
+        self._obs_pruned = 0.0
         self._clock_ok = (False, 0.0)
         self.upload_lock = asyncio.Lock()
         self.started = time.time()
@@ -332,9 +335,8 @@ class Dragon:
 
     # ================================================================ events
     def event(self, kind, text):
-        if self.napping:                # nothing is written to the card during a nap
-            log.info("(napping, not recorded) %s: %s", kind, text)
-            return
+        if self.napping:                # nothing is written to the card during a nap (the log included:
+            return                      # the system log is kept on the card too)
         self.store.event(kind, text)
         line = f"EVT {kind}|{text}\n".encode()
         for w in list(self.clients):
@@ -411,7 +413,7 @@ class Dragon:
 
     def beacon_payload(self):
         mood = self.pet.mood()
-        return friendsmod.encode(self.dragon_id, self.pet.level(),
+        return friendsmod.encode(self.dragon_id.today(), self.pet.level(),
                                  MOODS.index(mood) if mood in MOODS else 0, self.pet.name)
 
     async def classic_search(self, seconds):
@@ -429,7 +431,7 @@ class Dragon:
             s = self.ble.live.get(address.upper())
             if s and kind and s.kind in ("maker", "mystery"):
                 s.label = kind
-            log.info("classic: %s %s %s", address, label, rssi)
+            log.debug("classic device heard: %s", kind or "unknown kind")   # never its address or name
 
         try:
             await classic_search(seconds, found)
@@ -602,6 +604,7 @@ class Dragon:
         berry_food = bushes = 0
         if fix:
             obs_ts = now if self.clock_ok() else fix.get("utc")
+        at_home = bool(fix) and self.home_zone.inside(fix["lat"], fix["lon"])   # no sightings in the home zone
         for ap in aps:
             if ap["ssid"] in mine:
                 continue  # our own hotspots aren't food, and aren't uploaded
@@ -623,7 +626,7 @@ class Dragon:
                 if food:
                     berry_food += food
                     bushes += 1
-            if obs_ts and now - self._obs_last.get(ap["bssid"], 0) >= 60:
+            if obs_ts and now - self._obs_last.get(ap["bssid"], 0) >= 60 and not at_home:
                 self.store.ap_observe(ap["bssid"], obs_ts, ap["rssi"], fix)
                 self._obs_last[ap["bssid"]] = now
         if berry_food:
@@ -858,6 +861,9 @@ class Dragon:
             self._sky_tick(time.time())
             self.ble.prune()
             self.trackers.prune(time.time())
+            if time.time() - self._obs_pruned > 3600:   # wardriving sightings: 90 days at most
+                self._obs_pruned = time.time()
+                self.store.prune_obs()
             self.pet.alarm = bool(self.trackers.alerts)
             self.pet.tick(self.ble.in_range())
             self._garden_tick()
@@ -1459,6 +1465,35 @@ class Dragon:
             self.wifipos.set_enabled(on)
             self.event("network", f"Finding {self.pet.name} by Wi-Fi switched " + ("on (beaconDB)" if on else "off"))
             return ["OK"]
+        if cmd == "HOMEZONE":  # on=, r=, set=, sizes=
+            z = self.home_zone.state()
+            return [f"on={1 if z['on'] else 0}", f"r={z['r']}", f"set={1 if z['set'] else 0}",
+                    "sizes=" + ",".join(map(str, HOME_SIZES)), "END"]
+        if cmd == "HOMEZONESET":  # off / on (around the place set before) / here [meters]
+            a = arg.strip().lower().split()
+            if a[:1] == ["off"]:
+                self.home_zone.off()
+                self.event("network", "Home zone switched off")
+                return ["OK"]
+            if a[:1] == ["on"] and self.home_zone.state()["set"]:
+                z = self.store.get("home_zone")
+                z["on"] = True
+                self.store.put("home_zone", z)
+                gone = self.store.forget_obs_where(self.home_zone.inside)
+                return [f"OK {gone}"]
+            if a[:1] not in (["on"], ["here"]):
+                return ["ERR say off, on or here"]
+            r = int(a[1]) if len(a) > 1 and a[1].isdigit() else None
+            if r is not None and r not in HOME_SIZES:
+                return ["ERR sizes are " + ", ".join(map(str, HOME_SIZES)) + " meters"]
+            fix = self.gps.current()
+            if not fix:
+                return [f"ERR {self.pet.name} needs a GPS position to know where home is. Try again at home "
+                        "with the GPS working."]
+            gone = self.home_zone.set_here(fix, r)
+            # (no diary entry: the diary notes where each entry happened, and this one would say
+            # "home is here")
+            return [f"OK {gone}"]
         if cmd == "FORGETMAP":  # forget every claimed land and realm (and which landmarks he's seen)
             self.store.forget_lands()
             self.store.forget_landmarks_seen()
