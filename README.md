@@ -39,7 +39,7 @@ This guide grows with your setup. Start with the bare minimum, a Pi on your home
 | [1. The basics](#level-1-the-basics) | A Raspberry Pi Zero 2 W, a microSD card, your home Wi-Fi and a computer | Bluetooth snacks, Wi-Fi treats, species, friends, finding your own gadgets, tracker warnings, the moon, a shopping list and calendar, kitchen timers, typed questions, the weather and local weather news from his Lair, the Den |
 | [2. Out and about](#level-2-out-and-about) | Your smartphone's hotspot and a USB power bank | Walks together: more to eat, dragons to meet, the Den in your pocket. Optionally, much of Level 3 without phone apps: a USB GPS receiver, or claiming land by Wi-Fi |
 | [3. Your phone's senses](#level-3-your-phones-senses) | An Android phone sharing its sensors | Walks tracked and logged, wardriving, conquering the map, landmarks, parks, stars, weather, sunshine, his voice through your phone |
-| [4. A voice and ears](#level-4-a-voice-and-ears-echo-dot) | A rooted Echo Dot (2nd generation) | Spoken news, a mood ring, questions, timers, a calendar, a shopping list, "Hey dragon" |
+| [4. A voice and ears](#level-4-a-voice-and-ears-echo-dot) | A rooted Echo Dot (2nd generation) | Spoken news, a mood ring, using your own voice to ask questions, set timers, add to your calendar and shopping list, "Hey dragon" wake word for hands-free |
 
 Then:
 
