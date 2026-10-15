@@ -7,6 +7,9 @@ That list lives inside Bookworm's page, after its fact-checked values and each c
 names and rarities have been applied, so this opens the page in a headless browser once per
 country and asks it.
 
+It also writes pi/bt_dragon/lang.json: Bookworm's spelling and word lists for British, American
+and Canadian English, which BT Dragon uses for its own screen and Den text.
+
 Run after replacing garden/bookworm.html with a newer Bookworm:
     python3 tools/garden/extract.py
 Needs Playwright (pip install playwright, then playwright install chromium).
@@ -50,12 +53,26 @@ def main():
             out["countries"][c] = {"key": KEYS[c], "lang": LANG[c], "unlocks": unlocks, "habitats": habitats,
                                    "species": species}
             print(c, len(species), "species")
+            if c == "gb":
+                lang = page.evaluate("window.__garden.langData()")
             page.close()
         browser.close()
     out["points"] = {"Common": 100, "Uncommon": 200, "Rare": 300}
     dest = os.path.join(ROOT, "pi", "bt_dragon", "garden", "species.json")
     with open(dest, "w", encoding="utf-8") as f:
         json.dump(out, f, ensure_ascii=False, separators=(",", ":"))
+    print("wrote", dest, os.path.getsize(dest), "bytes")
+    # Bookworm's language rules (British, American and Canadian English), used for the text on
+    # Harald's screen, the Den and its pages (see lang.py)
+    # ...and, as in Bookworm, names that are never converted: every species' name in all four
+    # countries (a "Grey Dagger" stays grey in American English), the habitats' names, and Colorado
+    names = {sp["name"] for c in out["countries"].values() for sp in c["species"]}
+    names |= {h for c in out["countries"].values() for h in c["habitats"].values()}
+    names.add("Colorado")
+    lang["keep"] = sorted(names, key=lambda n: (-len(n), n))
+    dest = os.path.join(ROOT, "pi", "bt_dragon", "lang.json")
+    with open(dest, "w", encoding="utf-8") as f:
+        json.dump(lang, f, ensure_ascii=False, separators=(",", ":"))
     print("wrote", dest, os.path.getsize(dest), "bytes")
 
 
