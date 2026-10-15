@@ -24,7 +24,7 @@ Optional GPS integration unlocks the ability to "conquer" squares on a real-worl
 >
 > **If you're uncomfortable using AI-assisted code for any reason, please don't use this program.** That is your choice, it is perfectly reasonable, and this disclaimer is here so you can make it before downloading (if you're reading this on GitHub) or installing anything. That being said, please respect that the project author has been completely open and honest about the contents of this disclaimer and the fact of its inclusion, especially in a world where more and more individuals are attempting to pass off partially or completely AI-generated work as their own, either through direct deceit or by omission of fact.
 >
->If you're still interested in learning about Harald after all of that, let's move on...
+>If you're still interested in learning about Harald after all that, let's move on...
 
 
 
