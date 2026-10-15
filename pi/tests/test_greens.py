@@ -167,6 +167,7 @@ app.pet.green_visit = lambda words: said.append(("visit", words))
 app.dot = Obj()
 app.dot.adventure = lambda kind, **k: spoken.append((kind, k))
 app.event = lambda kind, text: events.append((kind, text))
+app._conquered = lambda text, pts, kind="land": events.append((kind, f"{text} +{pts} Conquest points."))
 app.greens.wanted = lambda fix: None
 t = T0
 for i in range(130):
@@ -175,7 +176,7 @@ for i in range(130):
 assert said == [("found", "Oakfield Country Park"), ("visit", "Took a walk in Oakfield Country Park!")], said
 assert spoken == [("green_found", {"name": "Oakfield Country Park"}),
                   ("green_visit", {"text": "Took a walk in Oakfield Country Park!"})], spoken
-assert events == [("green", "Harald found a new green space: Oakfield Country Park"),
+assert events == [("green", "Harald found a new green space: Oakfield Country Park. +50 Conquest points."),
                   ("green", "Harald: Took a walk in Oakfield Country Park!")], events
 recap = build_recap("Harald", [{"kind": k, "text": x} for k, x in events], 0, 0, 3600)
 assert "We went to Oakfield Country Park!" in recap, recap

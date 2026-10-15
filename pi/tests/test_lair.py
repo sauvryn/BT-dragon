@@ -230,6 +230,7 @@ async def run():
     joy3 = app.pet.joy
     await app._lair_check(sunrise + 60, ["sun"])
     assert app.pet.joy > joy3 and "THE SUN IS RISING AT THE LAIR" in app.pet.message, app.pet.message
+    assert len(pushed) == 1 and pushed[0].startswith("At the Lair, it is ") and pushed[0].endswith(" and the sun is rising."), pushed
     assert "sun" not in L.due(sunrise + 120)                                    # once
     # the temperature every hour on the hour, but not in quiet hours
     pushed.clear()

@@ -69,13 +69,47 @@ g.feed(need, 5, "GB")
 kinds = [e[0] for e in events]
 assert kinds[:3] == ["hatch", "pupate", "emerge"], kinds
 em = events[2][1]
-assert em["new"] and em["habitat"] and em["name"]
+assert em["new"] and em["name"]
+# the adult waits in its spot, at 100%, eating nothing, until it's collected from the den
+assert g.cdata("gb")["collection"] == [] and g.s["slots"][0]["adult"] and g.s["slots"][0]["stage"] == 10
+before = dict(g.s["slots"][0])
+g.feed(5, 5, "GB")
+assert g.s["slots"][0]["fed"] == before["fed"] and not g.s.get("x")
+v = g.view(5, "GB")
+assert v["larvae"][0]["adult"] and v["larvae"][0]["pct"] == 100
+assert g.collect(1, 5) and g.collect(0, 5) is None and g.collect(0, 5)          # (nothing left to collect)
+col = [e for e in events if e[0] == "collect"][0][1]
+assert col["new"] and col["habitat"] and col["points"] == G.data()["points"][b["rarity"]]
 coll = g.cdata("gb")["collection"]
 assert len(coll) == 1 and coll[0]["species"] == b["species"] and coll[0]["points"] == G.data()["points"][b["rarity"]]
 assert coll[0]["title"] == "Raised in the Butterfly Garden" and coll[0]["pages"] == 0
-assert em["habitat"] in g.cdata("gb")["habitats"]
-assert g.s["slots"][0].get("egg") and len(g.s["slots"]) == 1            # a new egg in the empty spot
+assert col["habitat"] in g.cdata("gb")["habitats"]
+assert g.s["slots"][0].get("egg") and len(g.s["slots"]) == 1            # the only spot: a new egg
 assert g.score() == coll[0]["points"]
+
+# collected from one of several spots: the ones below move up, the last spot is left empty
+g = G.Garden(Store(os.path.join(tmp, "g4b.db")), random.Random(4))
+g.unlock_now(1)
+g.feed(0.001, 3, "GB")
+g.lay_egg(1, 3)
+g.lay_egg(2, 3)
+g.feed(0.003, 3, "GB")
+ids = [x["species"] for x in g.s["slots"]]
+g.s["slots"][0]["fed"] = g.s["slots"][0]["need"] - 0.0001
+g.feed(0.003, 3, "GB")
+assert g.s["slots"][0]["adult"]
+assert g.collect(0, 3) is None
+assert [x.get("species") for x in g.s["slots"][:2]] == ids[1:] and g.s["slots"][2] == {"empty": True}
+# its country of origin: raised in Ireland, collected after the garden moved to the UK
+g = G.Garden(Store(os.path.join(tmp, "g4c.db")), random.Random(6))
+g.set_country("ie")
+g.feed(0.001, 5)
+g.s["slots"][0]["fed"] = g.s["slots"][0]["need"] - 0.0001
+g.feed(0.001, 5)
+g.set_country("gb")
+assert g.collect(0, 5) is None
+assert len(g.cdata("ie")["collection"]) == 1 and g.cdata("gb")["collection"] == []
+assert g.s["slots"][0].get("egg")
 
 # a new spot stays empty until you put an egg in it (only the first spot fills itself)
 g = G.Garden(Store(os.path.join(tmp, "g5.db")), random.Random(5))
@@ -92,16 +126,18 @@ assert abs(a["fed"] - 5 - 5) < 0.001 and abs(c["fed"] - 5) < 0.001 and a["specie
 assert g.take_egg(1, 6)                                                        # hatched now: stays
 v = g.view(6, "US")
 assert [x.get("slot") for x in v["larvae"]] == [0, 1] and v["fed_today"] == 15
-# when a second-spot adult emerges, its spot is left empty; the first spot gets a new egg
+# when a second-spot adult is collected, its spot is left empty; when the first spot's is,
+# the first spot gets a new egg
 evs = []
 g.on_event = lambda k, i: evs.append(k)
 c["fed"] = c["need"] - 0.01
 g.feed(0.1, 6, "US")
-assert "emerge" in evs and g.s["slots"][1] == {"empty": True}
+assert "emerge" in evs and g.s["slots"][1]["adult"]
+assert g.collect(1, 6) is None and g.s["slots"][1] == {"empty": True}
 a = g.s["slots"][0]
 a["fed"] = a["need"] - 0.01
 g.feed(0.1, 6, "US")
-assert g.s["slots"][0].get("egg")
+assert g.collect(0, 6) is None and g.s["slots"][0].get("egg")
 
 # picking: forms count separately; a species with all forms raised isn't picked again while others remain
 gb = G.data()["countries"]["gb"]
@@ -135,7 +171,7 @@ if ins and outs:
     expect = 3 * len(ins) / (3 * len(ins) + len(outs))
     assert abs(n_in / 6000 - expect) < 0.03, (n_in / 6000, expect)
 
-# queens and workers: a social species' female becomes a worker if his belly ran low while she grew
+# queens and workers: a social species' female becomes a worker if the dragon's belly ran low while she grew
 caste = next(s for s in gb["species"] if s["caste"])
 g = G.Garden(Store(os.path.join(tmp, "g8.db")), random.Random(1))
 evs = []
@@ -146,10 +182,12 @@ g.s["slots"] = [{"species": caste["id"], "country": "gb", "sex": "f", "rarity": 
 g.note_belly(True, 1)
 g.feed(20, 1, "GB")
 assert [e for e in evs if e[0] == "emerge"][0][1]["form"] == "w"
+g.collect(0, 1)
 assert g.cdata("gb")["collection"][-1]["sex"] == "w"
 g.s["slots"] = [{"species": caste["id"], "country": "gb", "sex": "f", "rarity": caste["rarity"], "need": 10.0, "fed": 0.0,
                  "pupAt": caste["pupAt"], "hatched": time.time(), "stage": 0, "caste": True, "hungry": False}]
 g.feed(20, 1, "GB")
+g.collect(0, 1)
 assert g.cdata("gb")["collection"][-1]["sex"] == "q"
 
 # titles: crossing 500 points
@@ -162,6 +200,7 @@ assert g.title() == "Egg Explorer"
 g.s["slots"] = [{"species": pool[0]["id"], "country": "gb", "sex": None, "rarity": "Common", "need": 1.0, "fed": 0.0,
                  "pupAt": pool[0]["pupAt"], "hatched": time.time(), "stage": 0, "caste": False, "hungry": False}]
 g.feed(5, 1, "GB")
+g.collect(0, 1)
 assert ("title", {"name": "Bluetooth Beetle"}) in evs and g.title() == "Bluetooth Beetle"
 assert not any(w in " ".join(t[2] for t in G.TITLES).lower() for w in ("book", "chapter", "librar", "manuscript", "paperback"))
 

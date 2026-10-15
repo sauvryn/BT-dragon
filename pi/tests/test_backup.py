@@ -84,11 +84,15 @@ assert "NewHotspot" in open(os.path.join(kept, "bt-dragon.toml")).read()
 open(os.path.join(boot, backup.BOOT_NAME), "wb").write(blob)
 assert backup.apply_pending(cfg).startswith("Restored")
 assert not os.path.exists(os.path.join(boot, backup.BOOT_NAME))
-assert os.path.exists(os.path.join(boot, "harald-restore.done.tar.gz"))
+assert os.path.exists(os.path.join(boot, "bt-dragon-restore.done.tar.gz"))
 assert backup.apply_pending(cfg) is None
+# the older name works too
+open(os.path.join(boot, "harald-restore.tar.gz"), "wb").write(blob)
+assert backup.apply_pending(cfg).startswith("Restored")
+assert os.path.exists(os.path.join(boot, "harald-restore.done.tar.gz"))
 
 
-# not his backups: refused, and nothing changed
+# not your dragon's backups: refused, and nothing changed
 def tar_of(members):
     buf = io.BytesIO()
     with tarfile.open(fileobj=buf, mode="w:gz") as t:
