@@ -1421,13 +1421,22 @@ SPECIES.forEach(s=>{ if(!s.noun) s.noun=s.kind; });
 /* ---------- seasons ---------- */
 /* Turns each species' "when to see it" text into a set of months (0 = January). Month ranges like
    "March–May" can wrap the year ("October–February"); "All year" means every month; with no month
-   names, season words are used (spring = Mar–May, summer = Jun–Aug, autumn = Sep–Nov, winter = Dec–Feb). */
+   names, season words are used (spring = Mar–May, summer = Jun–Aug, autumn or fall = Sep–Nov, winter = Dec–Feb).
+   A month can run to a season or the other way round ("April to fall" = April–November). */
 const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
 const SEASONS={spring:[2,3,4],summer:[5,6,7],autumn:[8,9,10],winter:[11,0,1]};
 function parseMonths(text){
-  const t=text.toLowerCase(), set=new Set();
+  /* American and Canadian texts say "fall"; it means the same months as autumn */
+  let t=text.toLowerCase().replace(/\bfall\b/g,"autumn"); const set=new Set();
   if(/all year|every month/.test(t)){ for(let m=0;m<12;m++) set.add(m); return set; }
   const mi=w=>MONTHS.findIndex(m=>m.toLowerCase()===w);
+  /* a month running to a season ("April to fall") or a season to a month ("summer to October") */
+  const MN="january|february|march|april|may|june|july|august|september|october|november|december", SN="spring|summer|autumn|winter";
+  const addRange=(a,b)=>{ for(let m=a;;m=(m+1)%12){ set.add(m); if(m===b) break; } };
+  t=t.replace(new RegExp(`\\b(${MN}) (?:to|until|till|into) (early |late )?(${SN})\\b`,"g"),(_,mo,mod,se)=>{
+    const s=SEASONS[se]; addRange(mi(mo), mod==="early "?s[0]:s[2]); return " "; });
+  t=t.replace(new RegExp(`\\b(early |late )?(${SN}) (?:to|until|till|into) (${MN})\\b`,"g"),(_,mod,se,mo)=>{
+    const s=SEASONS[se]; addRange(mod==="late "?s[2]:s[0], mi(mo)); return " "; });
   const re=/(january|february|march|april|may|june|july|august|september|october|november|december)(?:\s*–\s*(january|february|march|april|may|june|july|august|september|october|november|december))?/g;
   let r; while((r=re.exec(t))){ const a=mi(r[1]), b=r[2]?mi(r[2]):a; for(let m=a;;m=(m+1)%12){ set.add(m); if(m===b) break; } }
   if(set.size) return set;
@@ -3354,7 +3363,7 @@ function flagSVG(code){
 
 const SP = Object.fromEntries(SPECIES.map(s=>[s.id,s]));
 /* build_index.js loads the page once per country with ?dump-index to rebuild SEARCH_INDEX */
-try{ if(new URLSearchParams(location.search).has("dump-ca")) window.__BOOKWORM_CA=SPECIES.map(s=>({id:s.id,name:s.name,sci:s.sci,kind:s.kind,family:s.family,caOnly:!!s.caOnly,rarity:s.rarity,status:s.status,season:s.season,food:s.food,wing:s.wing,facts:s.facts,ca:CA_NOTES[s.id]||null,dur:DUR[s.id]?DUR[s.id].slice(0,4):undefined,hab:HAB[s.id]?HAB[s.id][0]:undefined,garden:s.garden||null,caste:CA_ONLY_CASTE[s.id],dimorph:CA_ONLY_DIMORPH[s.id]})); }catch(e){}
+try{ if(new URLSearchParams(location.search).has("dump-ca")) window.__parseMonths=parseMonths; if(new URLSearchParams(location.search).has("dump-ca")) window.__BOOKWORM_CA=SPECIES.map(s=>({id:s.id,name:s.name,sci:s.sci,kind:s.kind,family:s.family,caOnly:!!s.caOnly,rarity:s.rarity,status:s.status,season:s.season,months:[...(s.months||[])].sort((a,b)=>a-b),food:s.food,wing:s.wing,facts:s.facts,ca:CA_NOTES[s.id]||null,dur:DUR[s.id]?DUR[s.id].slice(0,4):undefined,hab:HAB[s.id]?HAB[s.id][0]:undefined,garden:s.garden||null,caste:CA_ONLY_CASTE[s.id],dimorph:CA_ONLY_DIMORPH[s.id]})); }catch(e){}
 try{ if(new URLSearchParams(location.search).has("dump-fc")) window.__BOOKWORM_FC=SPECIES.filter(s=>s.usOnly||s.caOnly).map(s=>({id:s.id,name:s.name,sci:s.sci,kind:s.kind,family:s.family,season:s.season,food:s.food,ca:!!s.caOnly,dur:DUR[s.id]?DUR[s.id].slice(0,4):null,hab:HAB[s.id]?HAB[s.id][0]:null})); }catch(e){}
 try{ if(new URLSearchParams(location.search).has("dump-index")) window.__BOOKWORM_INDEX=SPECIES.map(s=>[s.id,s.name,s.sci,s.kind,s.family,s.rarity]); }catch(e){}
 const RARITY_CHIP = {Common:"ok",Uncommon:"accent",Rare:"rare"};
