@@ -13,6 +13,7 @@ app = Dragon(cfg, simulate=True, out_dir=tmp)
 d = app.dot
 pushed = []
 d.phone.push = pushed.append
+d.quiet_now = lambda ts=None: False      # (not quiet hours, whatever time the tests run)
 
 # the phone only: a typed question is spoken through it
 d.s["enabled"], d.s["phone"] = False, True
