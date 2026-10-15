@@ -61,7 +61,7 @@
     <p>On the panel every pixel is ink or paper: transparent counts as paper, and grey becomes black if darker than half
       way, white if lighter. The previews below show exactly what the screen will show.</p>
     <p><b>Template</b> downloads the drawn placeholder at actual size, to draw over. <b>Upload</b> saves a picture into
-      <code id="folder">harald-art</code> on the card's boot partition; you can also copy files there from Windows,
+      <code id="folder">bt-dragon-art</code> on the card's boot partition; you can also copy files there from Windows,
       named like <code>happy.png</code>, <code>happy_1.png</code> (second frame), <code>happy-hungry.png</code>.</p>
   </div>
   <div id="problems" class="problems" hidden></div>
@@ -124,7 +124,7 @@ function screenTile(r) {
 }
 
 function draw() {
-  $('folder').textContent = data.folder || 'harald-art';
+  $('folder').textContent = data.folder || 'bt-dragon-art';
   $('screens').innerHTML = (data.screens || []).map(screenTile).join('');
   const other = Object.entries(data.other_problems || {});
   $('problems').hidden = !other.length;

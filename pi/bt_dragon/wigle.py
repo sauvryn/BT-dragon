@@ -46,11 +46,13 @@ def build_csv(rows):
 
 def save_csv(text, folder):
     os.makedirs(folder, exist_ok=True)
-    path = os.path.join(folder, time.strftime("harald-%Y%m%d-%H%M%S.csv"))
+    path = os.path.join(folder, time.strftime("bt-dragon-%Y%m%d-%H%M%S.csv"))
     with open(path, "w", encoding="utf-8") as f:
         f.write(text)
     # keep the 20 newest exports
-    files = sorted(p for p in os.listdir(folder) if p.endswith(".csv"))
+    # (by age, not by name: older ones are named harald-..., newer ones bt-dragon-...)
+    files = sorted((p for p in os.listdir(folder) if p.endswith(".csv")),
+                   key=lambda p: os.path.getmtime(os.path.join(folder, p)))
     for old in files[:-20]:
         try:
             os.remove(os.path.join(folder, old))

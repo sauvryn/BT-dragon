@@ -316,7 +316,7 @@ async def web_server(app):
                 p = app.cfg["privacy"]
                 csv = wigle.build_csv(app.store.pending_obs(p["skip_nomap"], p["upload_hidden"]))
                 out = _response("200 OK", csv, "text/csv",
-                                ['Content-Disposition: attachment; filename="harald-wigle.csv"'])
+                                ['Content-Disposition: attachment; filename="bt-dragon-wigle.csv"'])
             else:
                 out = _response("404 Not Found", "not here")
             writer.write(out)

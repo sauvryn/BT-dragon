@@ -36,7 +36,7 @@ def say(text, rate=1.0, pitch=1.0):
         pass
 
 
-def find_harald(wait_s=20):
+def find_dragon(wait_s=20):
     """Listen for a dragon announcing itself on the hotspot: 'BTDRAGON 1 port=... web=... name=...'."""
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -76,7 +76,7 @@ def main():
             if fails in (1, 10):
                 print(f"Can't reach your dragon ({e}); trying again...")
             if fails % 3 == 0:
-                found = find_harald()
+                found = find_dragon()
                 if found and found != address:
                     print(f"Found your dragon at {found}")
                     address, after = found, -1

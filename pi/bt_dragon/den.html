@@ -1259,12 +1259,15 @@ async function loadGarden() {
       nodes.push(`<span class="node${k === 9 ? ' chrys' : ''}${b.pct >= at ? ' done' : ''}" style="left:${at}%"></span>`);
     }
     const form = b.adult ? ({q: 'Queen', w: 'Worker', m: 'Male', f: 'Female'}[b.form] || '')
-      : b.caste ? (b.hungry ? `Worker-to-be (${PET}'s belly ran low)` : `Queen-to-be, if ${PET}'s belly never runs low`)
+      : b.caste ? (b.hungry ? 'Worker-to-be (went hungry)' : 'Queen-to-be, if it never goes hungry')
       : b.sex === 'm' ? 'Male' : b.sex === 'f' ? 'Female' : '';
     const pupa = cap1(b.pupa), adult = cap1(b.noun);
     const stage = b.adult || b.stage >= 10 ? adult : b.stage >= 9 ? pupa : cap1(b.young);
-    const mood = b.stage >= 9 ? 'content' : g.mood;   // pupae don't feed, so they never get hungry
-    const moodWord = b.adult ? 'Emerged' : b.stage >= 9 ? 'Pupating' : {content: 'Well fed', hungry: 'Hungry', xhungry: 'Extremely hungry'}[mood];
+    // hunger, as in Bookworm, by how long since it last ate (pupae don't eat, so they never get hungry)
+    const mood = b.hunger === 'very hungry' ? 'xhungry' : b.hunger === 'hungry' ? 'hungry' : 'content';
+    const moodWord = b.adult ? 'Emerged' : b.stage >= 9 ? 'Pupating'
+      : {'well fed': 'Well fed', satisfied: 'Satisfied', peckish: 'Peckish', hungry: 'Hungry',
+         'very hungry': 'Very hungry'}[b.hunger] || 'Well fed';
     const art = gardenArt(b.species, b.adult ? 10 : b.stage, mood);
     const notes = `/garden?c=${b.country}&notes=${encodeURIComponent(b.species)}&stage=${b.adult ? 10 : b.stage}&mood=${mood}`;
     const away = b.country !== g.country ? `<div class="sub">From ${esc(b.country_name)}</div>` : '';
@@ -1277,12 +1280,18 @@ async function loadGarden() {
       </div>${art ? `<div class="gd-art lv-art art-wrap${!b.adult && b.stage < 9 ? ' crawl' : ''}">${art}</div>` : ''}</div>
       ${b.adult ? '' : `<div class="stemlbl top"><span style="left:${b.pupAt}%${b.pupAt > 78 ? ';transform:translateX(-88%)' : ''}">${esc(pupa)} ${b.pupAt}%</span></div>
       <div class="stem"><span class="track"></span><span class="fill" style="width:${b.pct}%"></span>${nodes.join('')}</div>`}
-      <div class="sub">${esc(moodWord)}${b.adult ? '' : ` · ${b.fed} of ${b.need} food`} · <b>${b.adult ? 'tap to add to Collection' : 'tap for field notes'}</b></div></button>`;
+      <div class="sub">${esc(moodWord)}${b.adult ? '' : ` · Last fed ${lastFed(b.last_fed)}`} · <b>${b.adult ? 'tap to add to Collection' : 'tap for field notes'}</b></div></button>`;
   }).join('');
   if (html !== gdLast) { gdLast = html; $('gdLarvae').innerHTML = html; }   // redrawn only on a change, so they keep crawling
   $('gdCountryNote').textContent = "Which country's insects:";
   if (!keep($('gdCountry'))) $('gdCountry').value = g.country;
   $('gdCollLink').href = '/garden?c=' + g.country;
+}
+function lastFed(ts) {                // "today", "yesterday" or the date, in this phone's own time
+  if (!ts) return 'never';
+  const d = new Date(ts * 1000), day = x => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const ago = Math.round((day(new Date()) - day(d)) / 86400000);
+  return ago <= 0 ? 'today' : ago === 1 ? 'yesterday' : d.toLocaleDateString(undefined, {day: 'numeric', month: 'short'});
 }
 async function gardenCollect(slot, notes) {
   window.open(notes, '_blank');          // its field notes (opened straight away, so the browser allows it)

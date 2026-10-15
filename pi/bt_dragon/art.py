@@ -13,7 +13,7 @@ The sleep screens are whole-screen pictures, 250 x 122: nap-screen.png (while he
 sleep-screen.png (left on the e-ink when he's put to sleep). Without yours, a drawn one: his
 sleeping face alone in a white circle on black, with NAP or SLEEP in the corner.
 
-Where they go: the folder "harald-art" on the card's boot partition (the one Windows can
+Where they go: the folder "bt-dragon-art" (once "harald-art") on the card's boot partition (the one Windows can
 open), next to bt-dragon.toml, or uploaded from the den's art page, which saves them there.
 Pictures shipped with the program (bt_dragon/art/) are used for moods you haven't drawn.
 

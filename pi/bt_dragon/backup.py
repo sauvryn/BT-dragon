@@ -11,7 +11,7 @@ What's in one (a .tar.gz, the same kind of archive Linux has used for decades):
   bt-dragon.toml     the settings file (hotspot passwords and the WiGLE token are in it:
                      keep backups private)
   adb/               the Pi's key for the Dot's debug link, so a rebuilt Pi is let straight in
-  art/               your artwork (the harald-art folder next to the settings file)
+  art/               your artwork (the bt-dragon-art folder next to the settings file)
 
 Not in it: Raspberry Pi OS, the program, the speech and voice models, and the Debian built
 for the Dot. The update zip and install-voice.sh put those back.
@@ -55,9 +55,22 @@ ALLOWED = re.compile(r"^(manifest\.json|dragon\.db|bt-dragon\.toml|adb/adbkey(\.
                      r"(diary|wigle)/[A-Za-z0-9._ -]{1,120}|art/[A-Za-z_-]{1,40}\.(png|PNG))$")
 
 
+ART_FOLDER, OLD_ART_FOLDER = "bt-dragon-art", "harald-art"
+
+
 def art_dir(config_path, data_dir):
-    """Where your artwork lives: next to the settings file (as app.py sets it up)."""
-    return os.path.join(os.path.dirname(config_path), "harald-art") if config_path else os.path.join(data_dir, "art")
+    """Where your artwork lives: the bt-dragon-art folder next to the settings file. An older
+    harald-art folder is renamed to it the first time (or, if it can't be, still used)."""
+    if not config_path:
+        return os.path.join(data_dir, "art")
+    here = os.path.dirname(config_path)
+    new, old = os.path.join(here, ART_FOLDER), os.path.join(here, OLD_ART_FOLDER)
+    if os.path.isdir(old) and not os.path.exists(new):
+        try:
+            os.rename(old, new)
+        except OSError:
+            return old
+    return new
 
 
 def adb_dir():
@@ -125,7 +138,7 @@ def make(data_dir, config_path, name="Harald", now=None):
 
 
 def filename(now=None):
-    return time.strftime("harald-backup-%Y-%m-%d-%H%M.tar.gz", time.localtime(now or time.time()))
+    return time.strftime("bt-dragon-backup-%Y-%m-%d-%H%M.tar.gz", time.localtime(now or time.time()))
 
 
 class BadBackup(Exception):

@@ -251,7 +251,7 @@ class Dragon:
 
     def _garden_tick(self):
         """One garden message per pet tick (every 5 s)."""
-        self.garden.note_belly(self.pet.hunger < 30, self.pet.level())
+        self.garden.check_hunger(self.pet.level())
         now = time.time()
         if now < getattr(self.pet, "message_hold", 0):
             return
@@ -1232,8 +1232,7 @@ class Dragon:
             return [f"{k}={v[k]}" for k in v] + ["END"]
         if cmd == "GARDEN":
             v = self.garden.view(self.pet.level(), self._lair_code())
-            h = self.pet.hunger           # the larvae go hungry with him: no spare food reaches them
-            v["mood"] = "xhungry" if h < 10 else "hungry" if h < 30 else "content"
+            h = self.pet.hunger
             v.update(belly=round(h, 1), pack=round(self.pet.pack, 1), pack_cap=tuning.get("pack_cap"))
             v["art"] = self.garden_art_version() if hasattr(self, "garden_art_version") else ""
             return [json.dumps(v), "END"]

@@ -23,8 +23,11 @@ A larva's life, as in Bookworm:
     butterflies) at its species' own point, worked out from its real larva and pupa days, as
     in Bookworm (a little joy), and the adult emerges at 100% (a big joy). The adult joins the
     Garden Collection, may open a habitat, and earns points towards Bookworm's titles;
-  - queens and workers: a female of a social species becomes a queen if Harald's belly never
-    ran low while she was a larva, and a worker if it did.
+  - hunger, as in Bookworm, by how long since a larva last ate: "Well fed" for 24 hours,
+    "Satisfied" until 48, "Peckish" until 72, then "Hungry", and "Very hungry" from 96 hours (4 days).
+    Pupae don't eat, so they're never hungry;
+  - queens and workers: a female of a social species becomes a queen if she never went hungry
+    as a larva, and a worker if she did.
 
 The collection is kept per country (Bookworm's countries: United Kingdom, Ireland, United
 States, Canada): the Pi's own country to start with (or the United Kingdom), then whichever
@@ -43,6 +46,8 @@ log = logging.getLogger("garden")
 
 HERE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "garden")
 UNLOCK_LEVEL = 5
+# hours since a larva last ate: "Well fed", then "Satisfied", "Peckish", "Hungry", "Very hungry"
+WELL_FED_S, SATISFIED_S, PECKISH_S, HUNGRY_S = 24 * 3600, 48 * 3600, 72 * 3600, 96 * 3600
 MAX_SLOTS = 3
 COUNTRY_OF = {"GB": "gb", "IE": "ie", "US": "us", "CA": "ca"}
 COUNTRY_NAME = {"gb": "United Kingdom", "ie": "Ireland", "us": "United States", "ca": "Canada"}
@@ -258,6 +263,7 @@ class Garden:
 
     # ---- feeding
     def feed(self, food, level, lair_code=None, belly_low=False, now=None):
+        # (belly_low is no longer used: a larva's hunger is its own, by how long since it ate)
         """Surplus food from treats and berries: split between everything in the garden."""
         now = now or time.time()
         if food <= 0 or not self.unlocked(level):
@@ -277,8 +283,8 @@ class Garden:
         for i, b in slots:
             if b.get("egg"):
                 self._hatch(b, c, now)
-            if belly_low and b.get("caste") and b.get("stage", 0) < 9:
-                b["hungry"] = True
+            self._check_hunger(b, now)      # (did it go hungry before this meal?)
+            b["last_fed"] = now
             b["fed"] = min(b["need"], b["fed"] + share)
             pct = 100 * b["fed"] / b["need"]
             stage = stage_for(pct, b["pupAt"])
@@ -291,16 +297,34 @@ class Garden:
         self.sync_slots(level, now)
         self.save()
 
-    def note_belly(self, low, level):
-        """Harald's belly ran low: any queen-to-be still growing becomes a worker."""
-        if not low or not self.unlocked(level):
+    @staticmethod
+    def hunger(b, now=None):
+        """"well fed", "satisfied", "peckish", "hungry" or "very hungry" for a larva; None for an
+        egg, a pupa or an adult."""
+        if b.get("egg") or b.get("empty") or b.get("adult") or b.get("stage", 0) >= 9:
+            return None
+        since = (now or time.time()) - (b.get("last_fed") or b.get("hatched") or time.time())
+        return ("well fed" if since < WELL_FED_S else "satisfied" if since < SATISFIED_S
+                else "peckish" if since < PECKISH_S else "hungry" if since < HUNGRY_S else "very hungry")
+
+    def _check_hunger(self, b, now):
+        """A queen-to-be that went hungry becomes a worker (Bookworm's rule)."""
+        if b.get("caste") and not b.get("hungry") and self.hunger(b, now) in ("hungry", "very hungry"):
+            b["hungry"] = True
+            return True
+        return False
+
+    def check_hunger(self, level, now=None):
+        """Every few seconds, from the app: notices larvae that have gone hungry."""
+        if not self.unlocked(level):
             return
-        changed = False
-        for b in self.s["slots"]:
-            if b.get("caste") and not b.get("egg") and b.get("stage", 0) < 9 and not b.get("hungry"):
-                b["hungry"] = changed = True
-        if changed:
+        now = now or time.time()
+        if any([self._check_hunger(b, now) for b in self.s["slots"]]):
             self.save()
+
+    def note_belly(self, low, level):
+        """(Older versions: the dragon's belly decided. Now each larva's own hunger does.)"""
+        self.check_hunger(level)
 
     def _hatch(self, b, c, now):
         tier = self.roll_rarity()
@@ -309,7 +333,7 @@ class Garden:
         b.clear()
         b.update({"species": sp["id"], "country": c, "sex": p["sex"], "rarity": sp["rarity"], "need": self.need(sp["rarity"]),
                   "fed": 0.0, "pupAt": sp["pupAt"], "hatched": now, "stage": 0,
-                  "caste": sp["caste"] and p["sex"] == "f", "hungry": False})
+                  "caste": sp["caste"] and p["sex"] == "f", "hungry": False, "last_fed": now})
         self._tell("hatch", b)
 
     def _emerge(self, i, b, now):
@@ -390,6 +414,7 @@ class Garden:
                 "noun": sp["noun"], "young": sp["young"], "pupa": sp["pupa"], "rarity": b["rarity"],
                 "pct": round(pct, 1), "pupAt": b["pupAt"], "stage": b.get("stage", 0),
                 "sex": b.get("sex"), "caste": b.get("caste"), "hungry": b.get("hungry"),
+                "hunger": self.hunger(b), "last_fed": int(b.get("last_fed") or b.get("hatched") or 0),
                 "fed": round(b["fed"], 1), "need": b["need"], "country": b["country"], "slot": i,
                 "adult": bool(b.get("adult")), "form": b.get("form"),
                 "country_name": COUNTRY_NAME.get(b["country"], "")})
