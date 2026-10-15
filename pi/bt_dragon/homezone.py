@@ -1,5 +1,5 @@
 """
-The home zone (Den → Recent treats → "Exclude home zone (extra privacy)"): a circle around
+The home zone (Den → WiGLE → "Exclude home zone (extra privacy)"): a circle around
 home where wardriving sightings are never recorded, so they're never uploaded to WiGLE or
 put in an export either.
 

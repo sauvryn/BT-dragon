@@ -218,18 +218,6 @@
     <h2>Recent treats</h2>
     <details class="fold" id="fold-treats"><summary>Show the list <span class="sub" id="treatsCount"></span></summary>
       <div id="treats" data-nolang></div></details>
-    <div class="row" style="margin-top:10px"><div class="grow">Exclude home zone (extra privacy)
-      <div class="sub">A circle around home where wardriving sightings (each network with where you heard it) are never
-        recorded, so they're never uploaded to WiGLE. Without it, your sightings start and end at your door. The circle's
-        middle is moved a random distance from home, so nobody can find home by finding the middle of the empty patch.
-        Your home's own position is never stored. Networks inside still count as treats.
-        Switch it on <b>at home</b>, with the GPS working.</div>
-      <div class="sub" id="hzStatus"></div></div>
-      <label class="sub"><input type="checkbox" id="hzOn" onchange="homeZoneSet(this.checked)"> On</label></div>
-    <div id="hzSizeRow" hidden style="margin-top:6px">
-      <select id="hzSize" aria-label="Home zone size" style="max-width:100%"><option value="250">250 m</option>
-        <option value="500">500 m (recommended)</option><option value="1000">1 km</option></select>
-      <div class="actions" style="margin-top:8px"><button onclick="homeZoneHere()">Set home to here</button></div></div>
   </section>
 
   <section data-arrange="life">
@@ -429,8 +417,9 @@
       <div class="sub" id="lairNow"></div></div>
       <label class="sub"><input type="checkbox" id="lairAnnounce" onchange="lairAnnounceSet(this.checked)"> On</label></div>
     <div class="row" id="warnRow"><div class="grow">Official weather warnings<div class="sub" id="warnNote"></div>
-      <div class="sub" id="warnActive"></div></div>
-      <select id="warnRegion" hidden onchange="lairRegion(this.value)"><option value="ta">Central, Tayside & Fife</option><option value="em">East Midlands</option><option value="ee">East of England</option><option value="gr">Grampian</option><option value="he">Highlands & Eilean Siar</option><option value="se">London & South East England</option><option value="ne">North East England</option><option value="nw">North West England</option><option value="ni">Northern Ireland</option><option value="os">Orkney & Shetland</option><option value="dg">SW Scotland, Lothian & Borders</option><option value="sw">South West England</option><option value="st">Strathclyde</option><option value="wl">Wales</option><option value="wm">West Midlands</option><option value="yh">Yorkshire & Humber</option></select></div>
+      <div class="sub" id="warnActive"></div></div></div>
+    <div class="row" id="warnRegionRow" style="border:0" hidden>
+      <select id="warnRegion" aria-label="Met Office region" onchange="lairRegion(this.value)"><option value="ta">Central, Tayside & Fife</option><option value="em">East Midlands</option><option value="ee">East of England</option><option value="gr">Grampian</option><option value="he">Highlands & Eilean Siar</option><option value="se">London & South East England</option><option value="ne">North East England</option><option value="nw">North West England</option><option value="ni">Northern Ireland</option><option value="os">Orkney & Shetland</option><option value="dg">SW Scotland, Lothian & Borders</option><option value="sw">South West England</option><option value="st">Strathclyde</option><option value="wl">Wales</option><option value="wm">West Midlands</option><option value="yh">Yorkshire & Humber</option></select></div>
     <div class="row"><div class="grow">Language<div class="sub">The English on <span class="pname" data-nolang>Harald</span>'s screen, in the Den and on its other
       pages: <span data-nolang>"metres" or "meters", "colour" or "color", "autumn" or "fall"</span>. (What's said out loud stays the same.)
       From Bookworm, like the Butterfly Garden.</div></div></div>
@@ -619,6 +608,18 @@
       <button class="primary" onclick="cmd('UPLOAD', true)">Upload now</button>
       <a href="/api/export.csv"><button>Download CSV</button></a>
     </div>
+    <div class="row" style="margin-top:10px"><div class="grow">Exclude home zone (extra privacy)
+      <div class="sub">A circle around home where wardriving sightings (each network with where you heard it) are never
+        recorded, so they're never uploaded to WiGLE. Without it, your sightings start and end at your door. The circle's
+        middle is moved a random distance from home, so nobody can find home by finding the middle of the empty patch.
+        Your home's own position is never stored. Networks inside still count as treats.
+        Switch it on <b>at home</b>, with the GPS working.</div>
+      <div class="sub" id="hzStatus"></div></div>
+      <label class="sub"><input type="checkbox" id="hzOn" onchange="homeZoneSet(this.checked)"> On</label></div>
+    <div id="hzSizeRow" hidden style="margin-top:6px">
+      <select id="hzSize" aria-label="Home zone size" style="max-width:100%"><option value="250">250 m</option>
+        <option value="500">500 m (recommended)</option><option value="1000">1 km</option></select>
+      <div class="actions" style="margin-top:8px"><button onclick="homeZoneHere()">Set home to here</button></div></div>
   </section>
 
   </div>
@@ -1366,7 +1367,7 @@ async function loadLair() {
   $('lairNow').textContent = d.announce === '1' ? (d.now || 'First check within a minute or two (needs the internet).')
     + (d.temp_said ? ` · Last said: ${d.temp_said}` : '') : '';
   const src = d.warn_source;
-  $('warnRegion').hidden = src !== 'uk';
+  $('warnRegionRow').hidden = src !== 'uk';
   if (src === 'uk' && !keep($('warnRegion'))) $('warnRegion').value = d.warn_region;
   $('warnNote').textContent = src === 'uk' ? 'From the Met Office, for this region (change it if the guess is wrong):'
     : src === 'us' ? (d.warn_area ? `From the National Weather Service, for zone and county ${d.warn_area}.`
