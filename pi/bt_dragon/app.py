@@ -82,6 +82,8 @@ class Dragon:
         self.trackers = TrackerWatch(cfg["trackers"]["alert_after_minutes"] * 60,
                                      cfg["trackers"]["min_moved_meters"])
         self.gps = Gps()
+        self._draw_lock = asyncio.Lock()
+        self._join_errors = {}          # ssid -> why joining it last failed
         self.wifipos = WifiPosition(self.store)   # only when there's no GPS, and only if switched on
         sky_cfg = cfg["sky"]
         self.lands = skymod.Lands(self.store) if sky_cfg["lands"] else None
@@ -477,6 +479,7 @@ class Dragon:
                 self.pet.den_hint = f"DEN: {ip}:{self.cfg['link']['web_port']}" if ip else None
                 aps = await self.wifi.scan()
                 self._last_aps = (time.time(), aps)
+                await self._rejoin_if_lost(aps)
                 self.handle_aps(aps)
                 self._maybe_return(aps)
                 nets = self.wifipos.wanted(aps, self.gps.current() is not None, bool(self.home_ssid),
@@ -633,7 +636,13 @@ class Dragon:
             return
         self._caught_up = True
         started_at = time.time() - (time.monotonic() - self._mono_start)
-        gap = self.pet.catch_up(started_at)
+        nap = getattr(self, "_from_nap", False)
+        self._from_nap = False
+        gap = self.pet.catch_up(started_at, quiet=nap)
+        if nap:
+            if gap >= 120:          # a nap: the wake-up line in the diary already says how long
+                self.pet.save()
+            return
         if gap >= 120:
             from .pet import away_words
             ate = getattr(self.pet, "pack_eaten_away", 0)
@@ -808,8 +817,10 @@ class Dragon:
                 t = c_and_f(ev[1])
                 self.pet.say([f"IT'S {t} OUTSIDE AT THE LAIR", f"IT'S {t} AT THE LAIR", f"{t} AT THE LAIR"],
                              None, 30, speak=False)
-                if say["say_lair_temp"]:
-                    self.dot.news(f"It's {deg_words(ev[1])}, outside at the Lair.")
+                if say["say_lair_temp"]:     # ticked: said even in "Big moments"
+                    self.dot.news(f"It's {deg_words(ev[1])}, outside at the Lair.", big=True)
+                self.lair.s["temp_said"] = [now, t]
+                self.lair.save()
             elif kind == "pollen":
                 level, groups, higher, increased = ev[1], ev[2], ev[3], ev[4]
                 names = " and ".join({"trees": "tree", "weeds": "weed"}.get(g, g) for g in groups)
@@ -822,13 +833,24 @@ class Dragon:
                                   else f"Achoo! The {names} pollen is {level} at the Lair.", big=True)
                 if increased:
                     self.event("weather", f"{level.capitalize()} {names} pollen at the Lair")
+            elif kind == "air":
+                word, v, scale, higher, increased = ev[1], ev[2], ev[3], ev[4], ev[5]
+                self.pet.say([f"AIR QUALITY {word.upper()} AT THE LAIR", f"AIR QUALITY: {word.upper()}", "POOR AIR QUALITY!"],
+                             "sneezing", 45, speak=False)
+                if say["say_lair_air"] and (increased or say["say_lair_air_when"] == "all"):
+                    self.dot.news(f"The air quality at the Lair is getting worse! It's {word} now, with a {scale} "
+                                  f"air quality index of {v}." if higher else
+                                  f"The air quality at the Lair is {word}, with a {scale} air quality index of {v}.",
+                                  big=True)
+                if increased:
+                    self.event("weather", f"Air quality at the Lair: {word} ({scale} index {v})")
             elif kind == "uv":
                 uv, level, higher, increased = ev[1], ev[2], ev[3], ev[4]
                 screen = (["SUNGLASSES ON! UV IS HIGHER AT THE LAIR", "UV IS HIGHER AT THE LAIR", "HIGHER UV!"]
                           if higher else
                           [f"SUNGLASSES ON! {level.upper()} UV AT THE LAIR", f"{level.upper()} UV AT THE LAIR",
                            f"{level.upper()} UV!"])
-                self.pet.say(screen, "sunglasses", 45, speak=False)
+                self.pet.say(screen, "dazzled", 45, speak=False)
                 if say["say_lair_uv"] and (increased or say["say_lair_uv_when"] == "all"):
                     self.dot.news(f"Sunglasses on! The UV index at the Lair is higher! It's {round(uv)} now, that's {level}."
                                   if higher else
@@ -975,6 +997,9 @@ class Dragon:
                 continue
             if napped:
                 napped, last_key = False, None
+            if self.pet.sleeping:       # going to sleep: the "safe to unplug" picture stays
+                await self._sleep(2)
+                continue
             v = self.view()
             v["awake_min"] = v["awake"] // 60  # redraw when the UP clock's minute changes
             key = tuple((k, v[k]) for k in ("mood", "belly", "joy", "walked_today", "hunger", "pack", "pack_cap", "session_meals", "species", "session_treats",
@@ -985,7 +1010,9 @@ class Dragon:
             if (key != last_key and now - last_draw >= min_gap) or now - last_draw > 60:
                 phase ^= 1
                 v["phase"] = phase
-                await asyncio.to_thread(self.display.show, render(v))
+                async with self._draw_lock:
+                    if not self.pet.sleeping:
+                        await asyncio.to_thread(self.display.show, render(v))
                 last_key, last_draw = key, now
             await self._sleep(2)
 
@@ -1044,9 +1071,10 @@ class Dragon:
                 self.tracking[writer] = mac
                 self.classic_find_request(mac, fresh=True)  # listens first; knocks only if needed
             return ["OK"]
-        if cmd == "NETWORK":  # rank|ssid|connected(1/0) for each of our networks, best first
-            return [f"{r}|{s}|{1 if s == self.home_ssid else 0}"
-                    for r, (s, _) in enumerate(config_networks(self.cfg))] + ["END"]
+        if cmd == "NETWORK":  # rank|ssid|connected|in range|security|note, for each of our networks, best first
+            return [f"{n['rank']}|{n['ssid'].replace('|', '/')}|{1 if n['connected'] else 0}|"
+                    f"{1 if n['in_range'] else 0}|{n['security']}|{n['note'].replace('|', '/')}"
+                    for n in self.network_info()] + ["END"]
         if cmd == "RECONNECT":  # drop the current network and join the best one in range
             asyncio.ensure_future(self.switch_to_best(reason="asked from the den"))
             return ["OK looking for the best network (the den may lose its connection for a moment)"]
@@ -1156,7 +1184,9 @@ class Dragon:
                     f"complete={1 if lr.complete else 0}", f"now={reading}",
                     f"warn_source={lr.warnings_where()[0]}", f"warn_area={lr.warnings_where()[1]}",
                     f"warn_region={(lr.s.get('warn') or {}).get('area', '') if lr.warnings_where()[0] == 'uk' else ''}",
-                    "warn_active=" + " || ".join(w["title"] for w in lr.s.get("warn_active") or []), "END"]
+                    "warn_active=" + " || ".join(w["title"] for w in lr.s.get("warn_active") or []),
+                    "temp_said=" + (f"{lr.s['temp_said'][1]} at {time.strftime('%H:%M', time.localtime(lr.s['temp_said'][0]))}"
+                                    if lr.s.get("temp_said") else ""), "END"]
         if cmd == "LAIRSET":  # place|country: looked up straight away
             place, _, country = arg.partition("|")
             ok, words = await self.lair.set_place(place, country)
@@ -1415,11 +1445,11 @@ class Dragon:
         self.store.put("napping", None)
         # the time asleep counts like time switched off: the meters catch up (once the clock
         # is known to be right) and the Dot gives a welcome-back recap
-        self._mono_start, self._caught_up = time.monotonic(), False
+        self._mono_start, self._caught_up, self._from_nap = time.monotonic(), False, True
         self.started = time.time()
         from .pet import away_words
         self.event("wake", f"{self.pet.name} woke up from a nap" + (f" ({away_words(away).lower()})" if away >= 60 else ""))
-        self.pet.say("*YAWN* HELLO!", "happy", 20)
+        self.pet.say(["YAWN! HELLO!"], "happy", 20)
         return "OK awake"
 
     def _trip_view(self):
@@ -1463,7 +1493,8 @@ class Dragon:
         self.pet.save()
         self.activity.save()
         self._save_ble()
-        await asyncio.to_thread(self.display.sleep, render_sleep(self.view()))
+        async with self._draw_lock:     # wait for any picture being drawn right now to finish first
+            await asyncio.to_thread(self.display.sleep, render_sleep(self.view()))
         self.stop.set()
         if not self.simulate and how in ("SLEEP", "REBOOT"):
             subprocess.Popen(["systemctl", "poweroff" if how == "SLEEP" else "reboot"])
@@ -1504,13 +1535,49 @@ class Dragon:
             ok, msg = await wifimod.connect_profile(wifimod.profile_name(best))
             if ok:
                 self.home_ssid = ssid
+                self._join_errors.pop(ssid, None)
                 self.pet.say(f"NOW ON {ssid}")
                 return f"switched to {ssid}"
+            self._join_errors[ssid] = msg
             self.event("network", f"Couldn't switch to {ssid}: {msg}")
             self.pet.say(f"COULDN'T JOIN {ssid}")
             return f"couldn't join {ssid}: {msg}"
         finally:
             self._switching = False
+
+    async def _rejoin_if_lost(self, aps, now=None):
+        """No network for half a minute: don't just wait for the Pi's network manager to pick
+        one, join the best of ours that's in range (a backup, say), and keep trying each minute."""
+        now = time.time() if now is None else now
+        if self.home_ssid:
+            self._lost_since = None
+            return
+        if getattr(self, "_lost_since", None) is None:
+            self._lost_since = now
+            return
+        if self._switching or now - self._lost_since < 30 or now - getattr(self, "_rejoin_tried", float("-inf")) < 60:
+            return
+        visible = {ap["ssid"] for ap in aps}
+        if not any(s in visible for s, _ in config_networks(self.cfg)):
+            return
+        self._rejoin_tried = now
+        await self.switch_to_best(visible, "lost the network")
+
+    def network_info(self):
+        """For the den: each of our networks, whether it's in range, its security, and any
+        reason he can't join it."""
+        ts, aps = getattr(self, "_last_aps", (0, []))
+        out = []
+        for rank, (ssid, secret) in enumerate(config_networks(self.cfg)):
+            seen = [a for a in aps if a.get("ssid") == ssid] if time.time() - ts < 120 else []
+            sec = max((a.get("security", "") for a in seen), key=lambda x: x == "wpa3", default="")
+            note = wifimod.PROFILE_ERRORS.get(ssid) or self._join_errors.get(ssid, "")
+            if sec == "wpa3" and re.fullmatch(r"[0-9a-f]{64}", secret or ""):
+                note = ("This hotspot only accepts WPA3, which needs the password itself rather than the "
+                        "scrambled key. Set its security to WPA2/WPA3-Personal on the phone.")
+            out.append({"rank": rank, "ssid": ssid, "connected": ssid == self.home_ssid,
+                        "in_range": bool(seen), "security": sec, "note": note})
+        return out
 
     def _maybe_return(self, aps):
         """On a backup network and a better one is back in range (seen in two scans in a

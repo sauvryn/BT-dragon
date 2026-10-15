@@ -208,6 +208,9 @@ def profile_name(rank):
     return "bt-dragon-home" if rank == 0 else f"bt-dragon-backup-{rank}"
 
 
+PROFILE_ERRORS = {}     # ssid -> why NetworkManager wouldn't take its profile (for the den)
+
+
 def ensure_profiles(networks):
     """
     Make sure NetworkManager knows every network Harald may use, in priority order:
@@ -236,8 +239,10 @@ def ensure_profiles(networks):
                                capture_output=True, text=True)
         if r.returncode != 0:
             log.warning("could not set up network profile %s: %s", name, r.stderr.strip())
+            PROFILE_ERRORS[ssid] = r.stderr.strip() or "NetworkManager refused it"
             ok = False
         else:
+            PROFILE_ERRORS.pop(ssid, None)
             log.info("network profile '%s' ready for %s (priority %s)", name, ssid, prio)
     r = subprocess.run(base + ["show"], capture_output=True, text=True)
     for line in r.stdout.splitlines():

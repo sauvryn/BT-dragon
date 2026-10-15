@@ -13,7 +13,7 @@ B, P = 0, 255  # black ink, paper
 
 MOODS = ("content", "happy", "eating", "excited", "treat", "stuffed", "hungry", "starving",
          "bored", "lonely", "sleepy", "asleep", "alarmed", "uploading", "proud", "adventure", "riding",
-         "ecstatic", "sneezing", "sunglasses")  # new moods go at the end: friends' beacons send the mood's number
+         "ecstatic", "sneezing", "sunglasses", "dazzled")  # new moods go at the end: friends' beacons send the mood's number
 
 
 def _ell(d, x0, y0, x1, y1, fill=P, outline=B, width=1):
@@ -202,7 +202,8 @@ def _mouth_o(d):
 
 
 def _mouth_wavy(d):
-    d.line([(40, 64), (43, 62), (46, 64), (49, 62), (52, 64), (55, 62)], fill=B, width=1)
+    """Full and pleased: a wobbly smile, starting and ending on an up-stroke."""
+    d.line([(39, 62), (42, 64), (45, 62), (48, 64), (51, 62), (54, 64), (57, 62)], fill=B, width=1)
 
 
 def _eye_squeeze(d, cx, cy, side):    # sneezing: screwed shut, > <
@@ -351,8 +352,10 @@ def draw_dragon(d: ImageDraw.ImageDraw, ox, oy, mood="content", phase=0, belly=N
             _eye_squeeze(t, L, EY, -1); _eye_squeeze(t, R, EY, 1); _mouth_wide(t); _spray(t)
         else:
             _eye_half(t, L, EY); _eye_half(t, R, EY); _mouth_o(t)
-    elif m == "sunglasses":  # sunshine, or high UV
+    elif m == "sunglasses":  # sunshine
         _round_shades(t, phase); _mouth_grin(t)
+    elif m == "dazzled":     # high UV: sunglasses on, and an "oh!"
+        _round_shades(t, phase); _mouth_o(t)
     elif m == "uploading":
         _eye_open(t, L, EY, 1); _eye_open(t, R, EY, 1); _mouth_smile(t); _cloud(t, phase)
     else:

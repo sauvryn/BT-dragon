@@ -465,7 +465,7 @@ class Lair:
             elif k == "pressure":
                 out += self._pressure_events()
             elif k == "pollen":
-                out += self._pollen_event(air, now)
+                out += self._pollen_event(air, now) + self._air_event(air)
             elif k == "uv":
                 out += self._uv_event(now)
         if "sun" in kinds:
@@ -524,6 +524,21 @@ class Lair:
             return []
         return [("pollen", worst, [g for g, lv in levels.items() if lv == worst], higher, increased)]
 
+    def _air_event(self, air):
+        """Poor air quality (checked with the pollen): 'poor' or worse on the European scale,
+        or 'unhealthy for sensitive groups' or worse on the US one (for a Lair in the US)."""
+        a = (air or {}).get("current") or {}
+        us = self.s.get("code") == "US" and a.get("us_aqi") is not None
+        v = a.get("us_aqi") if us else a.get("european_aqi")
+        if v is None:
+            return []
+        bad = v > 100 if us else v > 60
+        word = us_aqi_word(v) if us else eu_aqi_word(v)
+        higher, increased = self._compare("air_prev", round(v), "high" if bad else "low")
+        if not bad:
+            return []
+        return [("air", word, round(v), "US" if us else "European", higher, increased)]
+
     def _uv_event(self, now):
         hourly = (self.cond or {}).get("hourly") or {}
         times, uv = hourly.get("time") or [], hourly.get("uv_index") or []
@@ -549,4 +564,5 @@ class Lair:
         if r.get("past") is not None:
             trend = ", rising" if r["past"] >= 1 else ", falling" if r["past"] <= -1 else ", steady"
         when = time.strftime("%H:%M", time.localtime(r["ts"]))
-        return where, f"{c_and_f(r['temp'])}, {round(r['pressure'])} hPa{trend} (at {when})"
+        pressure = f", {round(r['pressure'])} hPa{trend}" if r.get("pressure") is not None else ""
+        return where, f"{c_and_f(r['temp'])}{pressure} (at {when})"

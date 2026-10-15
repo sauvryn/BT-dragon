@@ -212,7 +212,7 @@ async def run():
     joy2 = app.pet.joy
     await app._lair_check(T0 + 45 * 60)
     assert "Sunglasses on! The UV index at the Lair is 7, that's high." in pushed, pushed
-    assert app.pet.reaction[0] == "sunglasses" and app.pet.joy == joy2
+    assert app.pet.reaction[0] == "dazzled" and app.pet.joy == joy2
     FORECAST["hourly"]["uv_index"][idx] = 8.4
     L.cond_ts, pushed[:] = 0, []
     L.s["done"]["uv"] = ""

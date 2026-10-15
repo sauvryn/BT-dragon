@@ -77,10 +77,12 @@ DEFAULTS = {
     "say_lair_temp": True, "say_lair_storm": True, "say_lair_sun": True, "say_lair_warnings": True,
     "say_lair_pollen": True, "say_lair_pollen_when": "increased",    # "all" high readings, or "increased" only
     "say_lair_uv": True, "say_lair_uv_when": "increased",
+    "say_lair_air": True, "say_lair_air_when": "increased",
     # ...and from the phone's own sensors
     "say_phone_storm": True, "say_phone_sun": True,
 }
 SAY_BOOLS = ("say_lair_temp", "say_lair_storm", "say_lair_sun", "say_lair_warnings", "say_lair_pollen", "say_lair_uv",
+             "say_lair_air",
              "say_phone_storm", "say_phone_sun")
 LIMITS = {"volume": (0, 100), "adv_volume": (0, 100), "brightness": (0, 100), "red": (0, 100), "green": (0, 100),
           "blue": (0, 100), "pitch": (-8, 8), "speed": (0.6, 1.6), "gap": (0, 120)}
@@ -267,7 +269,7 @@ class DotLink:
             self.s["home_lat"] = self.s["home_lon"] = None
             if self.s[key]:
                 asyncio.ensure_future(self._find_home(self.s[key]))
-        elif key in ("say_lair_pollen_when", "say_lair_uv_when"):
+        elif key in ("say_lair_pollen_when", "say_lair_uv_when", "say_lair_air_when"):
             if value not in ("all", "increased"):
                 return "choose all or increased"
             self.s[key] = value

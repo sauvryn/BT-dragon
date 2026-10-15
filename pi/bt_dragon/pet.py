@@ -163,10 +163,11 @@ class Pet:
 
     # ---------------------------------------------------------------- persistence
     def save(self):
+        self.saved_at = time.time()      # (kept in memory too: a nap's catch-up counts from here)
         self.store.put("pet", {"name": self.name, "xp": self.xp, "hunger": round(self.hunger, 1), "pack": round(self.pack, 2),
                                "joy": round(self.joy, 1), "total_meals": self.total_meals,
                                "total_treats": self.total_treats, "born": self.born,
-                               "saved_at": time.time(),
+                               "saved_at": self.saved_at,
                                "today": {"date": self._day, "meals": self.session_meals,
                                          "treats": self.session_treats, "species": self.session_species,
                                          "lands": self.lands_today, "stars": self.stars_today,
@@ -406,7 +407,7 @@ class Pet:
                   f"YOU TOLD {self.name} ABOUT YOUR ADVENTURE!", f"TOLD {self.name} ABOUT YOUR ADVENTURE!"], "happy", 40)
 
     # ---------------------------------------------------------------- time passes
-    def catch_up(self, started_at):
+    def catch_up(self, started_at, quiet=False):
         """
         Time passes while he's switched off, too. `started_at` is when this run began, on
         a clock known to be right; the gap since his last save before that is time he
@@ -437,7 +438,7 @@ class Pet:
                 break
         self.joy = max(0.0, self.joy - gap * 100 / (tuning.get("joy_empty_min") * 60)
                        * tuning.get("joy_off_drain") / 100)
-        if gap >= 1800:
+        if gap >= 1800 and not quiet:
             self.say(f"YOU'RE BACK! I WAS ASLEEP FOR {away_words(gap)}", "happy" if self.hunger >= 10 else None, 30)
         return gap
 

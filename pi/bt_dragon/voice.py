@@ -42,7 +42,7 @@ def speakable(text, name=""):
     t = " " + text.strip() + " "
     for k, v in SAY_AS.items():
         t = re.sub(rf"(?<![A-Za-z0-9]){re.escape(k)}(?![A-Za-z0-9])", "\x00" + v + "\x01", t)
-    t = t.replace("_", " ")
+    t = t.replace("_", " ").replace("*", " ")      # *YAWN* is a sound, not "asterisk yawn asterisk"
     t = re.sub(r"\+(\d)", r"plus \1", t)
     t = re.sub(r"(^|\s|\()-(\d)", r"\1minus \2", t)
     t = re.sub(r"\((.*?)\)", r", \1,", t)

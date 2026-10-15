@@ -98,8 +98,8 @@
 <main>
   <section id="napBox" hidden>
     <h2><span class="pname">Harald</span> is napping</h2>
-    <p style="margin:0">Asleep <span id="napFor"></span>: no feeding, the Dot dark and quiet, his meters frozen,
-      and nothing being written to his card, so he's safe to unplug. He stays on his hotspot so you can wake him from here.</p>
+    <p style="margin:0">Asleep <span id="napFor"></span>: no feeding, the Dot (if using) dark and quiet, his meters
+      frozen (but they drop when he wakes, by however long he napped, just as after sleeping), and nothing being written to his card, so he's safe to unplug. He stays on his hotspot so you can wake him from here.</p>
     <div class="actions" style="margin-top:10px"><button class="primary" onclick="wakeUp()">Wake up</button></div>
   </section>
   <img class="screen" id="screen" alt="Your dragon's e-ink screen">
@@ -307,11 +307,12 @@
     <p class="sub" style="margin:0 0 6px">Home, as far as the weather is concerned: what "at home" means when you ask him,
       and where the weather comes from when he doesn't know where he is. He only keeps it to within about 10 km, and a full
       postcode is cut to its area before it's looked up.</p>
-    <div class="row wrap" style="border:0">
-      <input type="text" id="lairPlace" maxlength="60" placeholder="City/state or zip/postcode" style="flex:2 1 180px"
-        onkeydown="if(event.key==='Enter') lairSave()">
-      <input type="text" id="lairCountry" maxlength="60" placeholder="Country" list="countryList" style="flex:1 1 120px"
-        onkeydown="if(event.key==='Enter') lairSave()">
+    <div class="row" style="border:0">
+      <input type="text" id="lairPlace" maxlength="60" placeholder="City/state or zip/postcode"
+        style="flex:1 1 auto; min-width:0; width:100%; box-sizing:border-box" onkeydown="if(event.key==='Enter') lairSave()"></div>
+    <div class="row" style="border:0">
+      <input type="text" id="lairCountry" maxlength="60" placeholder="Country" list="countryList"
+        style="flex:1 1 auto; min-width:0; box-sizing:border-box" onkeydown="if(event.key==='Enter') lairSave()">
       <button class="primary" onclick="lairSave()">Save</button></div>
     <datalist id="countryList"><option value="Afghanistan"><option value="Albania"><option value="Algeria"><option value="American Samoa"><option value="Andorra"><option value="Angola"><option value="Anguilla"><option value="Antarctica"><option value="Antigua and Barbuda"><option value="Argentina"><option value="Armenia"><option value="Aruba"><option value="Australia"><option value="Austria"><option value="Azerbaijan"><option value="Bahamas"><option value="Bahrain"><option value="Bangladesh"><option value="Barbados"><option value="Belarus"><option value="Belgium"><option value="Belize"><option value="Benin"><option value="Bermuda"><option value="Bhutan"><option value="Bolivia"><option value="Bosnia and Herzegovina"><option value="Botswana"><option value="Brazil"><option value="British Virgin Islands"><option value="Brunei"><option value="Bulgaria"><option value="Burkina Faso"><option value="Burundi"><option value="Cambodia"><option value="Cameroon"><option value="Canada"><option value="Cape Verde"><option value="Caribbean Netherlands"><option value="Cayman Islands"><option value="Central African Republic"><option value="Chad"><option value="Chile"><option value="China"><option value="Christmas Island"><option value="Cocos (Keeling) Islands"><option value="Colombia"><option value="Comoros"><option value="Cook Islands"><option value="Costa Rica"><option value="Croatia"><option value="Cuba"><option value="Curaçao"><option value="Cyprus"><option value="Czechia"><option value="Democratic Republic of the Congo"><option value="Denmark"><option value="Djibouti"><option value="Dominica"><option value="Dominican Republic"><option value="Ecuador"><option value="Egypt"><option value="El Salvador"><option value="Equatorial Guinea"><option value="Eritrea"><option value="Estonia"><option value="Eswatini"><option value="Ethiopia"><option value="Falkland Islands"><option value="Faroe Islands"><option value="Fiji"><option value="Finland"><option value="France"><option value="French Guiana"><option value="French Polynesia"><option value="Gabon"><option value="Gambia"><option value="Georgia"><option value="Germany"><option value="Ghana"><option value="Gibraltar"><option value="Greece"><option value="Greenland"><option value="Grenada"><option value="Guadeloupe"><option value="Guam"><option value="Guatemala"><option value="Guernsey"><option value="Guinea"><option value="Guinea-Bissau"><option value="Guyana"><option value="Haiti"><option value="Honduras"><option value="Hong Kong"><option value="Hungary"><option value="Iceland"><option value="India"><option value="Indonesia"><option value="Iran"><option value="Iraq"><option value="Ireland"><option value="Isle of Man"><option value="Israel"><option value="Italy"><option value="Ivory Coast"><option value="Jamaica"><option value="Japan"><option value="Jersey"><option value="Jordan"><option value="Kazakhstan"><option value="Kenya"><option value="Kiribati"><option value="Kuwait"><option value="Kyrgyzstan"><option value="Laos"><option value="Latvia"><option value="Lebanon"><option value="Lesotho"><option value="Liberia"><option value="Libya"><option value="Liechtenstein"><option value="Lithuania"><option value="Luxembourg"><option value="Macao"><option value="Madagascar"><option value="Malawi"><option value="Malaysia"><option value="Maldives"><option value="Mali"><option value="Malta"><option value="Marshall Islands"><option value="Martinique"><option value="Mauritania"><option value="Mauritius"><option value="Mayotte"><option value="Mexico"><option value="Micronesia"><option value="Moldova"><option value="Monaco"><option value="Mongolia"><option value="Montenegro"><option value="Montserrat"><option value="Morocco"><option value="Mozambique"><option value="Myanmar"><option value="Namibia"><option value="Nauru"><option value="Nepal"><option value="Netherlands"><option value="New Caledonia"><option value="New Zealand"><option value="Nicaragua"><option value="Niger"><option value="Nigeria"><option value="Niue"><option value="Norfolk Island"><option value="North Korea"><option value="North Macedonia"><option value="Northern Mariana Islands"><option value="Norway"><option value="Oman"><option value="Pakistan"><option value="Palau"><option value="Palestine"><option value="Panama"><option value="Papua New Guinea"><option value="Paraguay"><option value="Peru"><option value="Philippines"><option value="Pitcairn Islands"><option value="Poland"><option value="Portugal"><option value="Puerto Rico"><option value="Qatar"><option value="Republic of the Congo"><option value="Romania"><option value="Russia"><option value="Rwanda"><option value="Réunion"><option value="Saint Barthélemy"><option value="Saint Helena"><option value="Saint Kitts and Nevis"><option value="Saint Lucia"><option value="Saint Martin"><option value="Saint Pierre and Miquelon"><option value="Saint Vincent and the Grenadines"><option value="Samoa"><option value="San Marino"><option value="Saudi Arabia"><option value="Senegal"><option value="Serbia"><option value="Seychelles"><option value="Sierra Leone"><option value="Singapore"><option value="Sint Maarten"><option value="Slovakia"><option value="Slovenia"><option value="Solomon Islands"><option value="Somalia"><option value="South Africa"><option value="South Korea"><option value="South Sudan"><option value="Spain"><option value="Sri Lanka"><option value="Sudan"><option value="Suriname"><option value="Svalbard and Jan Mayen"><option value="Sweden"><option value="Switzerland"><option value="Syria"><option value="São Tomé and Príncipe"><option value="Taiwan"><option value="Tajikistan"><option value="Tanzania"><option value="Thailand"><option value="Timor-Leste"><option value="Togo"><option value="Tokelau"><option value="Tonga"><option value="Trinidad and Tobago"><option value="Tunisia"><option value="Turkey"><option value="Turkmenistan"><option value="Turks and Caicos Islands"><option value="Tuvalu"><option value="US Virgin Islands"><option value="Uganda"><option value="Ukraine"><option value="United Arab Emirates"><option value="United Kingdom"><option value="United States"><option value="Uruguay"><option value="Uzbekistan"><option value="Vanuatu"><option value="Vatican City"><option value="Venezuela"><option value="Vietnam"><option value="Wallis and Futuna"><option value="Western Sahara"><option value="Yemen"><option value="Zambia"><option value="Zimbabwe"><option value="Åland Islands"></datalist>
     <div class="row"><div class="grow sub" id="lairFound">Not set yet.</div></div>
@@ -350,7 +351,7 @@
     <div class="row"><div class="grow">How chatty<div class="sub" id="dotChattyNote"></div></div>
       <select id="dotChatty" onchange="dotSet('chatty', this.value)">
         <option value="all">Everything</option><option value="big">Big moments</option>
-        <option value="recap">Welcome-home recap only</option><option value="silent">Silent (ring only)</option>
+        <option value="recap">Welcome-home recap only</option><option value="silent">No announcements</option>
         <option value="adventure">Adventure mode</option></select></div>
     <div class="row wrap"><div class="grow full">Weather information: Lair<div class="sub">Which news from home he says out loud
       (his screen always shows it). Needs the Lair's Local announcements on.</div></div>
@@ -364,6 +365,9 @@
         <span><label class="sub"><input type="checkbox" id="say_lair_uv" onchange="sayTick(this)"> High UV</label>
           <select id="say_lair_uv_when" onchange="dotSet(this.id, this.value)">
             <option value="increased">Increased readings only</option><option value="all">All high readings</option></select></span>
+        <span><label class="sub"><input type="checkbox" id="say_lair_air" onchange="sayTick(this)"> Poor air quality</label>
+          <select id="say_lair_air_when" onchange="dotSet(this.id, this.value)">
+            <option value="increased">Increased readings only</option><option value="all">All poor readings</option></select></span>
         <label class="sub"><input type="checkbox" id="say_lair_sun" onchange="sayTick(this)"> Sunrise/sunset</label>
       </div></div>
     <div class="row wrap"><div class="grow full">Weather information: Phone sensors<div class="sub">From your phone's own
@@ -749,9 +753,10 @@ async function refresh() {
   } catch (e) {}
 
   const nets = (await cmd('NETWORK')).map(l => split(l));
-  $('netList').innerHTML = nets.map(([rank, ssid, on]) => `<div class="row"><div class="grow">${+on ? '<b>' + esc(ssid) + '</b>' : esc(ssid)}
-    <div class="sub">${+rank === 0 ? 'Main hotspot' : 'Backup ' + rank}</div></div>
-    <span class="sub">${+on ? 'connected' : ''}</span></div>`).join('');
+  $('netList').innerHTML = nets.map(([rank, ssid, on, seen, sec, note]) => `<div class="row"><div class="grow">${+on ? '<b>' + esc(ssid) + '</b>' : esc(ssid)}
+    <div class="sub">${+rank === 0 ? 'Main hotspot' : 'Backup ' + rank}${sec ? ' · ' + esc(sec.toUpperCase()) : ''}</div>
+    ${note ? `<div class="sub" style="color: var(--blood)">${esc(note)}</div>` : ''}</div>
+    <span class="sub">${+on ? 'connected' : +seen ? 'in range' : 'not in range'}</span></div>`).join('');
 
   const sp = await cmd('SPECIES');
   $('species').innerHTML = sp.map(l => { const [meals, kind, label] = split(l);
@@ -975,7 +980,7 @@ async function loadDot() {
   $('phoneCmd').textContent = `curl -O http://${location.host}/phone/harald_voice.py && python harald_voice.py`;
   if (!keep($('dotChatty'))) $('dotChatty').value = d.chatty;
   $('dotChattyNote').textContent = {all: 'He speaks every message from his screen', big: 'New species, landmarks, storms, level-ups...',
-    recap: 'Only a summary when he comes home', silent: 'The ring still shows his moods',
+    recap: 'Only a summary when he comes home', silent: "He announces nothing, but still answers your questions out loud. The Dot, if connected, will still display the mood ring lights and animations.",
     adventure: 'Out and about: distance, climbing, lands, realms, famous places, sunshine, stars, level-ups and a full pack. Nothing about gadgets or Wi-Fi.'}[d.chatty] || '';
   for (const [k, id] of [['volume', 'dotVolume'], ['adv_volume', 'dotAdvVolume'], ['brightness', 'dotBrightness'], ['pitch', 'dotPitch'], ['speed', 'dotSpeed'],
                          ['gap', 'dotGap'], ['red', 'dotRed'], ['green', 'dotGreen'], ['blue', 'dotBlue']]) {
@@ -1010,7 +1015,7 @@ async function loadDot() {
   if (!keep($('dotQFrom'))) $('dotQFrom').value = d.quiet_from.padStart(5, '0');
   if (!keep($('dotQTo'))) $('dotQTo').value = d.quiet_to.padStart(5, '0');
 }
-const SAY_KEYS = ['say_lair_temp', 'say_lair_storm', 'say_lair_warnings', 'say_lair_pollen', 'say_lair_uv', 'say_lair_sun',
+const SAY_KEYS = ['say_lair_temp', 'say_lair_storm', 'say_lair_warnings', 'say_lair_air', 'say_lair_pollen', 'say_lair_uv', 'say_lair_sun',
                   'say_phone_storm', 'say_phone_sun'];
 function sayTick(box) {
   const when = $(box.id + '_when');
@@ -1052,7 +1057,8 @@ async function loadLair() {
     : d.found ? `The Lair: ${d.found}. Add the country and press Save to confirm it.` : 'Not set yet.';
   if (!keep($('lairAnnounce'))) $('lairAnnounce').checked = d.announce === '1';
   $('lairAnnounce').disabled = d.complete !== '1';
-  $('lairNow').textContent = d.announce === '1' ? (d.now || 'First check within a minute or two (needs the internet).') : '';
+  $('lairNow').textContent = d.announce === '1' ? (d.now || 'First check within a minute or two (needs the internet).')
+    + (d.temp_said ? ` · Last said: ${d.temp_said}` : '') : '';
   const src = d.warn_source;
   $('warnRegion').hidden = src !== 'uk';
   if (src === 'uk' && !keep($('warnRegion'))) $('warnRegion').value = d.warn_region;
