@@ -42,7 +42,8 @@ def build(data, mode=True, source=None):
         raise ValueError("this doesn't look like Bookworm's page (its script ending wasn't found)")
     html = html[:i] + _read("hook.js") + "\n" + html[i:]
     if mode:
-        html = html.replace("</head>", "<style>\n" + _read("den.css") + "\n</style>\n</head>", 1)
+        html = html.replace("</head>", "<style>\n" + _read("den.css") + "\n</style>\n"
+                            '<link rel="stylesheet" href="/theme.css">\n</head>', 1)   # Color Blindness Mode
         j = html.rfind("</body>")
         html = html[:j] + "<script>\n" + _read("mode.js") + "\n</script>\n" + html[j:]
     return html

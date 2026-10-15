@@ -2,6 +2,12 @@
 window.__garden = {
   country: COUNTRY,
   unlocks: UNLOCKS,
+  /* Bookworm's English spellings and words (British, American, Canadian), for the rest of BT Dragon */
+  langData: function(){
+    var rx = function(L){ return L.map(function(x){ return [x[0].source, x[0].flags].concat(x.slice(1)); }); };
+    return {names: LANGS, us: rx(SPELL_US), gb: rx(SPELL_GB), ca_gb: rx(SPELL_CA_GB), ca_ize: rx(SPELL_CA_IZE),
+            us_words: rx(US_WORDS), gb_words: rx(GB_WORDS), ca_words: rx(CA_WORDS)};
+  },
   habitatNames: function(){ var o = {}; HABITATS.forEach(function(h){ o[h.k] = h.name; }); return o; },
   dump: function(){
     return SPECIES.map(function(s){

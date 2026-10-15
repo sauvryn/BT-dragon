@@ -9,7 +9,8 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
   :root { --stone: #1d1c1a; --stone2: #282623; --line: #3d3a35; --ink: #ece6da; --dim: #a69f92;
-          --rune: #d9a441; }
+          --rune: #d9a441; --blood: #e8735c; --moss: #7fbf5f; }
+  :root { color-scheme: dark; }      /* the browser's own controls (tick boxes, menus) drawn dark too */
   * { box-sizing: border-box; }
   html, body { margin: 0; height: 100%; background: var(--stone); color: var(--ink);
                font: 15px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
@@ -27,6 +28,8 @@
   #fallback { width: 100%; height: 100%; display: block; }
   .leaflet-container { background: #10100f; }
 </style>
+<script src="/lang.js"></script>
+<link rel="stylesheet" href="/theme.css">
 </head>
 <body>
 <header>
@@ -45,7 +48,8 @@
 <script>
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'})[c]);
-const GREEN = '#7fbf5f';
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const GREEN = css('--moss') || '#7fbf5f', GOLD = css('--rune') || '#d9a441', RED = css('--blood') || '#e8735c';
 let data = null, map = null, layers = [], first = true;
 
 async function load() {
@@ -74,11 +78,11 @@ function draw() {
   }
   if (data.lands.length) {
     layers.push(L.polygon(data.lands.map(b => [ring(b)]), {
-      color: '#d9a441', weight: 1, opacity: 0.9, fillColor: '#d9a441', fillOpacity: $('fog').checked ? 0.12 : 0.35,
+      color: GOLD, weight: 1, opacity: 0.9, fillColor: GOLD, fillOpacity: $('fog').checked ? 0.12 : 0.35,
       interactive: false}).addTo(map));
   }
   data.realms.forEach(b => layers.push(L.rectangle([[b[0], b[1]], [b[2], b[3]]], {
-    color: '#d9a441', weight: 1.5, dashArray: '6 5', fill: false, interactive: false}).addTo(map)));
+    color: GOLD, weight: 1.5, dashArray: '6 5', fill: false, interactive: false}).addTo(map)));
   (data.greens || []).forEach(g => {
     layers.push(L.polygon(g.rings, {color: GREEN, weight: 2, opacity: 0.95, dashArray: g.seen ? null : '5 5',
       fillColor: GREEN, fillOpacity: g.seen ? 0.22 : 0.06}).addTo(map)
@@ -87,18 +91,18 @@ function draw() {
   (data.landmarks || []).forEach(lm => {
     const icon = L.divIcon({className: '', iconSize: [22, 22], iconAnchor: [11, 11],
       html: `<div style="width:22px;height:22px;border-radius:11px;display:flex;align-items:center;justify-content:center;
-        font:bold 14px system-ui;border:2px solid #d9a441;${lm.seen ? 'background:#d9a441;color:#1d1c1a' : 'background:#1d1c1a;color:#d9a441'}">
+        font:bold 14px system-ui;border:2px solid ${GOLD};${lm.seen ? 'background:' + GOLD + ';color:#1d1c1a' : 'background:#1d1c1a;color:' + GOLD}">
         ${lm.seen ? '★' : '?'}</div>`});
     layers.push(L.marker([lm.lat, lm.lon], {icon}).addTo(map)
       .bindTooltip(lm.seen ? esc(lm.title) : `${esc(lm.title)}: not seen yet`));
   });
   if (data.here && data.here.wifi) {   // a Wi-Fi position: show how rough it is
-    layers.push(L.circle([data.here.lat, data.here.lon], {radius: data.here.acc || 50, color: '#c8553d', weight: 1,
+    layers.push(L.circle([data.here.lat, data.here.lon], {radius: data.here.acc || 50, color: RED, weight: 1,
       fillOpacity: 0.12}).addTo(map));
   }
   if (data.here) {
     layers.push(L.circleMarker([data.here.lat, data.here.lon], {
-      radius: 7, color: '#ece6da', weight: 2, fillColor: '#c8553d', fillOpacity: 1}).addTo(map)
+      radius: 7, color: '#ece6da', weight: 2, fillColor: RED, fillOpacity: 1}).addTo(map)
       .bindTooltip(data.here.wifi ? `${data.name} is about here (by Wi-Fi)` : `${data.name} is here`));
   }
   if (first) {
@@ -112,7 +116,7 @@ function draw() {
 }
 
 function centerOnMe() {
-  if (!data || !data.here) { alert(`${data ? data.name : 'The dragon'} doesn't know where he is right now (no GPS fix).`); return; }
+  if (!data || !data.here) { alert(`${data ? data.name : 'The dragon'} doesn't know where it is right now (no GPS fix).`); return; }
   if (map) map.setView([data.here.lat, data.here.lon], 17);
 }
 
@@ -134,11 +138,11 @@ function drawFallback() {
   let svg = `<svg id="fallback" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">`;
   (data.greens || []).forEach(g => g.rings.forEach(r => svg += `<polygon points="${r.map(p => X(p[1]) + ',' + Y(p[0])).join(' ')}"
       fill="${GREEN}" fill-opacity="${g.seen ? 0.3 : 0.08}" stroke="${GREEN}" stroke-width="2"${g.seen ? '' : ' stroke-dasharray="6 5"'}><title>${esc(g.name)}</title></polygon>`));
-  data.lands.forEach(b => svg += rect(b, 'fill="#d9a441" fill-opacity="0.5" stroke="#d9a441"'));
-  data.realms.forEach(b => svg += rect(b, 'fill="none" stroke="#d9a441" stroke-dasharray="8 6" stroke-width="2"'));
+  data.lands.forEach(b => svg += rect(b, `fill="${GOLD}" fill-opacity="0.5" stroke="${GOLD}"`));
+  data.realms.forEach(b => svg += rect(b, `fill="none" stroke="${GOLD}" stroke-dasharray="8 6" stroke-width="2"`));
   (data.landmarks || []).forEach(lm => svg += `<text x="${X(lm.lon)}" y="${Y(lm.lat) + 6}" text-anchor="middle" font-size="18"
-      fill="#d9a441">${lm.seen ? '★' : '?'}<title>${esc(lm.title)}</title></text>`);
-  if (data.here) svg += `<circle cx="${X(data.here.lon)}" cy="${Y(data.here.lat)}" r="8" fill="#c8553d" stroke="#ece6da" stroke-width="3"/>`;
+      fill="${GOLD}">${lm.seen ? '★' : '?'}<title>${esc(lm.title)}</title></text>`);
+  if (data.here) svg += `<circle cx="${X(data.here.lon)}" cy="${Y(data.here.lat)}" r="8" fill="${RED}" stroke="#ece6da" stroke-width="3"/>`;
   $('map').innerHTML = svg + '</svg>';
 }
 

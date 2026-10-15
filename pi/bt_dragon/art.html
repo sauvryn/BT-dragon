@@ -6,7 +6,8 @@
 <title>Artwork</title>
 <style>
   :root { --stone: #1d1c1a; --stone2: #282623; --line: #3d3a35; --ink: #ece6da; --dim: #a69f92;
-          --rune: #d9a441; --ember: #c8553d; --moss: #7fbf5f; }
+          --rune: #d9a441; --ember: #e8735c; --moss: #7fbf5f; }
+  :root { color-scheme: dark; }      /* the browser's own controls (tick boxes, menus) drawn dark too */
   * { box-sizing: border-box; }
   html, body { margin: 0; background: var(--stone); color: var(--ink);
                font: 16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
@@ -42,6 +43,8 @@
   #msg { position: sticky; top: 0; background: var(--stone); padding: 6px 0; min-height: 1.6em; color: var(--rune);
          font-size: 14px; z-index: 1; }
 </style>
+<script src="/lang.js"></script>
+<link rel="stylesheet" href="/theme.css">
 </head>
 <body>
 <main>
@@ -52,7 +55,7 @@
   <div class="intro sub">
     <p>Each picture is <b style="color:var(--ink)">96 × 86 pixels</b>, <b style="color:var(--ink)">black and white</b>,
       saved as <b style="color:var(--ink)">PNG</b> (JPEG blurs edges into grey). One per mood; a second frame is optional,
-      and he alternates the two on screen updates (blinking, chomping, drifting Zzz). Moods without a picture keep the
+      and the two alternate on screen updates (blinking, chomping, drifting Zzz). Moods without a picture keep the
       drawn version, so you can replace them one at a time. Anything the drawn one adds on top (Zzz, sparkles, sweat,
       speed lines) is part of your picture.</p>
     <p>On the panel every pixel is ink or paper: transparent counts as paper, and grey becomes black if darker than half
@@ -64,7 +67,7 @@
   <div id="problems" class="problems" hidden></div>
   <div id="msg"></div>
   <div class="mood"><div class="mood-head"><h2>Sleep screens</h2>
-    <span class="sub">The whole screen, <b style="color:var(--ink)">250 × 122</b>, while he naps and when he's put to sleep
+    <span class="sub">The whole screen, <b style="color:var(--ink)">250 × 122</b>, during a nap and after being put to sleep
       (turn them on or off in the Den's Care section). Transparent counts as white here too.</span></div>
     <div class="frames" id="screens"></div></div>
   <div id="list">Loading…</div>
@@ -137,7 +140,7 @@ function draw() {
       <span class="sub">${esc(data.notes[mood] || '')}${mine ? ` · ${mine} of yours` : ''}</span></div>
       <div class="frames">${main.map(tile).join('')}</div>`;
     if (extra.length) {
-      html += `<details class="variants"${extra.some(r => r.used) ? ' open' : ''}><summary>Optional: when his belly is empty or full</summary>
+      html += `<details class="variants"${extra.some(r => r.used) ? ' open' : ''}><summary>Optional: when the belly is empty or full</summary>
         <div class="frames">${extra.map(tile).join('')}</div></details>`;
     }
     html += '</div>';
@@ -155,8 +158,8 @@ async function upload(input) {
   try {
     const r = await fetch('/api/art?name=' + encodeURIComponent(target), {method: 'POST', body: f});
     const j = await r.json();
-    $('msg').textContent = !j.ok ? j.error : target.endsWith('-screen.png') ? `Saved ${target}. It's used the next time he ${target.startsWith('nap') ? 'naps' : 'is put to sleep'}.`
-      : `Saved ${target}. It's on his screen the next time that mood shows.`;
+    $('msg').textContent = !j.ok ? j.error : target.endsWith('-screen.png') ? `Saved ${target}. It's used at the next ${target.startsWith('nap') ? 'nap' : 'sleep'}.`
+      : `Saved ${target}. It's on the screen the next time that mood shows.`;
   } catch (e) { $('msg').textContent = 'The dragon is not answering.'; }
   stamp = Date.now();
   load();

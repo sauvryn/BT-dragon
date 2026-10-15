@@ -27,6 +27,7 @@ from .greens import Greens, visit_words
 from .garden import Garden
 from . import garden as gardenmod
 from . import garden_page
+from . import lang as langmod
 from .diary import DiaryFiles
 from .dot import DotLink
 from . import moon as moonmod
@@ -74,6 +75,11 @@ class Dragon:
             self.store.put("code_names_tidied", True)
             if n:
                 log.info("folded %d code-named species into %s", n, UNBRANDED)
+        if not self.store.get("types_renamed"):         # once: the diary says "type" now, not "species"
+            self.store.db.execute("UPDATE events SET text='New type: ' || substr(text, 14) "
+                                  "WHERE kind='species' AND text LIKE 'New species: %'")
+            self.store.db.commit()
+            self.store.put("types_renamed", True)
         self._known_species = {r["key"] for r in self.store.species_list()}
         self.ble = BleWatcher()
         self.ble.import_state(self.store.get("ble_today"))
@@ -152,7 +158,17 @@ class Dragon:
         self._nap_redraw = False
         self.garden = Garden(self.store)
         self.garden.on_event = self._garden_event
+        # which English (British, American, Canadian) his screen and the Den are in, and the
+        # garden's starting country: from the Pi's own country (set in Raspberry Pi Imager)
+        self.os_country = None if simulate else langmod.os_country()
+        self.language = langmod.Language(self.store, self.os_country)
+        self.garden.default_country = gardenmod.COUNTRY_OF.get((self.os_country or "").upper(), "gb")
+        if "country" not in self.garden.s and gardenmod.COUNTRY_OF.get(self._lair_code().upper()):
+            # (once, from an older version, where the garden followed the Lair)
+            self.garden.s["country"] = gardenmod.COUNTRY_OF[self._lair_code().upper()]
+            self.garden.save()
         self._garden_news = []
+        self._garden_fed, self._garden_fed_said, self._garden_shown = 0.0, 0.0, None
         self.pet.on_surplus = self._garden_feed
         if simulate:
             self.dot.state = "not used in the simulation"
@@ -161,6 +177,20 @@ class Dragon:
         for mac, name in cfg["own_devices"].items():
             if MAC_RE.match(mac) and mac not in self.store.pals():
                 self.store.add_pal(mac, name)
+
+    def _tuning_changed(self):
+        """A knob changed in Developer Tools: a smaller PACK spills what no longer fits (it
+        would otherwise show as more than full, and nothing could go into it)."""
+        cap = tuning.get("pack_cap")
+        if self.pet.pack > cap:
+            self.pet.pack = cap
+            self.pet.save()
+
+    # ================================================================ Color Blindness Mode
+    def cvd_mode(self):
+        from . import access
+        m = self.store.get("cvd")
+        return m if m in access.MODES else "full"
 
     # ================================================================ sleep screens
     def sleep_screens(self):
@@ -176,10 +206,15 @@ class Dragon:
     def _lair_code(self):
         return (self.lair.s or {}).get("code") or ""
 
+    def lang(self):
+        """gb, us or ca: the English his screen and the Den are written in."""
+        return self.language.current(self._lair_code())
+
     def _garden_feed(self, food):
-        if self.napping:
+        if self.napping or not self.garden.unlocked(self.pet.level()):
             return
         self.garden.feed(food, self.pet.level(), self._lair_code(), belly_low=self.pet.hunger < 30)
+        self._garden_fed += food           # said on his screen a moment later (see _garden_tick)
 
     def _garden_event(self, kind, info):
         """Hatching, pupating and emerging: queued, so a treat's own message isn't covered up."""
@@ -188,7 +223,25 @@ class Dragon:
     def _garden_tick(self):
         """One garden message per pet tick (every 5 s)."""
         self.garden.note_belly(self.pet.hunger < 30, self.pet.level())
-        if not self._garden_news or time.time() < getattr(self.pet, "message_hold", 0):
+        now = time.time()
+        if now < getattr(self.pet, "message_hold", 0):
+            return
+        waiting = self._garden_news or (self._garden_fed >= 0.05 and now - self._garden_fed_said >= 30)
+        if not waiting:
+            self._garden_shown = None
+            return
+        if self._garden_shown is None:
+            self._garden_shown = now        # (when this started waiting)
+        if now - getattr(self.pet, "message_ts", 0) < 6 and now - self._garden_shown < 30:
+            return                          # let the message that's showing be read first (in a busy
+                                            # place there's always one: then it waits 30 s at most)
+        self._garden_shown = now
+        if not self._garden_news:
+            if self._garden_fed >= 0.05 and time.time() - self._garden_fed_said >= 30:
+                n = self._garden_fed
+                self._garden_fed, self._garden_fed_said = 0.0, time.time()
+                self.pet.say([f"FED {_n(n)} FOOD TO THE BUTTERFLY GARDEN", f"FED {_n(n)} FOOD TO THE GARDEN",
+                              f"+{_n(n)} FOOD TO THE GARDEN"], None, 10, speak=False)
             return
         kind, info = self._garden_news.pop(0)
         if kind == "say":               # held back while "LEVEL UP!" was showing
@@ -238,7 +291,7 @@ class Dragon:
 
     def garden_page(self, c=""):
         c = c if c in gardenmod.COUNTRY_NAME else self.garden.country(self._lair_code())
-        return garden_page.build(dict(self.garden.page_data(c), name=self.pet.name))
+        return garden_page.build(dict(self.garden.page_data(c), name=self.pet.name, lang=self.lang()))
 
     # ================================================================ events
     def event(self, kind, text):
@@ -258,7 +311,7 @@ class Dragon:
         """Count a meal of this species; a species he's never had before is a feast."""
         if self.store.species_seen(key, label, kind, now):
             self.pet.feast(label)
-            self.event("species", f"New species: {label}")
+            self.event("species", f"New type: {label}")
         self._known_species.add(key)
 
     def _headcount_snacks(self, now):
@@ -525,7 +578,7 @@ class Dragon:
             if is_new:
                 packed = self.pet.treat(ap)
                 self.event("treat", f"New Wi-Fi: {ap['ssid'] or '(hidden)'} {ap['auth']}"
-                                    + (f" ({_n(packed)} into his pack)" if packed else ""))
+                                    + (f" ({_n(packed)} into the pack)" if packed else ""))
             elif clock and prev:
                 # berry bush: one point of food per calendar day since he last picked it
                 days = (datetime.date.fromtimestamp(now) - datetime.date.fromtimestamp(prev)).days
@@ -539,7 +592,7 @@ class Dragon:
         if berry_food:
             packed = self.pet.berries(berry_food, bushes)
             self.event("berries", f"Picked berries from {bushes} familiar network{'s' if bushes != 1 else ''} "
-                                  f"(+{_n(berry_food)} food" + (f", {_n(packed)} into his pack" if packed else "") + ")")
+                                  f"(+{_n(berry_food)} food" + (f", {_n(packed)} into the pack" if packed else "") + ")")
 
     async def wifi_loop(self):
         last_look = 0.0
@@ -679,6 +732,7 @@ class Dragon:
             message = self.pet.message
         return {
             "name": self.pet.name, "level": self.pet.level(), "xp_frac": self.pet.xp_frac(),
+            "lang": self.lang(),
             "mood": self.pet.mood(), "belly": self.pet.belly(), "hunger": round(self.pet.hunger), "pack": round(self.pet.pack, 1), "pack_cap": tuning.get("pack_cap"),
             "joy": round(self.pet.joy), "feeling": self.pet.feeling(),
             "moving": self.activity.motion.mode if self.gps.state() == "FIX" else "",
@@ -734,7 +788,7 @@ class Dragon:
             from .pet import away_words
             ate = getattr(self.pet, "pack_eaten_away", 0)
             self.event("away", f"{self.pet.name} was switched off for {away_words(gap).lower()}: "
-                               + (f"ate {ate:.0f} from his pack, " if ate >= 0.5 else "")
+                               + (f"ate {ate:.0f} from the pack, " if ate >= 0.5 else "")
                                + f"food now {self.pet.hunger:.0f}%, joy {self.pet.joy:.0f}%")
             self.pet.save()
 
@@ -791,7 +845,7 @@ class Dragon:
         if self.napping:
             return
         if self.baro:
-            self.baro.feed(float(vals[0]), self.gps.current(), self.activity.motion.mode)
+            self.baro.feed(float(vals[0]), self.gps.current(), self.activity.moving_mode())
 
     def _sky_tick(self, now):
         if self.stars:
@@ -799,7 +853,7 @@ class Dragon:
             if new or risen:
                 self.pet.stars(new, new_consts, risen)
                 for c in new_consts:
-                    self.event("star", f"{self.pet.name} saw his first {c} satellite: a new constellation!")
+                    self.event("star", f"{self.pet.name} saw a first {c} satellite: a new constellation!")
                     self.dot.adventure("constellation", name=c)
                 if len(new) > len(new_consts):
                     self.dot.adventure("stars", n=len(new) - len(new_consts))
@@ -906,7 +960,9 @@ class Dragon:
                 self.pet.say([f"IT'S {t} OUTSIDE AT THE LAIR", f"IT'S {t} AT THE LAIR", f"{t} AT THE LAIR"],
                              None, 30, speak=False)
                 if say["say_lair_temp"]:     # ticked: said even in "Big moments"
-                    self.dot.news(f"It's {deg_words(ev[1])}, outside at the Lair.", big=True)
+                    # the place first and the number last: a few words to catch your attention
+                    # before the part that matters
+                    self.dot.news(f"At the Lair, the current temperature is {deg_words(ev[1], celsius=True)}.", big=True)
                 self.lair.s["temp_said"] = [now, t]
                 self.lair.save()
             elif kind == "pollen":
@@ -1090,7 +1146,7 @@ class Dragon:
                 continue
             v = self.view()
             v["awake_min"] = v["awake"] // 60  # redraw when the UP clock's minute changes
-            key = tuple((k, v[k]) for k in ("mood", "belly", "joy", "walked_today", "hunger", "pack", "pack_cap", "session_meals", "species", "session_treats",
+            key = tuple((k, v[k]) for k in ("mood", "belly", "joy", "walked_today", "hunger", "pack", "pack_cap", "session_meals", "species", "session_treats", "lang",
                                              "pals_near", "friends_near", "gps", "wigle_pending", "message", "alert",
                                              "awake_min",
                                              "home", "linked", "level"))
@@ -1122,6 +1178,7 @@ class Dragon:
             v = self.garden.view(self.pet.level(), self._lair_code())
             h = self.pet.hunger           # the larvae go hungry with him: no spare food reaches them
             v["mood"] = "xhungry" if h < 10 else "hungry" if h < 30 else "content"
+            v.update(belly=round(h, 1), pack=round(self.pet.pack, 1), pack_cap=tuning.get("pack_cap"))
             v["art"] = self.garden_art_version() if hasattr(self, "garden_art_version") else ""
             return [json.dumps(v), "END"]
         if cmd == "GARDENUNLOCK":
@@ -1130,6 +1187,27 @@ class Dragon:
             else:
                 self.garden.lock_again()
             return ["OK"]
+        if cmd in ("GARDENEGG", "GARDENEMPTY"):     # put an egg in a spot, or take one away
+            if not arg.strip().isdigit():
+                return ["ERR which spot?"]
+            f = self.garden.lay_egg if cmd == "GARDENEGG" else self.garden.take_egg
+            err = f(int(arg), self.pet.level())
+            return [f"ERR {err}"] if err else ["OK"]
+        if cmd == "LANG":    # the language setting, and what moving the Lair would offer
+            code = self._lair_code().upper()
+            return [f"auto={1 if self.language.auto else 0}", f"lang={self.lang()}",
+                    f"chosen={self.language.chosen or ''}", f"os={self.os_country or ''}",
+                    f"default={self.language.default()}", f"lair_lang={langmod.OF_COUNTRY.get(code, '')}",
+                    f"lair_country={gardenmod.COUNTRY_OF.get(code, '')}", f"garden={self.garden.country()}", "END"]
+        if cmd == "LANGSET":  # LANGSET auto on|off, or LANGSET gb|us|ca
+            a = arg.lower().split()
+            if a[:1] == ["auto"] and a[1:] in (["on"], ["off"]):
+                err = self.language.set(auto=a[1] == "on", lair_code=self._lair_code())
+            elif len(a) == 1:
+                err = self.language.set(lang=a[0])
+            else:
+                err = "use: LANGSET auto on|off, or LANGSET gb|us|ca"
+            return [f"ERR {err}"] if err else ["OK"]
         if cmd == "GARDENCOUNTRY":
             err = self.garden.set_country(arg.lower())
             return [f"ERR {err}"] if err else ["OK"]
@@ -1217,10 +1295,12 @@ class Dragon:
                 err = tuning.set_value(key, val.strip())
             if err:
                 return [f"ERR {err}"]
+            self._tuning_changed()
             log.info("tuning: %s = %s", key, tuning.get(key))
             return [f"OK {key}={tuning.get(key):g}"]
         if cmd == "TUNERESET":  # TUNERESET food|joy|all
             tuning.reset(arg.lower() or "all")
+            self._tuning_changed()
             return ["OK"]
         if cmd == "METER":  # METER food|joy <0-100>: set a meter for playtesting
             which, _, val = arg.lower().partition(" ")
@@ -1317,7 +1397,7 @@ class Dragon:
         if cmd == "WIFIPOSSET":  # on / off
             on = arg.strip().lower() in ("on", "1", "true")
             self.wifipos.set_enabled(on)
-            self.event("network", "Finding him by Wi-Fi switched " + ("on (beaconDB)" if on else "off"))
+            self.event("network", f"Finding {self.pet.name} by Wi-Fi switched " + ("on (beaconDB)" if on else "off"))
             return ["OK"]
         if cmd == "FORGETMAP":  # forget every claimed land and realm (and which landmarks he's seen)
             self.store.forget_lands()
@@ -1371,10 +1451,10 @@ class Dragon:
             return [f"ERR {err}"] if err else ["OK"]
         if cmd == "DOTSAY":  # say this now (a test from the den; ignores quiet hours)
             if self.dot.phone_route() in (None, "dot") and not (self.dot.connected and self.dot.ready):
-                return ["ERR the Dot isn't connected (and no phone is speaking for him)"]
+                return [f"ERR the Dot isn't connected (and no phone is speaking for {self.pet.name})"]
             text = arg.strip()[:300]
             if not text:
-                return ["ERR type something for him to say"]
+                return ["ERR type something to say"]
             self.dot.say(text, force=True)
             return ["OK"]
         if cmd == "DOTRING":  # play one of the ring's animations (e.g. ev_test, ev_storm)
@@ -1436,6 +1516,14 @@ class Dragon:
         if cmd == "ALARMSTOP":
             self.dot.stop_alarm()
             return ["OK"]
+        if cmd == "CVD":       # Color Blindness Mode: full, protanopia, deuteranopia or tritanopia
+            from . import access
+            if arg:
+                if arg.lower() not in access.MODES:
+                    return ["ERR choose full, protanopia, deuteranopia or tritanopia"]
+                self.store.put("cvd", arg.lower())
+                return ["OK"]
+            return [self.cvd_mode()]
         if cmd == "SLEEPSCREEN":
             return [f"{k}={1 if v else 0}" for k, v in self.sleep_screens().items()] + ["END"]
         if cmd == "SLEEPSCREENSET":     # SLEEPSCREENSET nap on / SLEEPSCREENSET sleep off
@@ -1455,7 +1543,7 @@ class Dragon:
             return [f"ERR {err}" if err else "OK"]
         if cmd == "DOTRESCUE":  # hop onto the Dot's setup network now and switch its Wi-Fi back on
             if not self.dot.s["setup_network"] or not self.dot.s["serial"]:
-                return ["ERR set the Dot's setup network name first (and let him find the Dot once)"]
+                return [f"ERR set the Dot's setup network name first (and let {self.pet.name} find the Dot once)"]
             if self.dot.connected:
                 # Don't take "connected" on trust: it may have restarted a moment ago. Asking
                 # it settles that either way (a setup network in an old scan doesn't).
@@ -1464,7 +1552,7 @@ class Dragon:
                 else:
                     return ["ERR the Dot is already on the hotspot (it just answered)"]
             asyncio.ensure_future(self.dot.rescue())
-            return ["OK rescuing (the den will lose him for up to a minute)"]
+            return [f"OK rescuing (the den will lose {self.pet.name} for up to a minute)"]
         if cmd == "DOTFIND":  # look for the Dot now instead of within the minute
             self.dot._last_scan = self.dot._last_full = 0.0
             return ["OK looking (give it a minute)"]
@@ -1745,7 +1833,7 @@ class Dragon:
                 pass
         self.setup_home_wifi()
         if self.napping:
-            log.info("still napping after a restart; wake him from the den")
+            log.info("still napping after a restart; wake up from the den")
         else:
             self.event("wake", f"{self.pet.name} woke up")
         tasks = [self.pet_loop(), self.display_loop(), self.wigle_loop(), self.activity_loop(), serve_all(self)]

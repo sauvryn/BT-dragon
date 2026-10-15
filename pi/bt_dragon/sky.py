@@ -315,8 +315,11 @@ class Barometer:
         # step above it is a climb. Weather is far too slow to do that (even a fast
         # change is ~1 hPa an hour, about 0.4 m in 3 minutes).
         alt = pressure_altitude(p)
-        if mode == "vehicle":
-            self._alts.clear()               # driving over hills isn't climbing
+        if mode not in ("walking", "running", "cycling"):
+            # only climbing on the move counts: standing still, the pressure can still drift
+            # or jump (weather, a door or window, the phone picked up or held in a draught),
+            # and driving over hills isn't climbing
+            self._alts.clear()
         self._alts.append((now, alt))
         while self._alts and now - self._alts[0][0] > self.CLIMB_WINDOW_S:
             self._alts.popleft()

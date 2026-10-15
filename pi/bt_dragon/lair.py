@@ -85,7 +85,7 @@ def lookup(place, country, get=_get):
         data = get(GEOCODE, {"name": query, "count": 10, "countryCode": code, "language": "en", "format": "json"})
     except (urllib.error.URLError, OSError, ValueError) as e:
         log.info("lair lookup failed: %s", e)
-        raise LookupError_("I couldn't reach the place-finding service. Is he connected to the internet?")
+        raise LookupError_("I couldn't reach the place-finding service. Is your dragon connected to the internet?")
     res = [r for r in (data.get("results") or []) if r.get("country_code", code) == code]
     if not res:
         what = f"the postcode area {query}" if looks_like_postcode(query) else f"\"{place}\""
@@ -136,10 +136,10 @@ def c_and_f(c):
     return f"{round(c)}°C ({round(c * 9 / 5 + 32)}°F)"
 
 
-def deg_words(c):
-    """Both from the exact reading, so the screen and his voice agree."""
+def deg_words(c, celsius=False):
+    """Both from the exact reading, so the screen and the voice agree."""
     r = round(c)
-    return f"{r} degree{'s' if abs(r) != 1 else ''}, that's {round(c * 9 / 5 + 32)} Fahrenheit"
+    return f"{r} degree{'s' if abs(r) != 1 else ''}{' Celsius' if celsius else ''}, that's {round(c * 9 / 5 + 32)} Fahrenheit"
 
 
 # ------------------------------------------------------------------ answers

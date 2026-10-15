@@ -224,6 +224,7 @@ class Activity:
         self.trip_start = None
         self.last_moving = 0.0
         self.live_steps = None    # step total at the last reading this session
+        self._step_log = []       # (when, steps) this session, for on_foot()
         self.today = store.get("activity_today", {"date": "", "walked": 0.0, "rode": 0.0, "told": 0.0})
         self.last_trip = None     # (start, end) of the trip finished_trip() last handed out
         self._trip_saved = 0.0
@@ -259,6 +260,8 @@ class Activity:
                 out = ("story", n)
         elif total > self.live_steps and not gps_fix_live:
             out = ("walk", (total - self.live_steps) * self.stride)
+        if self.live_steps is not None and total > self.live_steps:
+            self._step_log.append((time.time(), total - self.live_steps))
         self.live_steps = total
         now = time.time()
         if out or now - getattr(self, "_steps_saved", 0) > 30:  # don't write on every step
@@ -268,6 +271,24 @@ class Activity:
 
     def link_lost(self):
         self.live_steps = None
+
+    ON_FOOT_S = 120
+    ON_FOOT_STEPS = 40
+
+    def on_foot(self, now=None):
+        """Out walking (or running) right now, by the phone's step counter: at least 40 steps
+        in the last 2 minutes. Picking the phone up, or a few steps across a room, isn't."""
+        now = now or time.time()
+        self._step_log = [(t, n) for t, n in self._step_log if now - t <= self.ON_FOOT_S]
+        return sum(n for _, n in self._step_log) >= self.ON_FOOT_STEPS
+
+    def moving_mode(self, now=None):
+        """How he's moving, for climbing: the GPS's walking, running or cycling, or "walking"
+        if the step counter says so; anything else (still, or in a vehicle) isn't climbing."""
+        m = self.motion.mode
+        if m in ("walking", "running", "cycling", "vehicle"):
+            return m
+        return "walking" if self.on_foot(now) else "still"
 
     # -- GPS
     def take_motion(self):

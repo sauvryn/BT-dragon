@@ -14,7 +14,7 @@ FOOD
             today, or one more phone/watch/earbud of a kind than were
             already around (rotating addresses are counted by heads,
             so a phone changing its address isn't a new meal)
-  feast     a species he has never eaten before                  +12 food  +8 joy    +20 XP
+  feast     a type he has never eaten before                     +12 food  +8 joy    +20 XP
   treat     a Wi-Fi network he has never seen before             +4 food   +2 joy    +5 XP
             (rarer kinds are worth more: open/WEP +6, WPA3/office +5)
   berries   a network he already knows: like a berry bush, it regrows one point per
@@ -220,7 +220,7 @@ class Pet:
     def feast(self, label):
         self.session_species += 1
         if not self._gain(tuning.get("feast_food"), tuning.get("feast_xp"), tuning.get("feast_joy")):
-            self.say([f"FEAST! NEW SPECIES: {label}", f"FEAST! {label}"], self.face_for(tuning.get("feast_joy")), 45)
+            self.say([f"FEAST! NEW TYPE: {label}", f"FEAST! {label}"], self.face_for(tuning.get("feast_joy")), 45)
 
     def treat(self, ap):
         self.session_treats += 1
@@ -232,10 +232,10 @@ class Pet:
         packed = self._overflow(food)
         if not self._gain(food - packed, tuning.get("treat_xp_" + sec), tuning.get("treat_joy")):
             name = ap["ssid"] or "A HIDDEN ONE"
-            tail = f" +{_n(packed)} IN HIS PACK" if packed else ""
+            tail = f" +{_n(packed)} IN THE PACK" if packed else ""
             self.say(_fit([f"TREAT! {name}" + (f" ({note})" if note else "") + tail,
                            f"TREAT! {name}{tail}",
-                           f"TREAT!{tail.replace(' IN HIS', ' IN')}: {name}"]), "treat", 25)
+                           f"TREAT!{tail.replace(' IN THE', ' IN')}: {name}"]), "treat", 25)
         return packed
 
     def _overflow(self, food):
@@ -267,9 +267,9 @@ class Pet:
         if not self._gain(eat, tuning.get("berry_xp") * food, tuning.get("berry_joy") * food):
             if not self.reaction or self.reaction[1] < time.time():
                 if packed and eat >= 0.5:
-                    gains = [f"+{_n(eat)} FOOD, +{_n(packed)} IN HIS PACK", f"+{_n(eat)} FOOD, +{_n(packed)} IN PACK"]
+                    gains = [f"+{_n(eat)} FOOD, +{_n(packed)} IN THE PACK", f"+{_n(eat)} FOOD, +{_n(packed)} IN PACK"]
                 elif packed:
-                    gains = [f"+{_n(packed)} INTO HIS PACK", f"+{_n(packed)} INTO PACK"]
+                    gains = [f"+{_n(packed)} INTO THE PACK", f"+{_n(packed)} INTO PACK"]
                 else:
                     gains = [f"+{_n(food)} FOOD"]
                 nets = f"{bushes} KNOWN NETWORK{'S' if bushes != 1 else ''}"
@@ -469,9 +469,9 @@ class Pet:
         self.joy = max(0.0, self.joy - dt * 100 / (tuning.get("joy_empty_min") * 60))
         bite = self.eat_from_pack()
         if bite:
-            self.say([f"{self.name} DIGS INTO HIS PACK! +{_n(bite)} FOOD", f"DIGGING INTO HIS PACK! +{_n(bite)} FOOD"],
+            self.say([f"{self.name} DIGS INTO THE PACK! +{_n(bite)} FOOD", f"DIGGING INTO THE PACK! +{_n(bite)} FOOD"],
                      "eating", 20)
-            self.store.event("pack", f"{self.name} ate {_n(bite)} food from his pack ({_n(self.pack)} left)")
+            self.store.event("pack", f"{self.name} ate {_n(bite)} food from the pack ({_n(self.pack)} left)")
         free = not self.reaction or self.reaction[1] < now
         if self._pending_lands:
             n, self._pending_lands = self._pending_lands, 0

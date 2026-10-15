@@ -5,7 +5,7 @@
   --ink:#ece6da !important; --muted:#a69f92 !important; --line:#3d3a35 !important;
   --leaf:#7fa36b !important; --leaf-dark:#5d7f4c !important; --link:#d9a441 !important;
   --accent-ink:#d9a441 !important; --accent:#d9a441 !important; --accent-soft:#3a2f1a !important; --on-accent:#1d1c1a !important;
-  --warn:#d9a441 !important; --warn-soft:#3a2f1a !important; --danger-soft:#3b1f19 !important; --danger:#c8553d !important;
+  --warn:#d9a441 !important; --warn-soft:#3a2f1a !important; --danger-soft:#3b1f19 !important; --danger:#e8735c !important;
   --ok:#7fa36b !important; --ok-soft:#24301f !important; --rare:#c9a8f0 !important; --rare-soft:#2c2040 !important;
   --ice:#8fcbea !important; --ice-soft:#1b2c37 !important; --shadow:0 6px 24px rgba(0,0,0,.4) !important;
   --f-display:system-ui,-apple-system,"Segoe UI",sans-serif !important;
@@ -20,16 +20,18 @@ header.top { border-bottom:3px double var(--line); padding-block:18px 10px; marg
 .wordmark { font-size:15px; font-weight:600; letter-spacing:3px; text-transform:uppercase; color:var(--muted); }
 .wordmark svg { display:none; }
 .score-box { pointer-events:none; }           /* Bookworm opens its titles here; not imported (yet) */
-.score-box .pts { color:var(--rune, #d9a441); }
+.score-box .pts { color:var(--accent); }
 #sub, .hdr-btns, nav.tabs, .coll-switch { display:none !important; }
 /* sections like the Den's */
 .card, .sheet { border-radius:8px; }
 .sheet { border:1px solid var(--line); }
-h2 { font-size:13px !important; letter-spacing:2px; text-transform:uppercase; color:#d9a441; font-weight:700; margin:0; }
+h2 { font-size:13px !important; letter-spacing:2px; text-transform:uppercase; color:var(--accent); font-weight:700; margin:0; }
 .overlay { background:rgba(0,0,0,.6); }
-button.primary, .garden-nav button { background:#d9a441; border-color:#d9a441; color:#1d1c1a; font-weight:600; border-radius:6px; }
+button.primary, .garden-nav button { background:var(--accent); border-color:var(--accent); color:#1d1c1a; font-weight:600; border-radius:6px; }
 .garden-nav { display:flex; justify-content:center; padding-top:4px; }
 .garden-nav.top { justify-content:flex-start; padding:0 0 4px; }
-.garden-nav.top button { background:transparent; color:#ece6da; border:1px solid #d9a441; font-weight:400; }
+.garden-nav.top button { background:transparent; color:#ece6da; border:1px solid var(--accent); font-weight:400; }
 /* names in the pop-ups stay as names (not small capitals) */
 .sheet h2 { font-size:20px !important; letter-spacing:0; text-transform:none; color:var(--ink); }
+/* the "?" on insects not raised yet: a little brighter than Bookworm's, to pass contrast (3:1 for large text) */
+.slot.locked .q { color:#8a8377 !important; opacity:1 !important; }

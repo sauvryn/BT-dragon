@@ -6,7 +6,8 @@
 <title>Shopping list</title>
 <style>
   :root { --stone: #1d1c1a; --stone2: #282623; --line: #3d3a35; --ink: #ece6da; --dim: #a69f92;
-          --rune: #d9a441; --ember: #c8553d; }
+          --rune: #d9a441; --ember: #e8735c; }
+  :root { color-scheme: dark; }      /* the browser's own controls (tick boxes, menus) drawn dark too */
   * { box-sizing: border-box; }
   html, body { margin: 0; background: var(--stone); color: var(--ink);
                font: 16px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
@@ -47,6 +48,8 @@
           flex-wrap: wrap; }
   #msg { min-height: 1.4em; }
 </style>
+<script src="/lang.js"></script>
+<link rel="stylesheet" href="/theme.css">
 </head>
 <body>
 <main>
@@ -104,7 +107,7 @@ function draw() {
       const info = [qtyText(i.qty), i.store].filter(Boolean).join(' · ');
       html += `<li class="${i.done ? 'done' : ''}${editing === i.id ? ' editing' : ''}">
         <div class="name" onclick="toggle(${i.id})"><span class="box">${i.done ? '✓' : ''}</span>
-          <span class="label">${esc(i.name)}${info ? `<span class="info">${esc(info)}</span>` : ''}</span></div>
+          <span class="label" data-nolang>${esc(i.name)}${info ? `<span class="info">${esc(info)}</span>` : ''}</span></div>
         <button class="trolley" title="How many, and where to buy it" onclick="edit(${i.id})">${TROLLEY}</button>
         <select class="move" title="Move to another section" onchange="move(${i.id}, this.value)">
           <option value="" selected disabled>Move</option>${opts}</select>

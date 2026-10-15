@@ -9,7 +9,8 @@ used to be wasted. Now it feeds the garden, split evenly between whatever is gro
 so raising three at once means each grows a third as fast.
 
 A larva's life, as in Bookworm:
-  - an egg waits in each free spot; the first food hatches it, and only then is its species
+  - an egg waits in the first spot (and in any other you put one in, from the den); the
+    first food hatches it, and only then is its species
     chosen (a little joy). Rarity is rolled (Common 60%, Uncommon 30%, Rare 10%), and a rarer
     one needs more food to raise, like a longer book;
   - which species: Bookworm's own rules. Every species of that rarity not yet raised, in the
@@ -26,7 +27,8 @@ A larva's life, as in Bookworm:
     ran low while she was a larva, and a worker if it did.
 
 The collection is kept per country (Bookworm's countries: United Kingdom, Ireland, United
-States, Canada), following the Lair's country, or a choice in the den for anywhere else.
+States, Canada): the Pi's own country to start with (or the United Kingdom), then whichever
+you choose in the den, or when the Lair moves to one of them and you say yes.
 """
 import datetime
 import json
@@ -105,13 +107,17 @@ class Garden:
         self.s.setdefault("countries", {})
         self.s.setdefault("titles", {})
         self.on_event = None        # (kind, info) -> the app: "hatch", "pupate", "emerge", "title"
+        self.default_country = "gb"  # the app sets this from the Pi's own country
 
     def save(self):
         self.store.put("garden", self.s)
 
     # ---- where, and is it open
     def country(self, lair_code=None):
-        return COUNTRY_OF.get((lair_code or "").upper()) or self.s.get("country") or "gb"
+        """Whose insects: the country chosen in the den (or when the Lair moved); to start with,
+        the Pi's own country if it's one of Bookworm's, else the United Kingdom. (`lair_code`
+        is only kept so older callers still work: the Lair no longer decides by itself.)"""
+        return self.s.get("country") or self.default_country
 
     def set_country(self, c):
         if c not in COUNTRY_NAME:
@@ -144,15 +150,45 @@ class Garden:
             start = UNLOCK_LEVEL
         return max(1, min(MAX_SLOTS, 1 + level - start))
 
+    @staticmethod
+    def _egg(now=None):
+        return {"egg": True, "laid": now or time.time(), "fed": 0.0}
+
     def sync_slots(self, level, now=None):
-        """An egg in every free spot."""
+        """The first spot always has an egg (or a larva) in it. Spots that open later, or that
+        an adult has just left, stay empty until you put an egg in them from the den, so you
+        can raise one or two at a time if you'd rather."""
         n = self.slot_count(level)
         changed = False
         while len(self.s["slots"]) < n:
-            self.s["slots"].append({"egg": True, "laid": now or time.time(), "fed": 0.0})
+            self.s["slots"].append(self._egg(now) if not self.s["slots"] else {"empty": True})
+            changed = True
+        if self.s["slots"] and self.s["slots"][0].get("empty"):
+            self.s["slots"][0] = self._egg(now)
             changed = True
         if changed:
             self.save()
+
+    def lay_egg(self, i, level):
+        """The den's "Put an egg here" on an empty spot."""
+        if not self.unlocked(level) or not 0 <= i < self.slot_count(level):
+            return "there's no such spot"
+        self.sync_slots(level)
+        if not self.s["slots"][i].get("empty"):
+            return "that spot isn't empty"
+        self.s["slots"][i] = self._egg()
+        self.save()
+        return None
+
+    def take_egg(self, i, level):
+        """The den's "Leave this spot empty": only an egg that hasn't hatched, and never the first spot's."""
+        if not 0 < i < min(len(self.s["slots"]), self.slot_count(level)):
+            return "the first spot always has an egg"
+        if not self.s["slots"][i].get("egg"):
+            return "only an egg that hasn't hatched yet can be taken away"
+        self.s["slots"][i] = {"empty": True}
+        self.save()
+        return None
 
     # ---- the collection, per country
     def cdata(self, c):
@@ -227,12 +263,16 @@ class Garden:
         if food <= 0 or not self.unlocked(level):
             return
         self.sync_slots(level, now)
-        slots = self.s["slots"][: self.slot_count(level)]
+        slots = [(i, b) for i, b in enumerate(self.s["slots"][: self.slot_count(level)]) if not b.get("empty")]
         if not slots:
             return
+        day = time.strftime("%Y-%m-%d", time.localtime(now))
+        if self.s.get("fed_day") != day:
+            self.s["fed_day"], self.s["fed_today"] = day, 0.0
+        self.s["fed_today"] = self.s.get("fed_today", 0.0) + food
         share = food / len(slots)
         c = self.country(lair_code)
-        for i, b in enumerate(slots):
+        for i, b in slots:
             if b.get("egg"):
                 self._hatch(b, c, now)
             if belly_low and b.get("caste") and b.get("stage", 0) < 9:
@@ -246,7 +286,9 @@ class Garden:
             b["stage"] = stage
             if pct >= 100:
                 self._emerge(i, b, now)
-        self.s["slots"] = [b for b in self.s["slots"] if not b.get("done")]
+        # an adult's spot: a new egg in the first one, the others left empty
+        self.s["slots"] = [(self._egg(now) if i == 0 else {"empty": True}) if b.get("done") else b
+                           for i, b in enumerate(self.s["slots"])]
         self.sync_slots(level, now)
         self.save()
 
@@ -305,14 +347,18 @@ class Garden:
         c = self.country(lair_code)
         out = {"unlocked": self.unlocked(level), "forced": bool(self.s.get("forced")), "level": level,
                "unlock_level": UNLOCK_LEVEL, "slots": self.slot_count(level), "max": MAX_SLOTS,
-               "country": c, "country_name": COUNTRY_NAME[c], "from_lair": bool(COUNTRY_OF.get((lair_code or "").upper())),
+               "country": c, "country_name": COUNTRY_NAME[c],
                "score": self.score(), "title": self.title(),
-               "raised": len(self.cdata(c)["collection"]), "larvae": []}
+               "raised": len(self.cdata(c)["collection"]), "larvae": [],
+               "fed_today": round(self.s.get("fed_today", 0.0), 1) if self.s.get("fed_day") == time.strftime("%Y-%m-%d") else 0}
         if out["unlocked"]:
             self.sync_slots(level)
-        for b in self.s["slots"][: out["slots"]]:
+        for i, b in enumerate(self.s["slots"][: out["slots"]]):
+            if b.get("empty"):
+                out["larvae"].append({"empty": True, "slot": i})
+                continue
             if b.get("egg"):
-                out["larvae"].append({"egg": True})
+                out["larvae"].append({"egg": True, "slot": i})
                 continue
             sp = data()["countries"][b["country"]]["by_id"][b["species"]]
             pct = 100 * b["fed"] / b["need"]
@@ -321,7 +367,7 @@ class Garden:
                 "noun": sp["noun"], "young": sp["young"], "pupa": sp["pupa"], "rarity": b["rarity"],
                 "pct": round(pct, 1), "pupAt": b["pupAt"], "stage": b.get("stage", 0),
                 "sex": b.get("sex"), "caste": b.get("caste"), "hungry": b.get("hungry"),
-                "fed": round(b["fed"], 1), "need": b["need"], "country": b["country"]})
+                "fed": round(b["fed"], 1), "need": b["need"], "country": b["country"], "slot": i})
         return out
 
     def _save_for(self, c):

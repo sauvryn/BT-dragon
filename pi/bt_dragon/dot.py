@@ -152,7 +152,7 @@ def build_recap(name, events, meals, treats, away_s):
         shown = species[:3]
         more = len(species) - len(shown)
         tail = f", and {_plural(more, 'more')}" if more else ""
-        parts.append(f"{'A new species' if len(species) == 1 else _plural(len(species), 'new species', 'new species')}: "
+        parts.append(f"{'A new type of gadget' if len(species) == 1 else _plural(len(species), 'new type of gadget', 'new types of gadget')}: "
                      f"{_list(shown)}{tail}!")
     marks = []
     for e in events:

@@ -133,7 +133,7 @@ class BadBackup(Exception):
 def read(path):
     """Check a backup and return {name: bytes} and its manifest. Raises BadBackup."""
     if os.path.getsize(path) > MAX_BYTES:
-        raise BadBackup("it's too big to be one of his backups")
+        raise BadBackup("it's too big to be one of your dragon's backups")
     files, total = {}, 0
     try:
         with tarfile.open(path, "r:gz") as tar:
@@ -153,7 +153,7 @@ def read(path):
     except ValueError:
         manifest = {}
     if manifest.get("kind") != KIND:
-        raise BadBackup("it isn't one of his backups (no manifest)")
+        raise BadBackup("it isn't one of your dragon's backups (no manifest)")
     if "dragon.db" not in files:
         raise BadBackup("it has no database in it")
     with tempfile.TemporaryDirectory() as tmp:

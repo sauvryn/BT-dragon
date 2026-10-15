@@ -255,7 +255,7 @@ class ArtSet:
                 if im.size != (w, h):
                     return f"that picture is {im.size[0]} x {im.size[1]} pixels: it must be {w} x {h}"
         except Exception:
-            return "that isn't a picture he can read"
+            return "that isn't a picture that can be read"
         os.makedirs(self.user_dir, exist_ok=True)
         path = os.path.join(self.user_dir, name)
         with open(path + ".tmp", "wb") as f:

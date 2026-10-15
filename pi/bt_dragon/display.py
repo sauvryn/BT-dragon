@@ -85,7 +85,7 @@ class Display:
         return self.epd is None
 
     def _headless(self, why):
-        log.warning("%s: running headless (the den shows his screen)", why)
+        log.warning("%s: running headless (the den shows the screen)", why)
         self.headless_why = why
         epd, self.epd = self.epd, None
         if epd is not None and self._cfg_module is not None:

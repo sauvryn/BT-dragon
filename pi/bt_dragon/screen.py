@@ -8,7 +8,7 @@ Lays out the 250x122 e-ink screen.
  │  │ Harald  │  BELLY [■■■■■■■■□□]              │
  │  │  face   │  PACK  [■■■□□□□□□□]              │
  │  │         │                                  │  (a little breathing room)
- │  │         │  SNACKS 34  SPECIES 12 (+2)      │  today's counts only;
+ │  │         │  SNACKS 34  TYPES 12 (+2)        │  today's counts only;
  │  │         │  WALK 1.2KM  TREATS 5            │  lifetime totals are in the den
  │  │         │  PALS 2/3  FRIENDS 1             │
  │  │         │  GPS FIX  WIGLE 120  45°C        │
@@ -20,6 +20,7 @@ Lays out the 250x122 e-ink screen.
 from PIL import Image, ImageDraw
 
 from . import art as artmod
+from . import lang as langmod
 from .fonts import FONT_LATIN, FONT_RUNES, draw_text, fit_text, text_width, to_runes
 
 WIDTH, HEIGHT = 250, 122
@@ -136,8 +137,8 @@ def render(v: dict) -> Image.Image:
     sn, sp = v.get("session_meals", 0), v.get("species", 0)
     plus = f" (+{v['new_species']})" if v.get("new_species") else ""
     rows = [
-        _first_fit([f"SNACKS {sn}  SPECIES {sp}{plus}", f"SNACKS {sn} SPECIES {sp}{plus}",
-                    f"SNACKS {sn} SPECIES {sp}"], WIDTH - 2 - x),
+        _first_fit([f"SNACKS {sn}  TYPES {sp}{plus}", f"SNACKS {sn} TYPES {sp}{plus}",
+                    f"SNACKS {sn} TYPES {sp}"], WIDTH - 2 - x),
         walk,
         (f"PALS {v.get('pals_near', 0)}/{v.get('pals_total', 0)}" if v.get("pals_total") else "PALS -")
         + f"  FRIENDS {v.get('friends', 0)}" + (f" ({v['friends_near']})" if v.get("friends_near") else ""),
@@ -165,7 +166,7 @@ def render(v: dict) -> Image.Image:
         ix -= 8
         _wifi_icon(d, ix, 113)
         icons_w += 10
-    msg = v.get("message", "")
+    msg = langmod.convert(v.get("message", ""), v.get("lang", "gb"))   # in his English (see lang.py)
     if v.get("alert"):
         d.rectangle([0, 112, WIDTH - 1 - icons_w, HEIGHT - 1], fill=0)
         draw_text(d, (3, 114), fit_text(msg, WIDTH - 8 - icons_w), fill=255)

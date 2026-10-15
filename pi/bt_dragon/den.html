@@ -7,9 +7,14 @@
 <style>
   :root {
     --stone: #1d1c1a; --stone2: #282623; --line: #3d3a35; --ink: #ece6da; --dim: #a69f92;
-    --rune: #d9a441; --blood: #c8553d; --moss: #7fa36b;
+    --rune: #d9a441; --blood: #e8735c; --moss: #7fa36b;
   }
+  :root { color-scheme: dark; }      /* the browser's own controls (tick boxes, menus) drawn dark too */
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  select { background: var(--stone); color: var(--ink); border: 1px solid var(--line); border-radius: 6px;
+           padding: 6px 8px; font: inherit; }
+  select:disabled { color: var(--dim); opacity: 1; }   /* still readable when it's not for changing */      /* even on rows and buttons that set their own display */
   body { margin: 0; background: var(--stone); color: var(--ink);
          font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
   header { padding: 18px 16px 10px; border-bottom: 3px double var(--line); }
@@ -34,6 +39,7 @@
   .actions { display: flex; flex-wrap: wrap; gap: 8px; }
   .alert { border-color: var(--blood); }
   .alert h2 { color: var(--blood); }
+  .alert h2::before { content: "\26A0\FE0E  "; }     /* ⚠: an alert never depends on its colour alone */
   .meter { height: 10px; background: var(--stone); border: 1px solid var(--line); border-radius: 5px; overflow: hidden; margin-top: 6px; }
   .meter > div { height: 100%; background: var(--moss); transition: width .3s; }
   .big { font-size: 34px; font-variant-numeric: tabular-nums; font-weight: 700; }
@@ -110,8 +116,13 @@
   .stemlbl:not(.top) span:last-child { transform: none; right: -8px; }
   .stemlbl.top { margin-top: 6px; color: var(--rune); }
   .lairfield input { display: block; flex: 1 1 100%; width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; }
+  .ask { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center;
+         padding: 16px; z-index: 20; }
+  .askbox { background: var(--stone2); border: 1px solid var(--rune); border-radius: 8px; padding: 14px 16px; max-width: 420px; width: 100%; }
+  .askopt { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; border-top: 1px solid var(--line); cursor: pointer; }
+  .askopt input { margin-top: 3px; }
   .gd-art { max-width: 220px; margin: 0 auto 4px; --leaf: #7fa36b; --leaf-dark: #5d7f4c; --surface-2: #1d1c1a;
-            --danger: #c8553d; --accent: #d9a441; --muted: #a69f92; --surface: #282623; --ink: #ece6da; }
+            --danger: var(--blood); --accent: var(--rune); --muted: #a69f92; --surface: #282623; --ink: #ece6da; }
   .gd-art svg { display: block; width: 100%; height: auto; }
   .crawl .body-g { animation: crawl 2.6s ease-in-out infinite; transform-origin: 50% 100%; transform-box: fill-box; }
   @keyframes crawl { 0%,100% { transform: scaleX(1); } 50% { transform: scaleX(.96) translateY(-1px); } }
@@ -122,6 +133,8 @@
   .egg-g { animation: eggrock 3.2s ease-in-out infinite; transform-origin: 160px 156px; }
   @keyframes eggrock { 0%,80%,100% { transform: rotate(0); } 86% { transform: rotate(-4deg); } 93% { transform: rotate(4deg); } }
 </style>
+<script src="/lang.js"></script>
+<link rel="stylesheet" href="/theme.css">
 </head>
 <body>
 <header>
@@ -130,9 +143,9 @@
 </header>
 <main>
   <section id="napBox" hidden>
-    <h2><span class="pname">Harald</span> is napping</h2>
-    <p style="margin:0">Asleep <span id="napFor"></span>: no feeding, the Dot (if using) dark and quiet, his meters
-      frozen (but they drop when he wakes, by however long he napped, just as after sleeping), and nothing being written to his card, so he's safe to unplug. He stays on his hotspot so you can wake him from here.</p>
+    <h2><span class="pname" data-nolang>Harald</span> is napping</h2>
+    <p style="margin:0">Asleep <span id="napFor"></span>: no feeding, the Dot (if using) dark and quiet, the meters
+      frozen (but they drop on waking, by however long the nap lasted, just as after sleeping), and nothing being written to the card, so it's safe to unplug. <span class="pname" data-nolang>Harald</span> stays on the hotspot so you can wake your dragon from here.</p>
     <div class="actions" style="margin-top:10px"><button class="primary" onclick="wakeUp()">Wake up</button></div>
   </section>
   <img class="screen" id="screen" alt="Your dragon's e-ink screen">
@@ -140,16 +153,16 @@
 
   <section id="alerts" class="alert" hidden>
     <h2>Unknown tracker alert</h2>
-    <div id="alertList"></div>
+    <div id="alertList" data-nolang></div>
     <p class="sub">An item tracker that is away from its owner has kept showing up near you. If you don't
       recognize it, check your bag, coat and car. Dismiss it if it's one you know about.</p>
   </section>
 
   <section>
-    <h2><span class="pname">Harald</span></h2>
+    <h2><span class="pname" data-nolang>Harald</span></h2>
     <div class="stats">
       <div class="stat"><b id="sMeals">0</b><span>snacks today</span></div>
-      <div class="stat"><b id="sSpecies">0</b><span>species</span></div>
+      <div class="stat"><b id="sSpecies">0</b><span>types</span></div>
       <div class="stat"><b id="sTreats">0</b><span>treats today</span></div>
     </div>
     <div class="sub" style="margin-top:10px">Joy</div>
@@ -157,7 +170,7 @@
     <div class="sub" style="margin-top:8px">Belly (food)</div>
     <div class="meter"><div id="hunger" style="width:50%"></div></div>
     <div class="sub" style="margin-top:8px">Pack <b id="packNow" style="color: var(--ink)">0</b> / <span id="packCap">50</span>
-      · spare berries and treats for when he gets hungry</div>
+      · spare berries and treats for when <span class="pname" data-nolang>Harald</span> gets hungry</div>
     <div class="meter"><div id="packBar" style="width:0; background: var(--dim)"></div></div>
     <p id="feeling" style="margin:10px 0 0; font-weight:600"></p>
     <p class="sub" id="meta"></p>
@@ -176,81 +189,89 @@
       <p class="sub" id="trackHow" style="margin:8px 0 0"></p>
       <p><button onclick="stopTrack()">Stop finding</button></p>
     </div>
-    <div id="pals"></div>
+    <div id="pals" data-nolang></div>
   </section>
 
   <section data-arrange="friends">
     <h2>Dragon friends</h2>
-    <div id="friends"></div>
+    <div id="friends" data-nolang></div>
   </section>
 
   <section data-arrange="nearby">
     <h2>Gadgets nearby</h2>
     <p class="sub">Only gadgets with a fixed address are listed. Phones and watches change their address every few
-      minutes to stay private, so <span class="pname">Harald</span> counts them but never lists them. Mark the ones that are yours.</p>
+      minutes to stay private, so <span class="pname" data-nolang>Harald</span> counts them but never lists them. Mark the ones that are yours.</p>
     <div class="actions" style="margin-bottom:8px">
       <button onclick="searchGadgets()">Search for my gadgets</button>
     </div>
     <p class="sub" id="searchNote" hidden>Searching for 30 seconds. Put your headphones or speaker in
       pairing mode now (and turn your phone's Bluetooth off for a moment).</p>
     <details class="fold" id="fold-nearby"><summary>Show the list <span class="sub" id="nearbyCount"></span></summary>
-      <div id="nearby"></div></details>
+      <div id="nearby" data-nolang></div></details>
   </section>
 
   <section data-arrange="treats">
     <h2>Recent treats</h2>
     <details class="fold" id="fold-treats"><summary>Show the list <span class="sub" id="treatsCount"></span></summary>
-      <div id="treats"></div></details>
+      <div id="treats" data-nolang></div></details>
   </section>
 
   <section data-arrange="life">
     <h2>Life list</h2>
-    <details><summary>Every species <span class="pname">Harald</span> has eaten</summary><div id="species"></div></details>
+    <details><summary>Every type of gadget <span class="pname" data-nolang>Harald</span> has eaten</summary><div id="species" data-nolang></div></details>
   </section>
 
   <section data-arrange="diary">
     <h2>Diary</h2>
     <details class="fold" id="fold-log"><summary>Recent entries <span class="sub" id="logCount"></span></summary>
-      <div id="log"></div></details>
+      <div id="log" data-nolang></div></details>
     <div id="diaryFiles" hidden>
       <p class="sub" style="margin:10px 0 6px">Every diary entry is also saved on the Pi as a spreadsheet file (CSV), one
-        per day, with the time, his meters and where it happened. Older days are deleted automatically.</p>
+        per day, with the time, the meters and where it happened. Older days are deleted automatically.</p>
       <div class="actions"><a id="dToday" href="#"><button>Download today's diary</button></a></div>
-      <details style="margin-top:8px"><summary>Earlier days (<span id="dCount">0</span>)</summary><div id="dList"></div></details>
+      <details style="margin-top:8px"><summary>Earlier days (<span id="dCount">0</span>)</summary><div id="dList" data-nolang></div></details>
     </div>
   </section>
 
   <section data-arrange="network">
     <h2>Network</h2>
     <div class="row" style="border:0"><div class="grow"><b id="netNow">--</b><div class="sub" id="netWhich"></div></div></div>
-    <div id="netList"></div>
+    <div id="netList" data-nolang></div>
     <div class="actions" style="margin-top:8px">
       <button onclick="reconnect()">Disconnect and find the best network</button>
     </div>
-    <p class="sub" style="margin:8px 0 0">He joins the highest one on this list that's in range. On a backup, he moves
-      back up by himself when a better one appears. To change the list, edit [home_wifi] and [[backup_wifi]] in the settings file.</p>
+    <p class="sub" style="margin:8px 0 0"><span class="pname" data-nolang>Harald</span> joins the highest one on this list that's in range. On a backup, your dragon moves
+      back up automatically when a better one appears. To change the list, edit [home_wifi] and [[backup_wifi]] in the settings file.</p>
   </section>
 
   <section data-arrange="care">
-    <h2>Care</h2>
+    <h2>Care and Accessibility</h2>
     <div class="actions">
       <button onclick="rename()">Rename</button>
       <a href="/art" target="_blank"><button>Artwork</button></a>
-      <button onclick="napNow()">Nap (stays plugged in; wake him from here)</button>
+      <button onclick="napNow()">Nap (stays plugged in; wake up from here)</button>
       <button class="danger" onclick="sleepNow()">Put to sleep (safe to unplug)</button>
       <button onclick="if(confirm('Restart ' + PET + '?')) cmd('REBOOT', true)">Restart</button>
     </div>
     <div class="row" style="margin-top:10px; border:0"><div class="grow">Sleep screen
-      <div class="sub">Like an e-reader's: while he naps or sleeps, his screen shows this instead of whatever it showed
+      <div class="sub">Like an e-reader's: during a nap or sleep, <span class="pname" data-nolang>Harald</span>'s screen shows this instead of whatever it showed
         last (e-ink keeps its picture even with the power off). Use your own pictures under Artwork.</div></div></div>
     <div class="row" style="border:0; justify-content:flex-start; gap:18px">
       <label class="sub"><input type="checkbox" id="ssNap" onchange="sleepScreenSet('nap', this.checked)"> Nap</label>
       <label class="sub"><input type="checkbox" id="ssSleep" onchange="sleepScreenSet('sleep', this.checked)"> Sleep</label></div>
+    <div class="row" style="margin-top:10px"><div class="grow">Color Blindness Mode
+      <div class="sub" id="cvdNote">Colors for each kind of color blindness, on every page of the Den.</div></div></div>
+    <div class="row" style="border:0">
+      <select id="cvdSel" onchange="cvdSet(this.value)">
+        <option value="full">Full color vision</option>
+        <option value="protanopia">Protanopia</option>
+        <option value="deuteranopia">Deuteranopia</option>
+        <option value="tritanopia">Tritanopia</option></select></div>
   </section>
 
   <section data-arrange="backup">
     <h2>Backup</h2>
-    <p class="sub" style="margin:0 0 10px">A small file with everything that's yours: him, his diary,
+    <p class="sub" style="margin:0 0 10px">A small file with everything that's yours: <span class="pname" data-nolang>Harald</span>, the diary,
       lands, the shopping list, calendar, voice profiles, your artwork, your settings and Developer Tools knobs. It includes your
       hotspot passwords and WiGLE token, so keep it somewhere private.</p>
     <div class="actions">
@@ -259,14 +280,14 @@
       <input type="file" id="restoreFile" accept=".gz,.tgz,application/gzip" style="display:none" onchange="restoreBackup(this)">
     </div>
     <p class="sub" id="restoreNote" style="margin:10px 0 0">Without the den: copy a backup onto the card's boot
-      partition (the one Windows can open), named <b>harald-restore.tar.gz</b>, and he restores it the next time he starts.</p>
+      partition (the one Windows can open), named <b>harald-restore.tar.gz</b>, and <span class="pname" data-nolang>Harald</span> restores it on the next start.</p>
   </section>
 
   <section data-arrange="devtools" class="tools">
     <h2>Developer Tools</h2>
     <details id="devtools"><summary>Fine-tune food, joy, XP and detection</summary>
     <p class="sub">For playtesting, or for special situations: in a quiet rural area, for example, you might make
-      <span class="pname">Harald</span> get hungry more slowly or make each catch more filling. Change any number while <span class="pname">Harald</span> runs; it takes
+      <span class="pname" data-nolang>Harald</span> get hungry more slowly or make each catch more filling. Change any number while <span class="pname" data-nolang>Harald</span> runs; it takes
       effect at once and is kept across restarts. Changed values are highlighted, with ↺ to put one back.</p>
     <details class="subtools" id="dt-food"><summary><b>Food</b> <span class="sub">· belly, pack and what each catch is worth</span><span class="changedn" id="chg-food"></span></summary>
       <div class="row knob setmeter"><div class="grow"><b>Set belly meter</b>
@@ -279,7 +300,7 @@
         <button style="visibility:visible; border-color: var(--rune); color: var(--ink)" onclick="setMeter('pack')">Set</button></div>
       <div id="knobs-food"></div>
     </details>
-    <details class="subtools" id="dt-joy"><summary><b>Joy</b> <span class="sub">· joy meter and what makes him happy</span><span class="changedn" id="chg-joy"></span></summary>
+    <details class="subtools" id="dt-joy"><summary><b>Joy</b> <span class="sub">· joy meter and what makes <span class="pname" data-nolang>Harald</span> happy</span><span class="changedn" id="chg-joy"></span></summary>
       <div class="row knob setmeter"><div class="grow"><b>Set joy meter</b>
         <div class="sub">Now <span id="nowJoy">--</span>%</div></div>
         <input id="setJoy" type="number" min="0" max="100" step="1" inputmode="decimal"><span class="unit">%</span>
@@ -314,56 +335,62 @@
       </div>
     </div>
     <p class="sub" style="margin:8px 0 0">On the day of each new moon, first quarter, full moon and last quarter,
-      <span class="pname">Harald</span> gets a burst of joy (the full moon is the biggest) and announces it: on his screen,
-      and out loud if he has a voice. No internet needed: the phases are worked out on the Pi.</p>
+      <span class="pname" data-nolang>Harald</span> gets a burst of joy (the full moon is the biggest) and announces it: on the screen,
+      and out loud if your dragon has a voice. No internet needed: the phases are worked out on the Pi.</p>
   </section>
 
   <section data-arrange="garden" class="dotctl">
-    <h2>Butterfly Garden</h2>
-    <p class="sub" style="margin:0 0 6px">Raise insects from <span class="pname">Harald</span>'s spare food: treats and berries
-      that fit in neither his BELLY nor his PACK go to the larvae here, shared evenly between them. From the Bookworm project,
-      with its species, field notes and real-world timings.</p>
-    <p class="sub" id="gdLocked" style="margin:0 0 6px">Opens when <span class="pname">Harald</span> reaches level 5.</p>
-    <div class="row" style="border:0"><div class="grow sub">Unlock now (prototype testing)</div>
+    <details class="fold" id="fold-garden" open><summary class="foldhead"><h2>Butterfly Garden</h2>
+      <span class="sub" id="gdSummary">Insects raised on spare food</span></summary>
+    <p class="sub" style="margin:0 0 6px">Raise insects from <span class="pname" data-nolang>Harald</span>'s spare food: treats and berries
+      that fit in neither the BELLY nor the PACK go to the larvae here, shared evenly between them. Data imported from another
+      of the project author's repos, Bookworm, using its data of species, field notes, and pupation timings. Manual
+      fact-checking of Bookworm's data is ongoing.</p>
+    <p class="sub" style="margin:0 0 6px">Spiders aren't included at the moment. If they're ever added, there will be an
+      "arachnophobia" tick box here to keep them from hatching.</p>
+    <p class="sub" id="gdLocked" style="margin:0 0 6px">Opens when <span class="pname" data-nolang>Harald</span> reaches level 5.</p>
+    <div class="row" id="gdTestRow" style="border:0"><div class="grow sub">Unlock now (prototype testing)</div>
       <label class="sub"><input type="checkbox" id="gdTest" onchange="gardenUnlock(this.checked)"> On</label></div>
     <div id="gdOpen" hidden>
       <div class="row"><div class="grow"><b id="gdTitle"></b><div class="sub" id="gdScore"></div></div></div>
-      <div class="sub" id="gdSpots"></div>
+      <div class="sub" id="gdFood"></div>
+      <div class="sub" id="gdSpots" style="margin-top:4px"></div>
       <div id="gdLarvae"></div>
       <div class="row" id="gdCountryRow" style="margin-top:8px"><div class="grow sub" id="gdCountryNote"></div>
         <select id="gdCountry" onchange="gardenCountry(this.value)"><option value="gb">United Kingdom</option>
           <option value="ie">Ireland</option><option value="us">United States</option><option value="ca">Canada</option></select></div>
       <div class="actions" style="margin-top:10px"><a id="gdCollLink" href="/garden" target="_blank"><button class="primary">See Collection</button></a></div>
     </div>
+    </details>
   </section>
 
   <section data-arrange="lists">
     <h2>Shopping list and calendar</h2>
     <div class="row"><div class="grow sub" id="shopNote">Add things here or by voice: "Add eggs to the shopping list".</div>
       <a href="/shopping" target="_blank"><button class="primary">Shopping list</button></a></div>
-    <div class="row" style="border:0"><div class="grow sub">Events and reminders. Ask him: "What events do I have today?"</div>
+    <div class="row" style="border:0"><div class="grow sub">Events and reminders. Ask <span class="pname" data-nolang>Harald</span>: "What events do I have today?"</div>
       <a href="/calendar" target="_blank"><button class="primary">Calendar</button></a></div>
   </section>
 
   <section data-arrange="ask">
-    <h2>Ask <span class="pname">Harald</span></h2>
-    <p class="sub" style="margin:0 0 6px">Type a question and his answer appears below (and he says it out loud, if he has a voice).
+    <h2>Ask <span class="pname" data-nolang>Harald</span></h2>
+    <p class="sub" style="margin:0 0 6px">Type a question and the answer appears below (and is said out loud, if your dragon has a voice).
       Try: the time in Tokyo, the date, "set a pasta timer for twelve minutes", what's on the shopping list or the calendar,
       the weather, or at home: "what's the temperature at home?", the humidity, air pressure, pollen count, UV index,
       air quality, sunrise or sunset.</p>
-    <p class="sub" style="margin:0 0 6px"><b>He only knows a set range of questions</b> (the full list is in the README), and
-      his answers don't come from a search engine. For anything else, use a real search engine (DuckDuckGo, for example)
+    <p class="sub" style="margin:0 0 6px"><b><span class="pname" data-nolang>Harald</span> only knows a set range of questions</b> (the full list is in the README), and
+      the answers don't come from a search engine. For anything else, use a real search engine (DuckDuckGo, for example)
       or an assistant that uses one (Hey Google, Siri, Alexa and so on).</p>
       <div class="row"><input type="text" id="askText" maxlength="200" placeholder="Ask: what time is it in Tokyo?"
         onkeydown="if(event.key==='Enter') askTyped()"><button onclick="askTyped()">Ask</button></div>
       <div class="row" style="border:0"><div class="grow sub" id="askLast"></div></div>
-      <div id="timerList"></div>
+      <div id="timerList" data-nolang></div>
   </section>
 
   <section data-arrange="lair">
-    <h2><span class="pname">Harald</span>'s Lair</h2>
-    <p class="sub" style="margin:0 0 6px">Home, as far as the weather is concerned: what "at home" means when you ask him,
-      and where the weather comes from when he doesn't know where he is. He only keeps it to within about 10 km, and a full
+    <h2><span class="pname" data-nolang>Harald</span>'s Lair</h2>
+    <p class="sub" style="margin:0 0 6px">Home, as far as the weather is concerned: what "at home" means when you ask <span class="pname" data-nolang>Harald</span>,
+      and where the weather comes from when your dragon's own location isn't known. It's only kept to within about 10 km, and a full
       postcode is cut to its area before it's looked up.</p>
     <!-- one field per line, then Save: side by side, some phones' browsers push the country list's
          arrow and the button past the edge -->
@@ -373,18 +400,27 @@
     <div class="row lairfield" style="border:0">
       <input type="text" id="lairCountry" maxlength="60" placeholder="Country" list="countryList"
         onkeydown="if(event.key==='Enter') lairSave()"></div>
-    <div class="actions"><button class="primary" onclick="lairSave()">Save</button></div>
+    <div class="actions"><button class="primary" id="lairSaveBtn" onclick="lairSave()">Save</button></div>
     <datalist id="countryList"><option value="Afghanistan"><option value="Albania"><option value="Algeria"><option value="American Samoa"><option value="Andorra"><option value="Angola"><option value="Anguilla"><option value="Antarctica"><option value="Antigua and Barbuda"><option value="Argentina"><option value="Armenia"><option value="Aruba"><option value="Australia"><option value="Austria"><option value="Azerbaijan"><option value="Bahamas"><option value="Bahrain"><option value="Bangladesh"><option value="Barbados"><option value="Belarus"><option value="Belgium"><option value="Belize"><option value="Benin"><option value="Bermuda"><option value="Bhutan"><option value="Bolivia"><option value="Bosnia and Herzegovina"><option value="Botswana"><option value="Brazil"><option value="British Virgin Islands"><option value="Brunei"><option value="Bulgaria"><option value="Burkina Faso"><option value="Burundi"><option value="Cambodia"><option value="Cameroon"><option value="Canada"><option value="Cape Verde"><option value="Caribbean Netherlands"><option value="Cayman Islands"><option value="Central African Republic"><option value="Chad"><option value="Chile"><option value="China"><option value="Christmas Island"><option value="Cocos (Keeling) Islands"><option value="Colombia"><option value="Comoros"><option value="Cook Islands"><option value="Costa Rica"><option value="Croatia"><option value="Cuba"><option value="Curaçao"><option value="Cyprus"><option value="Czechia"><option value="Democratic Republic of the Congo"><option value="Denmark"><option value="Djibouti"><option value="Dominica"><option value="Dominican Republic"><option value="Ecuador"><option value="Egypt"><option value="El Salvador"><option value="Equatorial Guinea"><option value="Eritrea"><option value="Estonia"><option value="Eswatini"><option value="Ethiopia"><option value="Falkland Islands"><option value="Faroe Islands"><option value="Fiji"><option value="Finland"><option value="France"><option value="French Guiana"><option value="French Polynesia"><option value="Gabon"><option value="Gambia"><option value="Georgia"><option value="Germany"><option value="Ghana"><option value="Gibraltar"><option value="Greece"><option value="Greenland"><option value="Grenada"><option value="Guadeloupe"><option value="Guam"><option value="Guatemala"><option value="Guernsey"><option value="Guinea"><option value="Guinea-Bissau"><option value="Guyana"><option value="Haiti"><option value="Honduras"><option value="Hong Kong"><option value="Hungary"><option value="Iceland"><option value="India"><option value="Indonesia"><option value="Iran"><option value="Iraq"><option value="Ireland"><option value="Isle of Man"><option value="Israel"><option value="Italy"><option value="Ivory Coast"><option value="Jamaica"><option value="Japan"><option value="Jersey"><option value="Jordan"><option value="Kazakhstan"><option value="Kenya"><option value="Kiribati"><option value="Kuwait"><option value="Kyrgyzstan"><option value="Laos"><option value="Latvia"><option value="Lebanon"><option value="Lesotho"><option value="Liberia"><option value="Libya"><option value="Liechtenstein"><option value="Lithuania"><option value="Luxembourg"><option value="Macao"><option value="Madagascar"><option value="Malawi"><option value="Malaysia"><option value="Maldives"><option value="Mali"><option value="Malta"><option value="Marshall Islands"><option value="Martinique"><option value="Mauritania"><option value="Mauritius"><option value="Mayotte"><option value="Mexico"><option value="Micronesia"><option value="Moldova"><option value="Monaco"><option value="Mongolia"><option value="Montenegro"><option value="Montserrat"><option value="Morocco"><option value="Mozambique"><option value="Myanmar"><option value="Namibia"><option value="Nauru"><option value="Nepal"><option value="Netherlands"><option value="New Caledonia"><option value="New Zealand"><option value="Nicaragua"><option value="Niger"><option value="Nigeria"><option value="Niue"><option value="Norfolk Island"><option value="North Korea"><option value="North Macedonia"><option value="Northern Mariana Islands"><option value="Norway"><option value="Oman"><option value="Pakistan"><option value="Palau"><option value="Palestine"><option value="Panama"><option value="Papua New Guinea"><option value="Paraguay"><option value="Peru"><option value="Philippines"><option value="Pitcairn Islands"><option value="Poland"><option value="Portugal"><option value="Puerto Rico"><option value="Qatar"><option value="Republic of the Congo"><option value="Romania"><option value="Russia"><option value="Rwanda"><option value="Réunion"><option value="Saint Barthélemy"><option value="Saint Helena"><option value="Saint Kitts and Nevis"><option value="Saint Lucia"><option value="Saint Martin"><option value="Saint Pierre and Miquelon"><option value="Saint Vincent and the Grenadines"><option value="Samoa"><option value="San Marino"><option value="Saudi Arabia"><option value="Senegal"><option value="Serbia"><option value="Seychelles"><option value="Sierra Leone"><option value="Singapore"><option value="Sint Maarten"><option value="Slovakia"><option value="Slovenia"><option value="Solomon Islands"><option value="Somalia"><option value="South Africa"><option value="South Korea"><option value="South Sudan"><option value="Spain"><option value="Sri Lanka"><option value="Sudan"><option value="Suriname"><option value="Svalbard and Jan Mayen"><option value="Sweden"><option value="Switzerland"><option value="Syria"><option value="São Tomé and Príncipe"><option value="Taiwan"><option value="Tajikistan"><option value="Tanzania"><option value="Thailand"><option value="Timor-Leste"><option value="Togo"><option value="Tokelau"><option value="Tonga"><option value="Trinidad and Tobago"><option value="Tunisia"><option value="Turkey"><option value="Turkmenistan"><option value="Turks and Caicos Islands"><option value="Tuvalu"><option value="US Virgin Islands"><option value="Uganda"><option value="Ukraine"><option value="United Arab Emirates"><option value="United Kingdom"><option value="United States"><option value="Uruguay"><option value="Uzbekistan"><option value="Vanuatu"><option value="Vatican City"><option value="Venezuela"><option value="Vietnam"><option value="Wallis and Futuna"><option value="Western Sahara"><option value="Yemen"><option value="Zambia"><option value="Zimbabwe"><option value="Åland Islands"></datalist>
-    <div class="row"><div class="grow sub" id="lairFound">Not set yet.</div></div>
-    <div class="row"><div class="grow">Local announcements<div class="sub">News from home while he's online, each at its own time:
+    <div class="row"><div class="grow sub" id="lairFound" data-nolang>Not set yet.</div></div>
+    <div class="row"><div class="grow">Local announcements<div class="sub">News from home while <span class="pname" data-nolang>Harald</span> is online, each at its own time:
       how warm it is on the hour ("It's 14°C (57°F) outside at the Lair."), a storm or change in the weather at a quarter past,
-      high pollen at half past (he sneezes; Europe only), high UV at a quarter to (sunglasses on), and sunrise and sunset as
-      they happen. Storms and sunrises bring joy, just like when he feels them himself.</div>
+      high pollen at half past (a sneeze; Europe only), high UV at a quarter to (sunglasses on), and sunrise and sunset as
+      they happen. Storms and sunrises bring joy, just like feeling them in person.</div>
       <div class="sub" id="lairNow"></div></div>
       <label class="sub"><input type="checkbox" id="lairAnnounce" onchange="lairAnnounceSet(this.checked)"> On</label></div>
     <div class="row" id="warnRow"><div class="grow">Official weather warnings<div class="sub" id="warnNote"></div>
       <div class="sub" id="warnActive"></div></div>
       <select id="warnRegion" hidden onchange="lairRegion(this.value)"><option value="ta">Central, Tayside & Fife</option><option value="em">East Midlands</option><option value="ee">East of England</option><option value="gr">Grampian</option><option value="he">Highlands & Eilean Siar</option><option value="se">London & South East England</option><option value="ne">North East England</option><option value="nw">North West England</option><option value="ni">Northern Ireland</option><option value="os">Orkney & Shetland</option><option value="dg">SW Scotland, Lothian & Borders</option><option value="sw">South West England</option><option value="st">Strathclyde</option><option value="wl">Wales</option><option value="wm">West Midlands</option><option value="yh">Yorkshire & Humber</option></select></div>
+    <div class="row"><div class="grow">Language<div class="sub">The English on <span class="pname" data-nolang>Harald</span>'s screen, in the Den and on its other
+      pages: <span data-nolang>"metres" or "meters", "colour" or "color", "autumn" or "fall"</span>. (What's said out loud stays the same.)
+      From Bookworm, like the Butterfly Garden.</div></div></div>
+    <div class="row" style="border:0">
+      <select id="langSel" onchange="langChoose(this.value)"><option value="gb">British English</option>
+        <option value="us">American English</option><option value="ca">Canadian English</option></select></div>
+    <div class="row" style="border:0"><label class="sub"><input type="checkbox" id="langAuto" onchange="langAutoSet(this.checked)">
+      Language matches Lair location automatically</label></div>
+    <div class="sub" id="langNote" style="margin-bottom:8px"></div>
     <div class="actions"><button class="danger" onclick="lairForget()">Forget the Lair</button></div>
   </section>
 
@@ -395,7 +431,7 @@
       <label class="sub"><input type="checkbox" id="dotOn" onchange="dotSet('enabled', this.checked)"> Use the Dot</label></div>
     <div class="row"><div class="grow">Speak through my phone<div class="sub" id="phoneNote"></div></div>
       <label class="sub"><input type="checkbox" id="phoneOn" onchange="phoneSet(this.checked)"> Use the phone</label></div>
-    <div class="row"><div class="grow">Phone as a backup<div class="sub">When he's using the Dot but loses it, he talks through the phone until it's back</div></div>
+    <div class="row"><div class="grow">Phone as a backup<div class="sub">When the Dot is in use but gets lost, your dragon talks through the phone until it's back</div></div>
       <label class="sub"><input type="checkbox" id="phoneBackup" onchange="dotSet('phone_backup', this.checked)"> On</label></div>
     <details class="subtools"><summary><b>Set up the phone voice</b> <span class="sub">· once, in Termux</span></summary>
       <ol class="sub" style="margin:8px 0; padding-left:20px; line-height:1.6">
@@ -404,17 +440,17 @@
         <li>Then: <code id="phoneCmd"></code></li>
         <li>In Android's settings, Apps → Termux → Battery: <b>Unrestricted</b>, so it keeps running with the screen off.</li>
       </ol>
-      <p class="sub" style="margin:0 0 8px">He says hello through the phone when it's working. Leave Termux running (its notification
-        stays while it's listening). Next time, open Termux and type <code>python harald_voice.py</code>. The phone's media volume sets how loud he is,
-        and Bluetooth earphones work too. Only the words he says go to the phone; nothing is kept.</p>
+      <p class="sub" style="margin:0 0 8px"><span class="pname" data-nolang>Harald</span> says hello through the phone when it's working. Leave Termux running (its notification
+        stays while it's listening). Next time, open Termux and type <code>python harald_voice.py</code>. The phone's media volume sets the loudness,
+        and Bluetooth earphones work too. Only the words <span class="pname" data-nolang>Harald</span> says go to the phone; nothing is kept.</p>
     </details>
     <div class="row"><div class="grow">How chatty<div class="sub" id="dotChattyNote"></div></div>
       <select id="dotChatty" onchange="dotSet('chatty', this.value)">
         <option value="all">Everything</option><option value="big">Big moments</option>
         <option value="recap">Welcome-home recap only</option><option value="silent">No announcements</option>
         <option value="adventure">Adventure mode</option></select></div>
-    <div class="row wrap"><div class="grow full">Weather information: Lair<div class="sub">Which news from home he says out loud
-      (his screen always shows it). Needs the Lair's Local announcements on.</div></div>
+    <div class="row wrap"><div class="grow full">Weather information: Lair<div class="sub">Which news from home is said out loud
+      (the screen always shows it). Needs the Lair's Local announcements on.</div></div>
       <div class="saybox">
         <label class="sub"><input type="checkbox" id="say_lair_temp" onchange="sayTick(this)"> Temperature</label>
         <label class="sub"><input type="checkbox" id="say_lair_storm" onchange="sayTick(this)"> Storm or change</label>
@@ -445,9 +481,9 @@
     <div class="row wrap"><div class="grow full">Quiet hours<div class="sub">No talking; the ring glows a dim night blue</div></div>
       <div class="times"><input type="time" id="dotQFrom" onchange="dotSet('quiet_from', this.value)"><span>to</span>
       <input type="time" id="dotQTo" onchange="dotSet('quiet_to', this.value)"></div></div>
-    <div class="row"><input type="text" id="dotSayText" maxlength="300" placeholder="Something for him to say"
+    <div class="row"><input type="text" id="dotSayText" maxlength="300" placeholder="Something to say"
       onkeydown="if(event.key==='Enter') dotSay()"><button onclick="dotSay()">Say it</button></div>
-    <details class="subtools"><summary><b>His voice</b> <span class="sub">· pitch, speed and pauses</span></summary>
+    <details class="subtools"><summary><b>Voice</b> <span class="sub">· pitch, speed and pauses</span></summary>
       <div class="row"><div class="grow">Pitch<div class="sub">Lower is deeper and more dragonish (needs SoX)</div></div><input type="range" min="-8" max="8" step="0.5" id="dotPitch"
         oninput="$('dotPitchV').textContent=this.value" onchange="dotSet('pitch', this.value)"><span class="val" id="dotPitchV"></span></div>
       <div class="row"><div class="grow">Speed</div><input type="range" min="0.6" max="1.6" step="0.05" id="dotSpeed"
@@ -467,7 +503,7 @@
       <div class="actions" style="margin-top:8px">
         <button onclick="dotRing('ev_test')">Show test colors</button>
         <button onclick="dotRing('ev_storm')">Storm</button><button onclick="dotRing('ev_level')">Level up</button>
-        <button onclick="dotRing('ev_species')">New species</button><button onclick="dotRing('ev_star')">Star</button>
+        <button onclick="dotRing('ev_species')">New type</button><button onclick="dotRing('ev_star')">Star</button>
         <button onclick="dotRing('ev_landmark')">Landmark</button>
       </div>
     </details>
@@ -476,17 +512,17 @@
         <label class="sub"><input type="checkbox" id="dotListen" onchange="dotSet('listen', this.checked)"> On</label></div>
       <div class="row"><div class="grow">Wake word: "Hey dragon"<div class="sub" id="wakeNote"></div></div>
         <label class="sub"><input type="checkbox" id="dotWake" onchange="dotSet('wake', this.checked)"> On</label></div>
-      <div class="row wrap"><div class="grow full sub">Listen for it between (the microphones stay on during these hours; nothing is saved, and with Harald's Debian on the Dot the sound never leaves it)</div>
+      <div class="row wrap"><div class="grow full sub">Listen for it between (the microphones stay on during these hours; nothing is saved, and with <span class="pname" data-nolang>Harald</span>'s Debian on the Dot the sound never leaves it)</div>
         <div class="times"><input type="time" id="dotWFrom" onchange="dotSet('wake_from', this.value)"><span>and</span>
         <input type="time" id="dotWTo" onchange="dotSet('wake_to', this.value)"></div></div>
-      <div class="row"><div class="grow">Voice profiles<div class="sub">Say "Set a voice profile" to the Dot and he'll learn who you are,
+      <div class="row"><div class="grow">Voice profiles<div class="sub">Say "Set a voice profile" to the Dot and <span class="pname" data-nolang>Harald</span> will learn who you are,
         then sometimes use your name. Voice prints (how a voice sounds, not recordings) stay on the Pi.
-        "Who am I?" checks he knows you.</div></div></div>
-      <div id="voiceList"></div>
+        "Who am I?" checks you're recognized.</div></div></div>
+      <div id="voiceList" data-nolang></div>
     </details>
     <details class="subtools"><summary><b>Setup-mode rescue</b> <span class="sub">· after the Dot restarts</span></summary>
       <p class="sub" style="margin:0 0 6px">After a restart an unregistered Echo goes into setup mode (spinning orange ring), switches
-        your hotspot off and broadcasts an open network of its own. With its name below, <span class="pname">Harald</span> hops onto it
+        your hotspot off and broadcasts an open network of its own. With its name below, <span class="pname" data-nolang>Harald</span> hops onto it
         for a moment, checks it's your Dot, switches your hotspot back on and hops home. Look for the name in your phone's
         Wi-Fi list while the ring is orange (like "Amazon-XY7").</p>
       <div class="row"><input type="text" id="dotSetupNet" maxlength="20" placeholder="Amazon-…"
@@ -526,22 +562,22 @@
       <span class="sub">(squares of the map about 250 m and 1 km across)</span></p>
     <details style="margin-top:8px"><summary>Star chart: <span id="cStars">0</span> satellites seen</summary>
       <p class="sub">Satellites need GPSd Forwarder, GPS2IP or a USB GPS receiver; SensorServer doesn't pass them on.</p>
-      <div id="starChart"></div></details>
+      <div id="starChart" data-nolang></div></details>
     <details style="margin-top:8px"><summary>Landmarks: <span id="cLm">0</span> famous places seen</summary>
       <p class="sub">Famous places (on Wikipedia in many languages) are looked up for each new realm.
         Ones you haven't been near yet are listed too, and shown on the map: go and see them!</p>
-      <div id="lmList"></div></details>
+      <div id="lmList" data-nolang></div></details>
     <details style="margin-top:8px"><summary>Green spaces: <span id="cGr">0</span> discovered</summary>
       <p class="sub">Named parks, woods, nature reserves, commons and gardens from OpenStreetMap, looked up for each
         new realm. Step inside one to discover it; ones you haven't been in yet are listed too, and drawn dashed on the map.</p>
-      <div id="grList"></div></details>
-    <details style="margin-top:8px" id="wpBox"><summary>Find him by Wi-Fi <span class="sub">(no GPS)</span>: <span id="wpOn">off</span></summary>
-      <p class="sub">For a dragon with no GPS. He sends the list of Wi-Fi networks he can hear to
+      <div id="grList" data-nolang></div></details>
+    <details style="margin-top:8px" id="wpBox"><summary>Find your dragon by Wi-Fi <span class="sub">(no GPS)</span>: <span id="wpOn">off</span></summary>
+      <p class="sub">For a dragon with no GPS. <span class="pname" data-nolang>Harald</span> sends the list of Wi-Fi networks in range to
         <a href="https://beacondb.net" target="_blank" rel="noopener" style="color: var(--ink)">beaconDB</a>,
-        a free community service that knows roughly where routers are, and it answers with roughly where he is.</p>
+        a free community service that knows roughly where routers are, and it answers with roughly where your dragon is.</p>
       <p class="sub" style="color: var(--rune)"><b>Less private:</b> the networks around you <i>are</i> where you are.
-        Every lookup tells beaconDB where he is, to within tens of meters, and its server logs keep your internet address
-        and the time for 28 days. It only runs while there's no GPS and he's on your hotspot, at most every two minutes,
+        Every lookup tells beaconDB where your dragon is, to within tens of meters, and its server logs keep your internet address
+        and the time for 28 days. It only runs while there's no GPS and <span class="pname" data-nolang>Harald</span> is on your hotspot, at most every two minutes,
         and not while the same networks are around.</p>
       <p class="sub">A Wi-Fi position claims lands and realms, spots landmarks and discovers green spaces. It never counts
         towards walk distances, walks, runs or rides, and nothing found this way is uploaded to WiGLE.</p>
@@ -570,11 +606,22 @@
     <button onclick="resetArrange()" id="arrangeReset" hidden>Back to the usual order</button></p>
 </main>
 <div id="toast"></div>
+<!-- asked when the Lair moves to a country with its own English or insects -->
+<div id="lairAsk" class="ask" hidden><div class="askbox">
+  <h2>The Lair is now in <span id="laWhere" data-nolang></span></h2>
+  <p class="sub" style="margin:0 0 10px">Would you like to change these to match? Choose either, both or neither.</p>
+  <label class="askopt" id="laLangRow"><input type="checkbox" id="laLang" checked>
+    <span>Change the language to <b id="laLangName"></b><span class="sub" id="laLangNote" style="display:block"></span></span></label>
+  <label class="askopt" id="laGardenRow"><input type="checkbox" id="laGarden" checked>
+    <span>Change the Butterfly Garden to <b id="laGardenName"></b><span class="sub" style="display:block">Its insects,
+      and its own collection. What's been raised in the other country is kept.</span></span></label>
+  <div class="actions" style="margin-top:12px"><button class="primary" onclick="lairAskApply()">Continue</button></div>
+</div></div>
 <script>
 const $ = id => document.getElementById(id);
 // folded lists stay as you left them (on this phone or computer)
 document.addEventListener('DOMContentLoaded', () => document.querySelectorAll('details.fold').forEach(d => {
-  try { d.open = localStorage.getItem(d.id) === 'open'; } catch (e) {}
+  try { const v = localStorage.getItem(d.id); if (v) d.open = v === 'open'; } catch (e) {}   // else as the page has it
   d.addEventListener('toggle', () => { try { localStorage.setItem(d.id, d.open ? 'open' : 'shut'); } catch (e) {} });
 }));
 // ---- arranging the den: the order is remembered on this phone or computer
@@ -645,7 +692,7 @@ function runeSvg(text) {  // carved strokes on a 5x9 grid, like the e-ink banner
     stroke-width="0.9" stroke-linecap="square" stroke-linejoin="miter" fill-opacity="1">${paths}</svg>`;
 }
 let tracking = null;
-let PET = 'Harald';  // the dragon's current name, filled in from his status
+let PET = 'Harald';  // the dragon's current name, filled in from the status
 
 function toast(t) { const e = $('toast'); e.textContent = t; e.style.display = 'block';
   clearTimeout(toast.t); toast.t = setTimeout(() => e.style.display = 'none', 3500); }
@@ -668,7 +715,7 @@ async function refresh() {
     const v = await (await fetch('/api/status')).json();
     if (v.page && v.page !== PAGE_ID) { location.reload(); return; }  // Harald was updated
     $('headlessNote').hidden = !v.headless;
-    if (v.headless) $('headlessNote').textContent = 'No e-ink screen: this is his screen. ' +
+    if (v.headless) $('headlessNote').textContent = `No e-ink screen: this is ${PET}'s screen. ` +
       (v.headless_why ? '(' + v.headless_why.charAt(0).toUpperCase() + v.headless_why.slice(1) + '.)' : '');
     $('runes').innerHTML = runeSvg(toRunes(v.name));
     $('napBox').hidden = !v.napping;
@@ -706,7 +753,7 @@ async function refresh() {
     $('cLandsW').textContent = v.lands === 1 ? 'land' : 'lands'; $('cRealmsW').textContent = v.realms === 1 ? 'realm' : 'realms';
     $('cStars').textContent = v.stars;
     $('netNow').textContent = v.network || 'Not connected';
-    $('netWhich').textContent = v.network_rank === null ? (v.network ? 'Not one of his saved networks' : '')
+    $('netWhich').textContent = v.network_rank === null ? (v.network ? 'Not one of the saved networks' : '')
       : v.network_rank === 0 ? 'Main hotspot' : 'Backup ' + v.network_rank;
     if (v.moon) { $('moonBox').hidden = false; drawMoon(v.moon, v.south); }
     if (v.pressure) {
@@ -854,10 +901,35 @@ async function rename() {
   if (n) { await cmd('NAME ' + n, true); refresh(); }
 }
 async function napNow() {
-  if (!confirm('Put ' + PET + ' down for a nap? Everything stops as if he were switched off, except this den, '
-               + 'where you can wake him. He stays napping even if he loses power or restarts.')) return;
+  if (!confirm('Put ' + PET + ' down for a nap? Everything stops as if switched off, except this den, '
+               + 'where you can wake ' + PET + ' up. The nap carries on even through a power cut or restart.')) return;
   await cmd('NAP', true); refresh();
 }
+// ---- Color Blindness Mode (see access.py for how the colors were chosen)
+const CVD_NOTES = {
+  full: 'Colors for each kind of color blindness, on every page of the Den. Gold is for headings and buttons, '
+      + 'red for danger, green for good things like meters and progress.',
+  protanopia: 'Protanopia: the red-sensing cones are missing, so reds look dark and red, orange and green run together. '
+      + 'Gold stays, green becomes blue, red becomes pink, and danger buttons get a \u26A0. '
+      + 'Deuteranopia uses the same colors.',
+  deuteranopia: 'Deuteranopia: the green-sensing cones are missing, so red and green look much the same '
+      + '(the most common kind). Gold stays, green becomes blue, red becomes pink, and danger buttons get a \u26A0. '
+      + 'Protanopia uses the same colors.',
+  tritanopia: 'Tritanopia: the blue-sensing cones are missing, so blue and green, and yellow and pink, run together '
+      + '(rare: about 1 in 10,000 people). Gold becomes lavender, green becomes teal, red stays red, '
+      + 'and danger buttons get a \u26A0.'};
+async function loadCvd() {
+  const r = await cmd('CVD');
+  if (!CVD_NOTES[r[0]]) return;
+  $('cvdSel').value = r[0];
+  $('cvdNote').textContent = CVD_NOTES[r[0]];
+}
+async function cvdSet(m) {
+  const r = await cmd('CVD ' + m);
+  if (r[0] !== 'OK') return toast((r[0] || PET + ' is not answering').replace(/^ERR /, ''));
+  location.reload();             // every color on the page from the new set
+}
+loadCvd();
 async function loadSleepScreen() {
   const d = {};
   (await cmd('SLEEPSCREEN')).forEach(l => { const i = l.indexOf('='); if (i > 0) d[l.slice(0, i)] = l.slice(i + 1); });
@@ -885,7 +957,7 @@ async function renameVoice(id, old) {
   if (n) { await cmd(`VOICENAME ${id} ${n}`, true); loadVoices(); }
 }
 async function sleepNow() {
-  if (!confirm('Put ' + PET + ' to sleep? Wait for his sleeping face on the e-ink (the sleep screen, or SAFE TO UNPLUG), then it is safe to unplug.')) return;
+  if (!confirm('Put ' + PET + ' to sleep? Wait for the sleeping face on the e-ink (the sleep screen, or SAFE TO UNPLUG), then it is safe to unplug.')) return;
   await cmd('SLEEP', true);
 }
 let findSession = 0;
@@ -997,24 +1069,24 @@ function drawMoon(m, south) {
     {weekday: 'short', month: 'short', day: 'numeric'})}, ${new Date(p.ts * 1000).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}`).join('<br>');
 }
 async function reconnect() {
-  if (!confirm(PET + ' will drop his current network and join the best one in range. If that\'s a different ' +
-               'network, this page will lose him until your phone is on that network too. Go ahead?')) return;
+  if (!confirm(PET + ' will drop the current network and join the best one in range. If that\'s a different ' +
+               'network, this page will lose ' + PET + ' until your phone is on that network too. Go ahead?')) return;
   await cmd('RECONNECT', true);
 }
 async function restoreBackup(input) {
   const f = input.files[0];
   input.value = '';
   if (!f) return;
-  if (!confirm(`Restore ${PET} from "${f.name}"?\n\nEverything he has now (his level, diary, lands, lists, settings) ` +
+  if (!confirm(`Restore ${PET} from "${f.name}"?\n\nEverything ${PET} has now (level, diary, lands, lists, settings) ` +
                `is replaced by what's in the backup. What's there now is kept aside on the Pi in case you change your mind. ` +
-               `He restarts to do it.`)) return;
+               `${PET} restarts to do it.`)) return;
   $('restoreNote').textContent = 'Sending the backup…';
   try {
     const r = await fetch('/api/restore', {method: 'POST', body: f});
     const j = await r.json();
     if (!j.ok) { $('restoreNote').textContent = j.error || 'That didn\'t work.'; return; }
     const made = j.made ? new Date(j.made * 1000).toLocaleString([], {dateStyle: 'medium', timeStyle: 'short'}) : 'an unknown date';
-    $('restoreNote').textContent = `Restoring the backup of ${j.name || PET} made ${made}. He's restarting: this page reloads by itself in about half a minute.`;
+    $('restoreNote').textContent = `Restoring the backup of ${j.name || PET} made ${made}. ${PET} is restarting: this page reloads by itself in about half a minute.`;
     setTimeout(function wait() {
       fetch('/api/status').then(r => r.ok ? location.reload() : setTimeout(wait, 3000)).catch(() => setTimeout(wait, 3000));
     }, 15000);
@@ -1024,7 +1096,7 @@ async function restoreBackup(input) {
 }
 
 async function forgetMap() {
-  if (!confirm('Forget every land and realm ' + PET + ' has claimed, and which landmarks and green spaces he has seen? This can\'t be undone.')) return;
+  if (!confirm('Forget every land and realm ' + PET + ' has claimed, and which landmarks and green spaces ' + PET + ' has seen? This can\'t be undone.')) return;
   await cmd('FORGETMAP', true); refresh();
 }
 async function resetKnobs() {
@@ -1053,8 +1125,8 @@ async function loadDot() {
     + (d.phone_route === 'phone' && d.phone !== 'True' ? ' Standing in for the Dot right now.' : '');
   $('phoneCmd').textContent = `curl -O http://${location.host}/phone/harald_voice.py && python harald_voice.py`;
   if (!keep($('dotChatty'))) $('dotChatty').value = d.chatty;
-  $('dotChattyNote').textContent = {all: 'He speaks every message from his screen', big: 'New species, landmarks, storms, level-ups...',
-    recap: 'Only a summary when he comes home', silent: "He announces nothing, but still answers your questions out loud. The Dot, if connected, will still display the mood ring lights and animations.",
+  $('dotChattyNote').textContent = {all: 'Every message on the screen is spoken', big: 'New types, landmarks, storms, level-ups...',
+    recap: 'Only a summary on coming home', silent: "No announcements, but questions are still answered out loud. The Dot, if connected, will still display the mood ring lights and animations.",
     adventure: 'Out and about: distance, climbing, lands, realms, famous places, sunshine, stars, level-ups and a full pack. Nothing about gadgets or Wi-Fi.'}[d.chatty] || '';
   for (const [k, id] of [['volume', 'dotVolume'], ['adv_volume', 'dotAdvVolume'], ['brightness', 'dotBrightness'], ['pitch', 'dotPitch'], ['speed', 'dotSpeed'],
                          ['gap', 'dotGap'], ['red', 'dotRed'], ['green', 'dotGreen'], ['blue', 'dotBlue']]) {
@@ -1069,7 +1141,7 @@ async function loadDot() {
     : (d.wake_active === 'True' ? 'Listening now.' : `Not listening right now: ${d.wake_why || 'starting up'}.`)
       + (+d.wake_heard ? ` Heard ${d.wake_heard} time${d.wake_heard === '1' ? '' : 's'}, last at ${new Date(+d.wake_last * 1000).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}.` : '')
       + (d.wake_where === 'Dot' && d.wake_strict !== undefined && d.wake_strict !== '' ? ` Strictness ${d.wake_strict}% (Dev Tools).`
-         + (d.wake_conf !== '' ? ` Last time he was ${d.wake_conf}% sure.` : '')
+         + (d.wake_conf !== '' ? ` Last time: ${d.wake_conf}% sure.` : '')
          + (+d.wake_turned_down ? ` Turned down ${d.wake_turned_down} near-miss${d.wake_turned_down === '1' ? '' : 'es'}${d.wake_last_no ? ` (last: ${d.wake_last_no})` : ''}.` : '')
          + (+d.wake_unasked ? ` Woke ${d.wake_unasked} time${d.wake_unasked === '1' ? '' : 's'} with no question after: probably false alarms.` : '') : '')
       + (d.wake_cpu !== '' ? ` Uses about ${Math.round(+d.wake_cpu * 100)}% of one of the ${d.wake_where === 'Dot' ? "Dot's" : "Pi's"} cores.` : '')
@@ -1109,11 +1181,11 @@ async function loadWifiPos() {
   if (document.activeElement !== $('wpCheck')) $('wpCheck').checked = on;
   $('wpOn').textContent = on ? 'on' : 'off';
   $('wpStatus').textContent = on ? d.status.charAt(0).toUpperCase() + d.status.slice(1)
-    + (+d.lookups ? ` · ${d.lookups} lookups since he started` : '') : 'Off';
+    + (+d.lookups ? ` · ${d.lookups} lookups since ${PET} started` : '') : 'Off';
 }
 async function wifiPosSet(on) {
-  if (on && !confirm('Find him by Wi-Fi?\n\nWhile there is no GPS, the Wi-Fi networks he can hear are sent to beaconDB, '
-      + 'which tells it where he is to within tens of meters. Its server logs keep your internet address for 28 days.')) {
+  if (on && !confirm('Find ' + PET + ' by Wi-Fi?\n\nWhile there is no GPS, the Wi-Fi networks in range are sent to beaconDB, '
+      + 'which tells it where your dragon is to within tens of meters. Its server logs keep your internet address for 28 days.')) {
     $('wpCheck').checked = false; return;
   }
   const r = await cmd('WIFIPOSSET ' + (on ? 'on' : 'off'));
@@ -1145,25 +1217,34 @@ async function loadGarden() {
   try { g = JSON.parse(r[0]); } catch (e) { return; }
   const keep = el => document.activeElement === el;
   $('gdLocked').hidden = g.unlocked;
+  $('gdTestRow').hidden = g.level >= g.unlock_level;          // already there: nothing to unlock
   if (!keep($('gdTest'))) $('gdTest').checked = g.unlocked && (g.forced || g.level < g.unlock_level);
-  $('gdTest').disabled = g.unlocked && !g.forced;
-  $('gdLocked').textContent = `Opens when ${PET} reaches level ${g.unlock_level} (he's level ${g.level}).`;
+  $('gdLocked').textContent = `Opens when ${PET} reaches level ${g.unlock_level} (now level ${g.level}).`;
   $('gdOpen').hidden = !g.unlocked;
+  const growing = g.larvae.filter(b => !b.empty && !b.egg).length;
+  $('gdSummary').textContent = !g.unlocked ? `Opens at level ${g.unlock_level}`
+    : `${growing ? growing + ' growing' : 'Waiting for spare food'} · ${g.title}`;
   if (!g.unlocked) return;
   $('gdTitle').textContent = g.title;
   $('gdScore').textContent = `${g.score.toLocaleString()} points · ${g.raised} raised in ${g.country_name}`;
-  $('gdSpots').textContent = g.slots < g.max ? `${g.slots} of ${g.max} spots: one more opens each level he gains (next at level ${g.level + 1}).`
-    : `All ${g.max} spots open: food is shared between them.`;
-  gardenArtFrame(g.art);
+  const bellyFull = g.belly >= 99.5, packFull = g.pack >= g.pack_cap - 0.05;
+  $('gdFood').innerHTML = `Spare food today: <b>${g.fed_today}</b>. It only reaches the garden once the BELLY is full
+    (now ${Math.round(g.belly)}%${bellyFull ? ' ✓' : ''}) and the PACK is full (${g.pack} of ${g.pack_cap}${packFull ? ' ✓' : ''}).`;
+  $('gdSpots').textContent = g.slots < g.max ? `${g.slots} of ${g.max} spots: one more opens with each level gained (next at level ${g.level + 1}).`
+    : `All ${g.max} spots open. Food is shared between the ones with an egg or a larva in them.`;
   const html = g.larvae.map(b => {
+    if (b.empty) return `<div class="larva egg"><b>An empty spot</b><div class="sub">Nothing grows here until you put an
+      egg in it, so the spare food goes further for the others.</div>
+      <div class="actions" style="margin-top:6px"><button onclick="gardenEgg(${b.slot}, true)">Put an egg here</button></div></div>`;
     if (b.egg) return `<div class="larva egg"><div class="gd-art">${EGG_SVG}</div>
-      <b>An egg</b><div class="sub">Hatches with the next spare food, and only then do we find out what it is.</div></div>`;
+      <b>An egg</b><div class="sub">Hatches with the next spare food, and only then do we find out what it is.</div>
+      ${b.slot > 0 ? `<div class="actions" style="margin-top:6px"><button onclick="gardenEgg(${b.slot}, false)">Leave this spot empty</button></div>` : ''}</div>`;
     const nodes = [];
     for (let k = 1; k <= 10; k++) {
       const at = k >= 10 ? 100 : k === 9 ? b.pupAt : Math.round(k * b.pupAt / 9 * 10) / 10;
       nodes.push(`<span class="node${k === 9 ? ' chrys' : ''}${b.pct >= at ? ' done' : ''}" style="left:${at}%"></span>`);
     }
-    const form = b.caste ? (b.hungry ? 'Worker-to-be (his belly ran low)' : 'Queen-to-be, if his belly never runs low')
+    const form = b.caste ? (b.hungry ? `Worker-to-be (${PET}'s belly ran low)` : `Queen-to-be, if ${PET}'s belly never runs low`)
       : b.sex === 'm' ? 'Male' : b.sex === 'f' ? 'Female' : '';
     const pupa = b.pupa.charAt(0).toUpperCase() + b.pupa.slice(1), adult = b.noun.charAt(0).toUpperCase() + b.noun.slice(1);
     const now = b.stage >= 10 ? adult : b.stage >= 9 ? pupa : b.young;
@@ -1172,7 +1253,7 @@ async function loadGarden() {
     const art = gardenArt(b.species, b.stage, mood);
     return `<button class="larva" onclick="window.open('/garden?c=${b.country}&notes=${encodeURIComponent(b.species)}&stage=${b.stage}&mood=${mood}', '_blank')">
       ${art ? `<div class="gd-art art-wrap${b.stage < 9 ? ' crawl' : ''}">${art}</div>` : ''}
-      <b>${esc(b.name)}</b> <span class="sub">${esc(now)} · ${esc(b.rarity)}${form ? ' · ' + esc(form) : ''}</span>
+      <b data-nolang>${esc(b.name)}</b> <span class="sub">${esc(now)} · ${esc(b.rarity)}${form ? ' · ' + esc(form) : ''}</span>
       <span class="sub" style="float:right">${b.pct.toFixed(0)}%</span>
       <div class="stemlbl top"><span style="left:${b.pupAt}%${b.pupAt > 78 ? ';transform:translateX(-88%)' : ''}">${esc(pupa)} ${b.pupAt}%</span></div>
       <div class="stem"><span class="track"></span><span class="fill" style="width:${b.pct}%"></span>${nodes.join('')}</div>
@@ -1180,10 +1261,14 @@ async function loadGarden() {
       <div class="sub">${esc(moodWord)} · ${b.fed} of ${b.need} food · tap for field notes</div></button>`;
   }).join('');
   if (html !== gdLast) { gdLast = html; $('gdLarvae').innerHTML = html; }   // redrawn only on a change, so they keep crawling
-  $('gdCountryRow').hidden = g.from_lair;
-  $('gdCountryNote').textContent = 'Which country\'s insects (the Lair isn\'t in one of these):';
+  $('gdCountryNote').textContent = "Which country's insects:";
   if (!keep($('gdCountry'))) $('gdCountry').value = g.country;
   $('gdCollLink').href = '/garden?c=' + g.country;
+}
+async function gardenEgg(slot, lay) {
+  const r = await cmd((lay ? 'GARDENEGG ' : 'GARDENEMPTY ') + slot);
+  if (r[0] !== 'OK') toast((r[0] || PET + ' is not answering').replace(/^ERR /, ''));
+  loadGarden();
 }
 async function gardenUnlock(on) {
   const r = await cmd('GARDENUNLOCK ' + (on ? 'on' : 'off'));
@@ -1222,11 +1307,68 @@ async function lairSave() {
   const place = $('lairPlace').value.trim(), country = $('lairCountry').value.trim();
   if (!place || !country) return toast('Fill in both: a place (city, city and state, or zip/postcode) and a country');
   $('lairFound').textContent = 'Looking it up...';
+  const before = await langState();
   const r = await cmd(`LAIRSET ${place.replace(/\|/g, ' ')}|${country.replace(/\|/g, ' ')}`);
   const words = (r[0] || PET + ' is not answering').replace(/^(OK|ERR) /, '');
   toast(words);
   loadLair();
+  if ((r[0] || '').startsWith('OK')) lairAsk(before, await langState());
 }
+// ---- language (British, American or Canadian English) and moving the Lair
+const LANG_NAMES = {gb: 'British English', us: 'American English', ca: 'Canadian English'};
+const GARDEN_NAMES = {gb: 'the United Kingdom', ie: 'Ireland', us: 'the United States', ca: 'Canada'};
+async function langState() {
+  const d = {};
+  (await cmd('LANG')).forEach(l => { const i = l.indexOf('='); if (i > 0) d[l.slice(0, i)] = l.slice(i + 1); });
+  return d;
+}
+async function loadLang() {
+  const d = await langState();
+  if (!('lang' in d)) return;
+  $('langSel').value = d.lang;
+  $('langAuto').checked = d.auto === '1';
+  $('langSel').disabled = d.auto === '1';
+  $('langNote').textContent = d.auto !== '1' ? 'Chosen by you.'
+    : d.lair_lang ? "Following the Lair's country."
+    : `No Lair in a country with its own English here, so it's ${d.os ? "the Pi's own country's" : 'the usual'}: ${LANG_NAMES[d.default]}.`;
+}
+async function langAutoSet(on) {
+  await cmd('LANGSET auto ' + (on ? 'on' : 'off'));
+  location.reload();             // every page's text in the new English
+}
+async function langChoose(l) {
+  await cmd('LANGSET ' + l);
+  location.reload();
+}
+let lairAskWas = null, lairAskNow = null;
+function lairAsk(before, now) {
+  if (!now.lair_lang) return;                 // not one of the countries with its own English or insects
+  const langChange = now.lair_lang !== before.lang, gardenChange = now.lair_country !== before.garden;
+  if (!langChange && !gardenChange) return;
+  lairAskWas = before; lairAskNow = now;
+  $('laWhere').textContent = GARDEN_NAMES[now.lair_country];
+  $('laLangRow').hidden = !langChange;
+  $('laGardenRow').hidden = !gardenChange;
+  $('laLang').checked = $('laGarden').checked = true;
+  $('laLangName').textContent = LANG_NAMES[now.lair_lang];
+  $('laLangNote').textContent = before.auto === '1'
+    ? '(Leaving this unticked turns off "Language matches Lair location automatically" and keeps ' + LANG_NAMES[before.lang] + '.)' : '';
+  $('laGardenName').textContent = GARDEN_NAMES[now.lair_country];
+  $('lairAsk').hidden = false;
+}
+async function lairAskApply() {
+  const was = lairAskWas, now = lairAskNow;
+  $('lairAsk').hidden = true;
+  let reload = false;
+  if (!$('laLangRow').hidden) {
+    if ($('laLang').checked && was.auto !== '1') { await cmd('LANGSET ' + now.lair_lang); reload = true; }
+    if (!$('laLang').checked && was.auto === '1') { await cmd('LANGSET auto off'); await cmd('LANGSET ' + was.lang); }
+    if ($('laLang').checked && was.auto === '1') reload = true;      // it followed the Lair already
+  }
+  if (!$('laGardenRow').hidden && $('laGarden').checked) await cmd('GARDENCOUNTRY ' + now.lair_country);
+  if (reload) location.reload(); else { loadLang(); loadGarden(); }
+}
+loadLang();
 async function lairAnnounceSet(on) {
   const r = await cmd('LAIRANNOUNCE ' + (on ? 'on' : 'off'));
   if (r[0] !== 'OK') toast((r[0] || PET + ' is not answering').replace(/^ERR /, ''));
@@ -1250,7 +1392,7 @@ async function phoneSet(on) {
 }
 async function dotSay() {
   const t = $('dotSayText').value.trim();
-  if (!t) return toast('Type something for him to say');
+  if (!t) return toast('Type something to say');
   const r = await cmd('DOTSAY ' + t);
   toast(r[0] === 'OK' ? 'Speaking in a moment' : (r[0] || PET + ' is not answering').replace(/^ERR /, ''));
   if (r[0] === 'OK') $('dotSayText').value = '';
@@ -1276,12 +1418,12 @@ async function loadTimers(ringing) {
 }
 async function dotRescue() {
   if (!confirm(PET + ' will leave your hotspot for up to a minute to switch the Dot\'s Wi-Fi back on. ' +
-               'This page loses him meanwhile. Go ahead?')) return;
+               'This page loses ' + PET + ' meanwhile. Go ahead?')) return;
   await cmd('DOTRESCUE', true);
 }
 async function dotForget() {
   if (!confirm(PET + ' will stop using this Echo Dot and hand it back to Alexa (her services start again). ' +
-               'He will claim the next Dot he finds. Go ahead?')) return;
+               PET + ' will claim the next Dot found. Go ahead?')) return;
   await cmd('DOTFORGET', true); loadDot();
 }
 loadDot(); setInterval(loadDot, 10000);

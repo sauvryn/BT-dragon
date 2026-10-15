@@ -25,7 +25,7 @@ DISCOVERY_PORT = 5150
 
 def say(text, rate=1.0, pitch=1.0):
     # the "music" stream: the media volume, and Bluetooth earphones if they're connected.
-    # Speed and pitch follow "His voice" in the den, on top of the phone's own settings.
+    # Speed and pitch follow "Voice" in the den, on top of the phone's own settings.
     try:
         subprocess.run(["termux-tts-speak", "-s", "MUSIC", "-r", f"{rate:.2f}", "-p", f"{pitch:.2f}", text],
                        timeout=120)
@@ -55,7 +55,7 @@ def find_harald(wait_s=20):
 def main():
     address = ADDRESS
     subprocess.run(["termux-wake-lock"], check=False)     # keep running with the screen off
-    print(f"Listening for Harald at {address}. Leave Termux running; the screen can go off.")
+    print(f"Listening for your dragon at {address}. Leave Termux running; the screen can go off.")
     after, fails, said_hello = -1, 0, False
     while True:
         try:
@@ -74,11 +74,11 @@ def main():
         except Exception as e:
             fails += 1
             if fails in (1, 10):
-                print(f"Can't reach Harald ({e}); trying again...")
+                print(f"Can't reach your dragon ({e}); trying again...")
             if fails % 3 == 0:
                 found = find_harald()
                 if found and found != address:
-                    print(f"Found Harald at {found}")
+                    print(f"Found your dragon at {found}")
                     address, after = found, -1
             time.sleep(5)
     subprocess.run(["termux-wake-unlock"], check=False)

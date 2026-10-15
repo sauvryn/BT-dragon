@@ -143,6 +143,11 @@ async def web_server(app):
     page_id = hashlib.sha1(page.encode()).hexdigest()[:10]
     page = page.replace("__PAGEID__", page_id)
 
+    with open(os.path.join(HERE, "lang.js"), encoding="utf-8") as f:
+        lang_js = f.read()
+    with open(os.path.join(HERE, "lang.json"), encoding="utf-8") as f:
+        lang_js = lang_js.replace("__RULES__", f.read().replace("</", "<\\/"))
+
     art_cache, art_lock = [], threading.Lock()
 
     def garden_art():
@@ -183,6 +188,13 @@ async def web_server(app):
                 out = _response("200 OK", page, "text/html; charset=utf-8")
             elif path == "/map":
                 out = _response("200 OK", map_page.replace("__NAME__", app.pet.name), "text/html; charset=utf-8")
+            elif path == "/theme.css":
+                # Color Blindness Mode: loaded last by every Den page (see access.py)
+                from . import access
+                out = _response("200 OK", access.theme_css(app.cvd_mode()), "text/css; charset=utf-8")
+            elif path == "/lang.js":
+                # the Den's pages in his English (British, American or Canadian): see lang.py
+                out = _response("200 OK", lang_js.replace("__LANG__", app.lang()), "text/javascript; charset=utf-8")
             elif path == "/garden":
                 # Bookworm's page is big (about 1.4 MB), so it goes compressed when the browser can take it
                 q = urllib.parse.parse_qs(urllib.parse.urlparse(target).query)
