@@ -32,7 +32,12 @@ store = Store(os.path.join(data, "dragon.db"))
 store.put("pet", {"name": "Harald", "xp": 1234})
 store.event("level", "Harald reached level 7")
 
-# made while he's running (his own connection still open, changes still in the side file)
+# an older install's harald-art folder becomes bt-dragon-art (pictures and all)
+assert backup.art_dir(toml, data) == os.path.join(boot, "bt-dragon-art")
+assert not os.path.exists(os.path.join(boot, "harald-art"))
+assert os.path.exists(os.path.join(boot, "bt-dragon-art", "happy.png"))
+
+# made while running (its own connection still open, changes still in the side file)
 blob = backup.make(data, toml, "Harald", now=1791900000)
 assert len(blob) < 50000
 with tarfile.open(fileobj=io.BytesIO(blob), mode="r:gz") as t:
@@ -45,7 +50,7 @@ assert man["kind"] == "bt-dragon-backup" and man["made"] == 1791900000 and man["
 p = os.path.join(tmp, "snap.db")
 open(p, "wb").write(snap)
 assert json.loads(sqlite3.connect(p).execute("SELECT value FROM kv WHERE key='pet'").fetchone()[0])["xp"] == 1234
-assert backup.filename(1791900000).startswith("harald-backup-") and backup.filename().endswith(".tar.gz")
+assert backup.filename(1791900000).startswith("bt-dragon-backup-") and backup.filename().endswith(".tar.gz")
 good = os.path.join(tmp, "good.tar.gz")
 open(good, "wb").write(blob)
 files, m = backup.read(good)
@@ -60,7 +65,7 @@ os.remove(os.path.join(tmp, "home", ".android", "adbkey"))
 cfg = {"data_dir": data, "_path": toml}
 assert backup.apply_pending(cfg) is None                         # nothing waiting
 
-os.remove(os.path.join(boot, "harald-art", "happy.png"))
+os.remove(os.path.join(boot, "bt-dragon-art", "happy.png"))
 # ...then the den sends the backup back
 open(os.path.join(data, backup.PENDING), "wb").write(blob)
 line = backup.apply_pending(cfg)
@@ -70,7 +75,7 @@ s2 = Store(os.path.join(data, "dragon.db"))
 assert s2.get("pet")["xp"] == 1234
 s2.db.close()
 assert open(toml).read() == '[home_wifi]\nssid = "MyHotspot"\n'
-assert open(os.path.join(boot, "harald-art", "happy.png"), "rb").read() == b"\x89PNG fake picture"
+assert open(os.path.join(boot, "bt-dragon-art", "happy.png"), "rb").read() == b"\x89PNG fake picture"
 assert open(os.path.join(data, "diary", "2026-10-13.csv")).read().startswith("time,what")
 assert open(os.path.join(tmp, "home", ".android", "adbkey")).read() == "PRIVATE KEY"
 assert oct(os.stat(os.path.join(tmp, "home", ".android", "adbkey")).st_mode)[-3:] == "600"

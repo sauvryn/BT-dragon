@@ -177,9 +177,20 @@ g = G.Garden(Store(os.path.join(tmp, "g8.db")), random.Random(1))
 evs = []
 g.on_event = lambda k, i: evs.append((k, i))
 g.unlock_now(1)
+# (hunger, as in Bookworm: well fed 24 h, satisfied to 48, peckish to 72, hungry, very hungry from 96)
+day = 24 * 3600
+assert G.Garden.hunger({"stage": 3, "last_fed": time.time() - 3600}) == "well fed"
+assert G.Garden.hunger({"stage": 3, "last_fed": time.time() - 1.5 * day}) == "satisfied"
+assert G.Garden.hunger({"stage": 3, "last_fed": time.time() - 2.5 * day}) == "peckish"
+assert G.Garden.hunger({"stage": 3, "last_fed": time.time() - 73 * 3600}) == "hungry"
+assert G.Garden.hunger({"stage": 3, "last_fed": time.time() - 95 * 3600}) == "hungry"
+assert G.Garden.hunger({"stage": 3, "last_fed": time.time() - 97 * 3600}) == "very hungry"
+assert G.Garden.hunger({"stage": 9, "last_fed": time.time() - 9 * day}) is None              # pupae don't eat
 g.s["slots"] = [{"species": caste["id"], "country": "gb", "sex": "f", "rarity": caste["rarity"], "need": 10.0, "fed": 0.0,
-                 "pupAt": caste["pupAt"], "hatched": time.time(), "stage": 0, "caste": True, "hungry": False}]
-g.note_belly(True, 1)
+                 "pupAt": caste["pupAt"], "hatched": time.time() - 4 * day, "stage": 2, "caste": True, "hungry": False,
+                 "last_fed": time.time() - 4 * day}]
+g.check_hunger(1)
+assert g.s["slots"][0]["hungry"] and g.view(1)["larvae"][0]["hunger"] == "very hungry"
 g.feed(20, 1, "GB")
 assert [e for e in evs if e[0] == "emerge"][0][1]["form"] == "w"
 g.collect(0, 1)
@@ -254,7 +265,7 @@ before = app.garden.s["slots"][0]["fed"]
 app.pet.treat({"ssid": "Cafe2", "security": "open"})
 assert app.garden.s["slots"][0]["fed"] == before, "room in his belly: nothing spare"
 v = json.loads(asyncio.run(app.command("GARDEN"))[0])
-assert v["mood"] == "hungry"                              # his belly is at 10: the larvae are hungry with him
+assert v["larvae"][0]["hunger"] == "well fed"            # just ate: a larva's hunger is its own, by time
 assert v["unlocked"] and v["forced"] and len(v["larvae"]) == 1 and v["larvae"][0]["pct"] > 0
 assert asyncio.run(app.command("GARDENCOUNTRY ie")) == ["OK"] and asyncio.run(app.command("GARDENCOUNTRY xx"))[0].startswith("ERR")
 assert asyncio.run(app.command("GARDENUNLOCK off")) == ["OK"] and not app.garden.unlocked(app.pet.level())
