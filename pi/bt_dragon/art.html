@@ -25,6 +25,8 @@
   .mood-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
   .frames { display: flex; gap: 14px; flex-wrap: wrap; }
   .frame { flex: 1 1 140px; max-width: 192px; min-width: 0; }
+  .frame.wide { flex: 1 1 260px; max-width: 360px; }
+  .frame.wide img { aspect-ratio: 250 / 122; }
   .frame img { display: block; width: 100%; aspect-ratio: 96 / 86; image-rendering: pixelated;
                background: #fff; border: 4px solid #e9e4d8; border-radius: 4px; }
   .tag { font-size: 12.5px; margin: 6px 0 4px; min-height: 1.3em; }
@@ -61,6 +63,10 @@
   </div>
   <div id="problems" class="problems" hidden></div>
   <div id="msg"></div>
+  <div class="mood"><div class="mood-head"><h2>Sleep screens</h2>
+    <span class="sub">The whole screen, <b style="color:var(--ink)">250 × 122</b>, while he naps and when he's put to sleep
+      (turn them on or off in the Den's Care section). Transparent counts as white here too.</span></div>
+    <div class="frames" id="screens"></div></div>
   <div id="list">Loading…</div>
   <input type="file" id="picker" accept="image/png" hidden onchange="upload(this)">
 </main>
@@ -97,8 +103,26 @@ function tile(r) {
   </div>`;
 }
 
+function screenTile(r) {
+  const label = r.kind === 'nap' ? 'Nap' : 'Sleep';
+  let tag = r.used === 'yours' ? 'Yours' + (r.problem ? ': ' + r.problem : '') : r.problem || 'The drawn placeholder';
+  const cls = r.problem ? 'err' : r.used === 'yours' ? 'yours' : '';
+  return `<div class="frame wide">
+    <div class="sub">${label}</div>
+    <img src="/art/screen.png?kind=${r.kind}&t=${stamp}" alt="${esc(r.name)}">
+    <div class="tag ${cls}">${esc(tag)}</div>
+    <div class="btns">
+      <button onclick="pick('${r.name}')">Upload</button>
+      <a class="btn quiet" href="/art/screen-template.png?kind=${r.kind}" download="${esc(r.name)}">Template</a>
+      ${r.used === 'yours' ? `<button class="quiet" onclick="removeArt('${r.name}')">Remove</button>` : ''}
+    </div>
+    <div class="sub" style="font-size:12px;margin-top:4px">${esc(r.name)}</div>
+  </div>`;
+}
+
 function draw() {
   $('folder').textContent = data.folder || 'harald-art';
+  $('screens').innerHTML = (data.screens || []).map(screenTile).join('');
   const other = Object.entries(data.other_problems || {});
   $('problems').hidden = !other.length;
   $('problems').innerHTML = other.length ? '<b>Files not used:</b><br>' +
@@ -131,7 +155,8 @@ async function upload(input) {
   try {
     const r = await fetch('/api/art?name=' + encodeURIComponent(target), {method: 'POST', body: f});
     const j = await r.json();
-    $('msg').textContent = j.ok ? `Saved ${target}. It's on his screen the next time that mood shows.` : j.error;
+    $('msg').textContent = !j.ok ? j.error : target.endsWith('-screen.png') ? `Saved ${target}. It's used the next time he ${target.startsWith('nap') ? 'naps' : 'is put to sleep'}.`
+      : `Saved ${target}. It's on his screen the next time that mood shows.`;
   } catch (e) { $('msg').textContent = 'The dragon is not answering.'; }
   stamp = Date.now();
   load();

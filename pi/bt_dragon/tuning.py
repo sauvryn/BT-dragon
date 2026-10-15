@@ -29,6 +29,10 @@ KNOBS = [
     ("pack_portion", "food", "PACK: how much of it he eats each time", 50, "%",
      "Never more than it takes to fill his belly back to 100."),
     ("land_food", "food", "New land claimed", 3, "food", "A square of the map about 250 m across."),
+    ("garden_food_common", "food", "Butterfly Garden: food to raise a Common one", 40, "food",
+     "Only food that fits in neither his BELLY nor his PACK reaches the garden, shared between the larvae there."),
+    ("garden_food_uncommon", "food", "Butterfly Garden: food to raise an Uncommon one", 80, "food", ""),
+    ("garden_food_rare", "food", "Butterfly Garden: food to raise a Rare one", 120, "food", ""),
     ("realm_food", "food", "New realm claimed", 3, "food", "A square of the map about 1 km across."),
     ("star_food", "food", "A star (satellite) he's never seen", 3, "food", ""),
     ("constellation_food", "food", "His first star of a new constellation", 6, "food", ""),
@@ -75,6 +79,9 @@ KNOBS = [
     ("green_visit_joy", "joy", "A walk, run or ride in a green space", 6, "joy", "Once per green space per day."),
     ("moon_full_joy", "joy", "Full moon", 12, "joy", "Once, on the day of the full moon."),
     ("moon_phase_joy", "joy", "New moon or a quarter moon", 4, "joy", "Once, on the day of each."),
+    ("garden_hatch_joy", "joy", "Butterfly Garden: an egg hatches", 3, "joy", ""),
+    ("garden_pupate_joy", "joy", "Butterfly Garden: a larva pupates", 3, "joy", ""),
+    ("garden_emerge_joy", "joy", "Butterfly Garden: an adult emerges", 10, "joy", "The big-joy face from 8."),
     # ---------------------------------------------------------------- XP
     ("xp_curve", "xp", "Level curve", 50, "XP",
      "Level 2 needs this much XP, level 3 four times it, level 4 nine times, level 5 sixteen "
@@ -105,6 +112,7 @@ KNOBS = [
     ("green_xp", "xp", "A green space he's never been in", 8, "XP", ""),
     ("green_visit_xp", "xp", "A walk, run or ride in a green space", 5, "XP", "Once per green space per day."),
     ("moon_xp", "xp", "A major moon phase", 5, "XP", ""),
+    ("garden_xp", "xp", "Butterfly Garden: an adult emerges", 10, "XP", ""),
     # ---------------------------------------------------------------- detection
     ("land_accuracy_m", "detect", "Lands: ignore GPS fixes less precise than", 30, "m",
      "Stops GPS wobble from claiming land while you sit still."),

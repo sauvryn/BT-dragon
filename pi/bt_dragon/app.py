@@ -24,6 +24,9 @@ from . import activity as actmod
 from . import sky as skymod
 from .landmarks import Landmarks
 from .greens import Greens, visit_words
+from .garden import Garden
+from . import garden as gardenmod
+from . import garden_page
 from .diary import DiaryFiles
 from .dot import DotLink
 from . import moon as moonmod
@@ -145,6 +148,12 @@ class Dragon:
         self.lair = Lair(self.store)                # home, as far as the weather is concerned
         self.lair.adopt_home_town(self.dot.s.get("home_town"), self.dot.s.get("home_lat"), self.dot.s.get("home_lon"))
         self.pet.on_say = self.dot.on_say
+        # the Butterfly Garden (from the Bookworm project): raised on food that fits nowhere else
+        self._nap_redraw = False
+        self.garden = Garden(self.store)
+        self.garden.on_event = self._garden_event
+        self._garden_news = []
+        self.pet.on_surplus = self._garden_feed
         if simulate:
             self.dot.state = "not used in the simulation"
         self.store.listeners = (self.dot.on_event,)
@@ -152,6 +161,84 @@ class Dragon:
         for mac, name in cfg["own_devices"].items():
             if MAC_RE.match(mac) and mac not in self.store.pals():
                 self.store.add_pal(mac, name)
+
+    # ================================================================ sleep screens
+    def sleep_screens(self):
+        """Which sleep screens are on: like an e-reader's, they hide what his screen last
+        showed. Both on unless you untick them in the den."""
+        s = self.store.get("sleep_screen") or {}
+        return {"nap": s.get("nap", True), "sleep": s.get("sleep", True)}
+
+    def _nap_picture(self):
+        return self.art.screen("nap") if self.sleep_screens()["nap"] else render_nap(self.view())
+
+    # ================================================================ the Butterfly Garden
+    def _lair_code(self):
+        return (self.lair.s or {}).get("code") or ""
+
+    def _garden_feed(self, food):
+        if self.napping:
+            return
+        self.garden.feed(food, self.pet.level(), self._lair_code(), belly_low=self.pet.hunger < 30)
+
+    def _garden_event(self, kind, info):
+        """Hatching, pupating and emerging: queued, so a treat's own message isn't covered up."""
+        self._garden_news.append((kind, info))
+
+    def _garden_tick(self):
+        """One garden message per pet tick (every 5 s)."""
+        self.garden.note_belly(self.pet.hunger < 30, self.pet.level())
+        if not self._garden_news or time.time() < getattr(self.pet, "message_hold", 0):
+            return
+        kind, info = self._garden_news.pop(0)
+        if kind == "say":               # held back while "LEVEL UP!" was showing
+            self.pet.say(*info)
+            return
+        if kind == "title":
+            text = f"NEW BUTTERFLY GARDEN TITLE: {info['name'].upper()}!"
+            self.pet.say([text, f"NEW TITLE: {info['name'].upper()}!"], "proud", 30)
+            self.event("garden", f"New Butterfly Garden title: {info['name']}")
+            return
+        sp = gardenmod.data()["countries"][info["country"]]["by_id"][info["species"]]
+        name = gardenmod.full_name(sp)
+        young, pupa = sp["young"], sp["pupa"]
+        if kind == "hatch":
+            j = tuning.get("garden_hatch_joy")
+            self.pet._gain(0, 0, j)
+            words = [f"AN EGG HATCHED! A {name.upper()} {young.upper()}", f"EGG HATCHED: {name.upper()}!",
+                     f"A {young.upper()} HATCHED!"]
+            self.pet.say(words, "happy", 20, speak=False)
+            self.dot.news(f"An egg hatched in the Butterfly Garden! It's a {name} {young}.")
+            self.event("garden", f"An egg hatched in the Butterfly Garden: a {name} {young} ({info['rarity']})")
+        elif kind == "pupate":
+            j = tuning.get("garden_pupate_joy")
+            self.pet._gain(0, 0, j)
+            words = [f"THE {name.upper()} {young.upper()} IS NOW A {pupa.upper()}!",
+                     f"{name.upper()}: NOW A {pupa.upper()}!", f"A {young.upper()} PUPATED!"]
+            self.pet.say(words, "happy", 20, speak=False)
+            self.dot.news(f"The {name} {young} in the Butterfly Garden is now a {pupa}!")
+            self.event("garden", f"The {name} {young} became a {pupa}")
+        elif kind == "emerge":
+            j = tuning.get("garden_emerge_joy")
+            leveled = self.pet._gain(0, tuning.get("garden_xp"), j)
+            form = gardenmod.FORM_WORD.get(info.get("form") or "", "")
+            new = "A NEW " if info.get("new") else "A "
+            words = [f"{new}{name.upper()} EMERGED{(' (' + form.upper() + ')') if form else ''}!",
+                     f"{new}{name.upper()} EMERGED!", f"{name.upper()} EMERGED!"]
+            if leveled:
+                self._garden_news.insert(0, ("say", (words, self.pet.face_for(j), 45)))
+            else:
+                self.pet.say(words, self.pet.face_for(j), 45)
+            line = f"{'A new' if info.get('new') else 'A'} {name} emerged in the Butterfly Garden"
+            if form:
+                line += f" ({form.lower()})"
+            if info.get("habitat"):
+                line += f", and a new habitat opened: {gardenmod.habitat_name(info['country'], info['habitat'])}"
+            self.event("garden", line)
+
+    def garden_page(self, c=""):
+        c = c if c in gardenmod.COUNTRY_NAME else self.garden.country(self._lair_code())
+        return garden_page.build(dict(self.garden.page_data(c), name=self.pet.name))
 
     # ================================================================ events
     def event(self, kind, text):
@@ -678,6 +765,7 @@ class Dragon:
             self.trackers.prune(time.time())
             self.pet.alarm = bool(self.trackers.alerts)
             self.pet.tick(self.ble.in_range())
+            self._garden_tick()
             self.vitals = self.stats.sample()
             if time.time() - last_save > 60:
                 self.pet.save()
@@ -989,9 +1077,9 @@ class Dragon:
         napped = False
         while not self.stop.is_set():
             if self.napping:
-                if not napped:          # his sleeping face, drawn once and left alone
-                    napped = True
-                    await asyncio.to_thread(self.display.show, render_nap(self.view()), True)
+                if not napped or self._nap_redraw:     # drawn once and left alone
+                    napped, self._nap_redraw = True, False
+                    await asyncio.to_thread(self.display.show, self._nap_picture(), True)
                     await asyncio.to_thread(self._flush_to_card)     # the screen picture too
                 await self._sleep(2)
                 continue
@@ -1030,6 +1118,21 @@ class Dragon:
             v.update(gps_source=self.gps.source or "", home_ssid=self.home_ssid or "", ip=self.my_ip or "",
                      upload=(self.store.last_upload() or {}).get("message", ""))
             return [f"{k}={v[k]}" for k in v] + ["END"]
+        if cmd == "GARDEN":
+            v = self.garden.view(self.pet.level(), self._lair_code())
+            h = self.pet.hunger           # the larvae go hungry with him: no spare food reaches them
+            v["mood"] = "xhungry" if h < 10 else "hungry" if h < 30 else "content"
+            v["art"] = self.garden_art_version() if hasattr(self, "garden_art_version") else ""
+            return [json.dumps(v), "END"]
+        if cmd == "GARDENUNLOCK":
+            if arg.lower() in ("on", "1", "yes"):
+                self.garden.unlock_now(self.pet.level())
+            else:
+                self.garden.lock_again()
+            return ["OK"]
+        if cmd == "GARDENCOUNTRY":
+            err = self.garden.set_country(arg.lower())
+            return [f"ERR {err}"] if err else ["OK"]
         if cmd == "LOG":
             n = int(arg) if arg.isdigit() else 20
             return [f"{int(e['ts'])}|{e['kind']}|{e['text']}" for e in self.store.events(n)] + ["END"]
@@ -1333,8 +1436,22 @@ class Dragon:
         if cmd == "ALARMSTOP":
             self.dot.stop_alarm()
             return ["OK"]
+        if cmd == "SLEEPSCREEN":
+            return [f"{k}={1 if v else 0}" for k, v in self.sleep_screens().items()] + ["END"]
+        if cmd == "SLEEPSCREENSET":     # SLEEPSCREENSET nap on / SLEEPSCREENSET sleep off
+            which, _, val = arg.lower().partition(" ")
+            if which not in ("nap", "sleep") or val not in ("on", "off"):
+                return ["ERR use: SLEEPSCREENSET nap|sleep on|off"]
+            st = self.sleep_screens()
+            st[which] = val == "on"
+            self.store.put("sleep_screen", st)
+            if which == "nap" and self.napping:
+                self._nap_redraw = True          # napping now: show the change
+            return ["OK"]
         if cmd == "ARTDEL":  # remove one of your pictures (that mood goes back to the drawn one)
             err = self.art.remove(arg.strip().lower())
+            if not err and arg.strip().lower() == "nap-screen.png" and self.napping:
+                self._nap_redraw = True
             return [f"ERR {err}" if err else "OK"]
         if cmd == "DOTRESCUE":  # hop onto the Dot's setup network now and switch its Wi-Fi back on
             if not self.dot.s["setup_network"] or not self.dot.s["serial"]:
@@ -1494,7 +1611,9 @@ class Dragon:
         self.activity.save()
         self._save_ble()
         async with self._draw_lock:     # wait for any picture being drawn right now to finish first
-            await asyncio.to_thread(self.display.sleep, render_sleep(self.view()))
+            pic = (self.art.screen("sleep") if how == "SLEEP" and self.sleep_screens()["sleep"]
+                   else render_sleep(self.view()))
+            await asyncio.to_thread(self.display.sleep, pic)
         self.stop.set()
         if not self.simulate and how in ("SLEEP", "REBOOT"):
             subprocess.Popen(["systemctl", "poweroff" if how == "SLEEP" else "reboot"])

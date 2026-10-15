@@ -160,6 +160,7 @@ class Pet:
         self.uploading = False
         self.sleeping = False
         self.on_say = None           # callback(text or wordings, mood), for Harald's voice
+        self.on_surplus = None       # callback(food): what fits in neither belly nor PACK (the Butterfly Garden)
 
     # ---------------------------------------------------------------- persistence
     def save(self):
@@ -243,7 +244,16 @@ class Pet:
         spare = max(0.0, food - max(0.0, 100.0 - self.hunger))
         packed = min(spare, max(0.0, tuning.get("pack_cap") - self.pack))
         self.pack += packed
+        self._surplus(spare - packed)
         return packed
+
+    def _surplus(self, food):
+        """Food that fits in neither his belly nor his PACK: to the Butterfly Garden, if it's open."""
+        if food > 0.001 and self.on_surplus:
+            try:
+                self.on_surplus(food)
+            except Exception:
+                pass
 
     def berries(self, food, bushes):
         """Known networks whose 'berries' have regrown since he last saw them."""
@@ -253,6 +263,7 @@ class Pet:
         eat = min(food, max(0.0, 100.0 - self.hunger))
         packed = min(food - eat, max(0.0, tuning.get("pack_cap") - self.pack))
         self.pack += packed
+        self._surplus(food - eat - packed)
         if not self._gain(eat, tuning.get("berry_xp") * food, tuning.get("berry_joy") * food):
             if not self.reaction or self.reaction[1] < time.time():
                 if packed and eat >= 0.5:

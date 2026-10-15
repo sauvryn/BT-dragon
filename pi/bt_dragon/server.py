@@ -15,11 +15,13 @@ Anyone on your hotspot can reach these. A phone hotspot normally has only your o
 devices on it, which is the assumption here.
 """
 import asyncio
+import gzip
 import json
 import logging
 import os
 import re
 import socket
+import threading
 import time
 import urllib.parse
 
@@ -77,11 +79,11 @@ async def control_server(app):
 
 # ---------------------------------------------------------------- the den (HTTP)
 
-def _response(status, body, ctype="text/plain; charset=utf-8", extra=None):
+def _response(status, body, ctype="text/plain; charset=utf-8", extra=None, cache="no-store"):
     if isinstance(body, str):
         body = body.encode()
     head = [f"HTTP/1.1 {status}", f"Content-Type: {ctype}", f"Content-Length: {len(body)}",
-            "Cache-Control: no-store", "Connection: close"]
+            f"Cache-Control: {cache}", "Connection: close"]
     head += extra or []
     return ("\r\n".join(head) + "\r\n\r\n").encode() + body
 
@@ -141,6 +143,22 @@ async def web_server(app):
     page_id = hashlib.sha1(page.encode()).hexdigest()[:10]
     page = page.replace("__PAGEID__", page_id)
 
+    art_cache, art_lock = [], threading.Lock()
+
+    def garden_art():
+        with art_lock:
+            return _garden_art()
+
+    def _garden_art():
+        if not art_cache:
+            from . import garden_page
+            html = garden_page.build(None).encode()
+            art_cache.append((html, gzip.compress(html, 9), hashlib.sha1(html).hexdigest()[:10]))
+        return art_cache[0]
+    # built once, in the background, when he starts (the Den waits for it before drawing larvae)
+    app.garden_art_version = lambda: art_cache[0][2] if art_cache else ""
+    asyncio.get_running_loop().run_in_executor(None, garden_art)
+
     async def handle(reader, writer):
         try:
             request = await asyncio.wait_for(reader.readline(), 10)
@@ -154,7 +172,8 @@ async def web_server(app):
                 headers[k.strip().lower()] = v.strip()
             body = b""
             path = urllib.parse.urlparse(target).path
-            limit = 210 * 1024 if path == "/api/art" else 4096          # a picture, or a command
+            limit = (210 * 1024 if path == "/api/art" else 256 * 1024 if path == "/api/garden/seen"
+                     else 4096)                                          # a picture, sightings, or a command
             n = min(int(headers.get("content-length", "0") or 0), limit)
             if n and path != "/api/restore":
                 body = await asyncio.wait_for(reader.readexactly(n), 30)
@@ -164,6 +183,29 @@ async def web_server(app):
                 out = _response("200 OK", page, "text/html; charset=utf-8")
             elif path == "/map":
                 out = _response("200 OK", map_page.replace("__NAME__", app.pet.name), "text/html; charset=utf-8")
+            elif path == "/garden":
+                # Bookworm's page is big (about 1.4 MB), so it goes compressed when the browser can take it
+                q = urllib.parse.parse_qs(urllib.parse.urlparse(target).query)
+                html = await asyncio.to_thread(app.garden_page, (q.get("c") or [""])[0])
+                if "gzip" in headers.get("accept-encoding", ""):
+                    out = _response("200 OK", await asyncio.to_thread(gzip.compress, html.encode(), 6),
+                                    "text/html; charset=utf-8", ["Content-Encoding: gzip"])
+                else:
+                    out = _response("200 OK", html, "text/html; charset=utf-8")
+            elif path == "/garden/art":
+                # the art-only copy, drawn from by the Den: the same until an update, so the browser keeps it
+                plain, packed, version = await asyncio.to_thread(garden_art)
+                gz = "gzip" in headers.get("accept-encoding", "")
+                out = _response("200 OK", packed if gz else plain, "text/html; charset=utf-8",
+                                ["Content-Encoding: gzip"] if gz else None, cache="max-age=31536000, immutable")
+            elif path == "/api/garden/seen" and method == "POST":
+                try:
+                    d = json.loads(body.decode(errors="replace"))
+                    err = app.garden.set_seen(d.get("country"), d.get("seen"), d.get("seenDates"))
+                except ValueError:
+                    err = "not JSON"
+                out = _response("200 OK" if not err else "400 Bad Request",
+                                json.dumps({"ok": not err, "error": err or ""}), "application/json")
             elif path == "/shopping":
                 out = _response("200 OK", shop_page.replace("__NAME__", app.pet.name), "text/html; charset=utf-8")
             elif path == "/calendar":
@@ -196,16 +238,29 @@ async def web_server(app):
             elif path == "/api/art" and method == "POST":
                 q = urllib.parse.parse_qs(urllib.parse.urlparse(target).query)
                 err = app.art.save((q.get("name") or [""])[0].lower(), body)
+                if not err and (q.get("name") or [""])[0].lower() == "nap-screen.png" and app.napping:
+                    app._nap_redraw = True          # napping now: show the new picture
                 out = _response("200 OK" if not err else "400 Bad Request",
                                 json.dumps({"ok": not err, "error": err or ""}), "application/json")
             elif path == "/api/art":
                 from .art import MOOD_NOTES, EVERYDAY
                 out = _response("200 OK", json.dumps({
                     "rows": app.art.table(), "notes": MOOD_NOTES, "everyday": EVERYDAY,
-                    "folder": app.art.user_dir or "",
+                    "screens": app.art.screen_rows(), "folder": app.art.user_dir or "",
                     "other_problems": {k: v for k, v in app.art.problems.items()
-                                       if k.lower() not in {r["name"] for r in app.art.table()}}}),
+                                       if k.lower() not in {r["name"] for r in app.art.table() + app.art.screen_rows()}}}),
                     "application/json")
+            elif path in ("/art/screen.png", "/art/screen-template.png"):
+                # the nap and sleep screens: as shown (yours or drawn), or the drawn one to draw over
+                q = urllib.parse.parse_qs(urllib.parse.urlparse(target).query)
+                kind = (q.get("kind") or [""])[0]
+                if kind not in ("nap", "sleep"):
+                    out = _response("404 Not Found", "no such screen")
+                elif path == "/art/screen.png":
+                    out = _response("200 OK", app.art.screen_png(kind, scale=2), "image/png")
+                else:
+                    out = _response("200 OK", app.art.screen_png(kind, drawn=True), "image/png",
+                                    [f'Content-Disposition: attachment; filename="{kind}-screen.png"'])
             elif path in ("/art/preview.png", "/art/template.png"):
                 q = urllib.parse.parse_qs(urllib.parse.urlparse(target).query)
                 mood = (q.get("mood") or ["content"])[0]

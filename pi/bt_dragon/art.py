@@ -9,6 +9,10 @@ Pictures are 96 x 86 pixels, black and white, PNG, one per mood, named after it:
     happy-stuffed.png    (optional, the everyday moods) when it's full
 Any mood without a picture keeps the drawn version, so they can be replaced one at a time.
 
+The sleep screens are whole-screen pictures, 250 x 122: nap-screen.png (while he naps) and
+sleep-screen.png (left on the e-ink when he's put to sleep). Without yours, a drawn one: his
+sleeping face alone in a white circle on black, with NAP or SLEEP in the corner.
+
 Where they go: the folder "harald-art" on the card's boot partition (the one Windows can
 open), next to bt-dragon.toml, or uploaded from the den's art page, which saves them there.
 Pictures shipped with the program (bt_dragon/art/) are used for moods you haven't drawn.
@@ -26,7 +30,8 @@ import time
 
 from PIL import Image, ImageDraw
 
-from .dragon import MOODS, draw_dragon
+from .dragon import MOODS, draw_dragon, draw_sleeping_face
+from .fonts import draw_text, text_width
 
 log = logging.getLogger("art")
 
@@ -36,6 +41,28 @@ BELLIES = ("hungry", "stuffed")
 NAME_RE = re.compile(r"^(?P<mood>[a-z]+)(?:-(?P<belly>hungry|stuffed))?(?:_(?P<frame>1))?\.png$")
 HERE = os.path.dirname(os.path.abspath(__file__))
 MAX_BYTES = 200 * 1024
+SW, SH = 250, 122                    # the whole screen
+SCREENS = {"nap-screen.png": "nap", "sleep-screen.png": "sleep"}
+
+
+def size_for(name):
+    return (SW, SH) if name in SCREENS else (W, H)
+
+
+def drawn_screen(kind, phase=1):
+    """The placeholder sleep screen: flat black, a white circle in the middle with his
+    sleeping face, and NAP or SLEEP in bold white at the bottom right."""
+    img = Image.new("1", (SW, SH), 0)
+    d = ImageDraw.Draw(img)
+    cx, cy, r = SW // 2, SH // 2, 58
+    d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=255)
+    # the face's drawing fills about x 2-96, y 3-69 of its box: centre that in the circle
+    draw_sleeping_face(d, cx - 49, cy - 36, phase)
+    word = "NAP" if kind == "nap" else "SLEEP"
+    x, y = SW - 5 - text_width(word), SH - 4 - 7
+    for dx in (0, 1):                    # drawn twice, a pixel apart: bold
+        draw_text(d, (x + dx, y), word, fill=255)
+    return img
 
 MOOD_NOTES = {
     "content": "the everyday face", "happy": "good mood", "bored": "nothing happening for a while",
@@ -50,6 +77,8 @@ MOOD_NOTES = {
 
 
 def valid_name(name):
+    if name in SCREENS:
+        return True
     m = NAME_RE.match(name or "")
     if not m or m.group("mood") not in MOODS:
         return None
@@ -108,15 +137,16 @@ class ArtSet:
         for where, fn, path, _, size in listing:        # yours come last, so they win
             name = fn.lower()
             if not valid_name(name):
-                problems[fn] = "not a mood name, so it isn't used (see the list of names)"
+                problems[fn] = "not a mood or sleep screen name, so it isn't used (see the list of names)"
                 continue
+            w, h = size_for(name)
             if size > MAX_BYTES:
-                problems[fn] = "too big a file for a 96 x 86 picture"
+                problems[fn] = f"too big a file for a {w} x {h} picture"
                 continue
             try:
                 with Image.open(path) as im:
-                    if im.size != (W, H):
-                        problems[fn] = f"{im.size[0]} x {im.size[1]} pixels: it must be {W} x {H}, so it isn't used"
+                    if im.size != (w, h):
+                        problems[fn] = f"{im.size[0]} x {im.size[1]} pixels: it must be {w} x {h}, so it isn't used"
                         continue
                     img, grey = to_panel(im)
             except Exception as e:
@@ -155,6 +185,25 @@ class ArtSet:
             img.paste(pic, (x, y))
         else:
             draw_dragon(ImageDraw.Draw(img), x, y, mood, phase, belly)
+
+    def screen(self, kind):
+        """The nap or sleep screen: yours if there is one, else the drawn one."""
+        self.refresh()
+        got = self.frames.get(f"{kind}-screen.png")
+        return got[0].copy() if got else drawn_screen(kind)
+
+    def screen_rows(self):
+        self.refresh()
+        return [{"name": n, "kind": k, "used": (self.frames.get(n) or (None, ""))[1],
+                 "problem": self.problems.get(n, "")} for n, k in SCREENS.items()]
+
+    def screen_png(self, kind, drawn=False, scale=1):
+        img = drawn_screen(kind) if drawn else self.screen(kind)
+        if scale > 1:
+            img = img.resize((SW * scale, SH * scale), Image.NEAREST)
+        buf = io.BytesIO()
+        img.save(buf, "PNG")
+        return buf.getvalue()
 
     # ---------------------------------------------------------------- for the den
     def preview(self, mood, phase=0, belly=None, scale=3):
@@ -196,14 +245,15 @@ class ArtSet:
             return "there's nowhere to keep pictures (no settings file found)"
         if not valid_name(name):
             return "that isn't one of the mood names"
+        w, h = size_for(name)
         if len(data) > MAX_BYTES:
-            return "that file is too big for a 96 x 86 picture"
+            return f"that file is too big for a {w} x {h} picture"
         try:
             with Image.open(io.BytesIO(data)) as im:
                 if im.format != "PNG":
                     return f"that's a {im.format} file: save it as PNG (JPEG blurs the edges into grey)"
-                if im.size != (W, H):
-                    return f"that picture is {im.size[0]} x {im.size[1]} pixels: it must be {W} x {H}"
+                if im.size != (w, h):
+                    return f"that picture is {im.size[0]} x {im.size[1]} pixels: it must be {w} x {h}"
         except Exception:
             return "that isn't a picture he can read"
         os.makedirs(self.user_dir, exist_ok=True)
