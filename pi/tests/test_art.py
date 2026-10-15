@@ -33,7 +33,7 @@ assert a.save("happy.png", png(0, (100, 86))).startswith("that picture is 100 x 
 assert a.save("happy.png", png(0, mode="RGB", fmt="JPEG")).startswith("that's a JPEG file")
 assert a.save("grumpy.png", png(0)) == "that isn't one of the mood names"
 assert a.save("eating-hungry.png", png(0)) == "that isn't one of the mood names"   # belly variants: everyday moods only
-assert a.save("happy.png", b"nonsense") == "that isn't a picture he can read"
+assert a.save("happy.png", b"nonsense") == "that isn't a picture that can be read"
 assert a.frame("happy").getpixel((10, 10)) == 0                                    # all black: it's used
 assert a.preview("happy", scale=1) != drawn
 

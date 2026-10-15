@@ -150,7 +150,7 @@ assert status == "HTTP/1.1 200 OK" and j["ok"] and j["made"] == 1791900000 and a
 assert os.path.exists(os.path.join(data, backup.PENDING))
 os.remove(os.path.join(data, backup.PENDING))
 status, j, a = asyncio.run(upload(bad["no manifest"]))
-assert status.startswith("HTTP/1.1 400") and j["error"].startswith("Not restoring: it isn't one of his backups")
+assert status.startswith("HTTP/1.1 400") and j["error"].startswith("Not restoring: it isn't one of your dragon's backups")
 assert not a.restarts and not os.path.exists(os.path.join(data, backup.PENDING))
 status, j, a = asyncio.run(upload(blob[:1000], length=len(blob)))      # cut off part way
 assert status.startswith("HTTP/1.1 400") and "didn't arrive whole" in j["error"] and not a.restarts

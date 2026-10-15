@@ -164,7 +164,7 @@ async def run():
     joy0 = app.pet.joy
     await app._lair_check(T0)                                                   # 10:00: the temperature
     assert "IT'S 14°C (58°F)" in app.pet.message and "LAIR" in app.pet.message, app.pet.message
-    assert pushed == ["It's 14 degrees, that's 58 Fahrenheit, outside at the Lair."], pushed
+    assert pushed == ["At the Lair, the current temperature is 14 degrees Celsius, that's 58 Fahrenheit."], pushed
     assert app.pet.joy == joy0 and L.due(T0 + 60) == []                        # no joy; nothing more till :15
     pushed.clear()
     events0 = len(app.store.events(500))
@@ -238,7 +238,7 @@ async def run():
     assert pushed == []
     app.dot.s.update(quiet_from="00:00", quiet_to="00:00")
     await app._lair_check(T0 + 4 * 3600, ["temp"])
-    assert any("outside at the Lair" in p for p in pushed)
+    assert any(p.startswith("At the Lair, the current temperature is") for p in pushed)
     # forgetting it
     assert (await app.command("LAIRFORGET")) == ["OK"] and not app.lair.complete
     r = await app.command("ASK what's the humidity at home")

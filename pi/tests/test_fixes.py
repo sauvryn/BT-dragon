@@ -83,7 +83,7 @@ async def air_test():
     L.cond = {"current": {"temperature_2m": 12.0}, "hourly": {}, "daily": {}}
     L.cond_ts = time.time() + 99999
     await app2._lair_check(time.time(), ["temp"])
-    assert pushed and "outside at the Lair" in pushed[0], pushed
+    assert pushed and pushed[0].startswith("At the Lair, the current temperature is"), pushed
     d = dict(x.split("=", 1) for x in await app2.command("LAIR") if "=" in x)
     assert d["temp_said"].startswith("12°C (54°F) at "), d
 

@@ -98,6 +98,22 @@ b2 = sky.Barometer(FakeStore())
 for i in range(0, 3 * 3600, 2):              # 3 hours of a steady 1 hPa/hour fall
     b2.feed(1015.0 - i / 3600.0, None, "still", t0 + i)
 assert b2.take_climb() == 0.0                 # the weather never looks like a climb
+b3 = sky.Barometer(FakeStore())
+for i in range(0, 600):                       # the same 3.3 m jump, sitting at home: not a climb
+    b3.feed(1012.0 - (0.4 if i >= 300 else 0.0), None, "still", t0 + i)
+assert b3.take_climb() == 0.0
+
+# on foot by the step counter: 40 steps in 2 minutes (not a few steps, or picking the phone up)
+import tempfile as _tf
+from bt_dragon import activity as _act
+from bt_dragon.store import Store as _Store
+A = _act.Activity(_Store(_tf.mkdtemp() + "/a.db"))
+A.steps(1000, False)
+A.steps(1012, False)
+assert A.moving_mode() == "still"
+A.steps(1060, False)
+assert A.moving_mode() == "walking"
+assert A.moving_mode(time.time() + 200) == "still"            # stopped walking a while ago
 
 
 def weather_run(fall_per_hour, moved=False, hours=3.6):

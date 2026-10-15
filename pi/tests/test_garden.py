@@ -77,12 +77,31 @@ assert em["habitat"] in g.cdata("gb")["habitats"]
 assert g.s["slots"][0].get("egg") and len(g.s["slots"]) == 1            # a new egg in the empty spot
 assert g.score() == coll[0]["points"]
 
-# food is shared: two larvae each get half
+# a new spot stays empty until you put an egg in it (only the first spot fills itself)
 g = G.Garden(Store(os.path.join(tmp, "g5.db")), random.Random(5))
-g.feed(0.0001, 6, "US")
+g.feed(5, 6, "US")
+assert g.s["slots"][1] == {"empty": True} and g.s["slots"][0]["fed"] == 5        # all of it to the one larva
+assert g.take_egg(0, 6) and g.take_egg(1, 6) and g.lay_egg(2, 6)               # no such things to do
+assert g.lay_egg(1, 6) is None and g.lay_egg(1, 6)                              # (not twice)
+assert g.take_egg(1, 6) is None and g.s["slots"][1] == {"empty": True}
+assert g.lay_egg(1, 6) is None
+# food is shared: two larvae each get half
 g.feed(10, 6, "US")
 a, c = g.s["slots"]
-assert abs(a["fed"] - c["fed"]) < 0.001 and a["country"] == "us" and a["species"] != c["species"]
+assert abs(a["fed"] - 5 - 5) < 0.001 and abs(c["fed"] - 5) < 0.001 and a["species"] != c["species"]
+assert g.take_egg(1, 6)                                                        # hatched now: stays
+v = g.view(6, "US")
+assert [x.get("slot") for x in v["larvae"]] == [0, 1] and v["fed_today"] == 15
+# when a second-spot adult emerges, its spot is left empty; the first spot gets a new egg
+evs = []
+g.on_event = lambda k, i: evs.append(k)
+c["fed"] = c["need"] - 0.01
+g.feed(0.1, 6, "US")
+assert "emerge" in evs and g.s["slots"][1] == {"empty": True}
+a = g.s["slots"][0]
+a["fed"] = a["need"] - 0.01
+g.feed(0.1, 6, "US")
+assert g.s["slots"][0].get("egg")
 
 # picking: forms count separately; a species with all forms raised isn't picked again while others remain
 gb = G.data()["countries"]["gb"]
@@ -146,9 +165,11 @@ g.feed(5, 1, "GB")
 assert ("title", {"name": "Bluetooth Beetle"}) in evs and g.title() == "Bluetooth Beetle"
 assert not any(w in " ".join(t[2] for t in G.TITLES).lower() for w in ("book", "chapter", "librar", "manuscript", "paperback"))
 
-# country: the Lair's if it's one of Bookworm's, else the den's choice
-assert g.country("CA") == "ca" and g.country("FR") == "gb" and g.country(None) == "gb"
-assert g.set_country("ie") is None and g.country("FR") == "ie" and g.country("US") == "us"
+# country: the den's choice; to start with, the Pi's own country (set by the app), else the UK
+assert g.country("CA") == "gb" and g.country(None) == "gb"
+g.default_country = "us"
+assert g.country() == "us"
+assert g.set_country("ie") is None and g.country("FR") == "ie" and g.country("US") == "ie"
 assert g.set_country("fr")
 
 # sightings from the page
@@ -186,6 +207,7 @@ app.pet.treat({"ssid": "Cafe", "security": "open"})
 assert app.garden.s["slots"] and not app.garden.s["slots"][0].get("egg"), "a full belly and pack: the treat fed the garden"
 assert app._garden_news and app._garden_news[0][0] == "hatch"
 app.pet.message_hold = 0
+app.pet.message_ts = time.time() - 10              # (the treat's own message has been read)
 app._garden_tick()
 assert "HATCHED" in app.pet.message, app.pet.message
 app.pet.hunger, app.pet.pack = 10.0, 0.0

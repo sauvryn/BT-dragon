@@ -58,7 +58,7 @@ ev = [{"kind": "species", "text": "New species: Apple Watch"},
       {"kind": "weather", "text": "A storm is coming: pressure fell 3.2 hPa in 3 hours"},
       {"kind": "level", "text": "Harald reached level 6"}]
 r = build_recap("Harald", ev, 34, 5, 3 * 3600)
-assert r.startswith("I'm home! I ate 34 snacks and 5 Wi-Fi treats today.") and "2 new species: Apple Watch and Garmin device!" in r \
+assert r.startswith("I'm home! I ate 34 snacks and 5 Wi-Fi treats today.") and "2 new types of gadget: Apple Watch and Garmin device!" in r \
        and "I saw Kingsbridge Castle!" in r and "1 new realm" in r and "storm" in r and "level 6" in r, r
 assert build_recap("Harald", [{"kind": "wake", "text": "Harald woke up"}], 0, 0, 7200) is None
 assert "1 snack " in build_recap("Harald", [], 1, 0, 600)
