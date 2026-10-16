@@ -11,7 +11,7 @@ WORDS = re.compile(r"\b(he|him|his|himself|he's|he'll|he'd)\b", re.I)
 found = []
 
 for name in ("den.html", "map.html", "shopping.html", "calendar.html", "art.html",
-             "garden/mode.js", "garden/hook.js", "lang.js"):
+             "garden/mode.js", "garden/hook.js", "lang.js", "collection.html"):
     with open(os.path.join(HERE, name), encoding="utf-8") as f:
         text = f.read()
     text = re.sub(r"<!--.*?-->|/\*.*?\*/", "", text, flags=re.S)        # comments

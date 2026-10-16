@@ -35,6 +35,11 @@ apt-get install -y python3-venv python3-pil bluez iw git rfkill
 for pkg in python3-spidev python3-gpiozero python3-lgpio; do
   apt-get install -y "$pkg" || echo "(skipping $pkg)"
 done
+# the radio stick (RTL-SDR), optional: rtl_adsb hears planes, rtl_433 the little radios.
+# The rtl-sdr package also stops the TV-tuner driver from claiming the stick.
+for pkg in rtl-sdr rtl-433; do
+  apt-get install -y "$pkg" || echo "(skipping $pkg: only needed for a radio stick)"
+done
 
 say "Turning on SPI (the e-ink screen's connection)"
 raspi-config nonint do_spi 0 || true
@@ -75,6 +80,9 @@ done
 say "Giving him a voice (for the optional Echo Dot; skipped if the download fails)"
 cp "$SRC/install-voice.sh" "$DEST/install-voice.sh"
 bash "$DEST/install-voice.sh" || echo "(The voice didn't install. You can try again later: sudo bash $DEST/install-voice.sh)"
+
+say "Keeping the system log in memory, to spare the memory card"
+bash "$SRC/gentle-card.sh" || echo "(Couldn't change the system log; it doesn't stop your dragon working.)"
 
 say "Installing the bt-dragon service"
 mkdir -p /var/lib/bt-dragon

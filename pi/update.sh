@@ -17,6 +17,12 @@ if [ -d "$BOOT/bt-dragon" ] && [ "$SRC" != "$BOOT/bt-dragon" ]; then
   rm -rf "$BOOT/bt-dragon" && cp -r "$SRC" "$BOOT/bt-dragon" || true
 fi
 systemctl daemon-reload
+bash "$SRC/gentle-card.sh" || true      # the system log in memory, not on the card
+if ! command -v rtl_433 >/dev/null || ! command -v rtl_adsb >/dev/null; then
+  echo "== Adding the radio stick's programs (rtl-sdr, rtl-433), for planes and little radios"
+  { apt-get update -qq && apt-get install -y -qq rtl-sdr rtl-433; } >/dev/null 2>&1 \
+    || echo "   (Couldn't add them now: no internet? Later: sudo apt-get install -y rtl-sdr rtl-433)"
+fi
 if [ ! -x /opt/bt-dragon/piper/piper ] || ! command -v adb >/dev/null; then
   echo "== Tip: for Harald's voice through an Echo Dot, also run:  sudo bash /opt/bt-dragon/install-voice.sh"
 fi

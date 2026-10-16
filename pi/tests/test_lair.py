@@ -155,6 +155,8 @@ async def run():
     # local announcements, each at its own minute past the hour
     assert (await app.command("LAIRANNOUNCE on")) == ["OK"]
     tuning._over["storm_first_joy"] = 7
+    from bt_dragon import aurora
+    aurora.dark = lambda *a: False          # (the northern lights have their own test: test_aurora)
     lt = time.localtime()
     T0 = time.mktime((lt.tm_year, lt.tm_mon, lt.tm_mday, 10, 0, 0, 0, 0, -1))   # 10:00 today
     L = app.lair
@@ -258,6 +260,7 @@ app.pet.sunny(speak=True)
 assert pushed and "sunny" in pushed[-1].lower(), pushed
 
 # an older setup's home town carries over (for the weather) until the Lair is set properly
+app.store.flush()          # (one dragon at a time on a database: the first one's changes go first)
 app2 = Dragon(cfg, simulate=True, out_dir=tempfile.mkdtemp())
 app2.lair.forget()
 app2.lair.adopt_home_town("Toronto", 43.70011, -79.4163)

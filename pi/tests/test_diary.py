@@ -17,6 +17,8 @@ df = DiaryFiles(d, 90, True, lambda: ctx)
 now = time.time()
 df.write(now, "landmark", "Harald saw Tower Bridge for the first time!")
 df.write(now + 1, "treat", 'New Wi-Fi: "Cafe, upstairs" [WPA2]')
+assert len(os.listdir(d)) == 2                              # the new rows wait in memory...
+df.flush()                                                   # ...until the database is saved
 names = sorted(os.listdir(d))
 old = (datetime.date.today() - datetime.timedelta(days=100)).isoformat()
 assert f"diary-{old}.csv" not in names and "notes.txt" in names and len(names) == 3, names

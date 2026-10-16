@@ -37,6 +37,7 @@ assert backup.art_dir(toml, data) == os.path.join(boot, "bt-dragon-art")
 assert not os.path.exists(os.path.join(boot, "harald-art"))
 assert os.path.exists(os.path.join(boot, "bt-dragon-art", "happy.png"))
 
+store.flush()       # (the Den does this first: changes wait in memory until then)
 # made while running (its own connection still open, changes still in the side file)
 blob = backup.make(data, toml, "Harald", now=1791900000)
 assert len(blob) < 50000
@@ -58,7 +59,7 @@ assert m["made"] == 1791900000 and files["bt-dragon.toml"].startswith(b"[home_wi
 
 # things change after the backup...
 store.put("pet", {"name": "Harald", "xp": 9999})
-store.db.close()
+store.close()
 open(toml, "w").write('[home_wifi]\nssid = "NewHotspot"\n')
 open(os.path.join(data, "diary", "2026-10-13.csv"), "w").write("changed\n")
 os.remove(os.path.join(tmp, "home", ".android", "adbkey"))

@@ -78,7 +78,7 @@ run = lambda c: asyncio.run(app.command(c))                             # noqa: 
 assert run("CVD") == ["full"]
 assert run("CVD deuteranopia") == ["OK"] and run("CVD") == ["deuteranopia"] and app.cvd_mode() == "deuteranopia"
 assert run("CVD purple")[0].startswith("ERR") and run("CVD") == ["deuteranopia"]
-for page in ("den", "map", "shopping", "calendar", "art"):
+for page in ("den", "map", "shopping", "calendar", "art", "collection"):
     with open(f"bt_dragon/{page}.html", encoding="utf-8") as f:
         html = f.read()
     assert '<link rel="stylesheet" href="/theme.css">' in html and "color-scheme: dark" in html, page
@@ -166,7 +166,8 @@ if sync_playwright:
             for scheme in ("dark", "light"):
                 ctx = br.new_context(viewport={"width": 400, "height": 900}, color_scheme=scheme)
                 # (the pages are dark whatever the browser prefers; light mode is checked on the two main ones)
-                for path in (("/", "/garden", "/art", "/map", "/shopping", "/calendar") if scheme == "dark" else ("/", "/garden")):
+                for path in (("/", "/garden", "/art", "/map", "/shopping", "/calendar", "/stars", "/journal", "/sky", "/whispers") if scheme == "dark"
+                             else ("/", "/garden")):
                     page = ctx.new_page()
                     page.route("**/*", lambda rt: rt.continue_() if "127.0.0.1" in rt.request.url else rt.abort())
                     page.goto(f"http://127.0.0.1:{port}{path}")
