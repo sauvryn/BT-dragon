@@ -16,6 +16,8 @@ Addresses come in kinds, and the kind decides what Harald may do:
     food and as a species, and never tries to link one address to the next.
 The top two bits of a random address say which: 11 = static, 01 = resolvable, 00 = non-resolvable.
 """
+import asyncio
+import contextlib
 import re
 import hashlib
 import hmac
@@ -90,6 +92,11 @@ SERVICES = {
     0x181A: ("Environment sensor", "home"),
     0x184E: ("LE Audio device", "audio"),
 }
+
+# Services other makers' gadgets carry too, so a gadget broadcasting its own name is filed
+# under that name instead: Amazon's 0xFE03 is on Echos and Fire TVs, but also on headphones
+# and speakers that work with Alexa (a JBL Tune 520BT, say).
+NAME_FIRST = {0xFE03}
 
 APPLE_PODS = {
     0x0220: "AirPods", 0x0F20: "AirPods (2nd gen)", 0x1320: "AirPods (3rd gen)",
@@ -215,6 +222,8 @@ def classify(name, manufacturer_data: dict, service_uuids, service_data: dict):
 
     named = species_from_name(name)
     for s in svcs:
+        if s in NAME_FIRST and named:
+            continue        # a service other makers' gadgets carry too: a real name says more
         if s in SERVICES:
             label, kind = SERVICES[s]
             return _key(label), label, kind
@@ -433,16 +442,52 @@ class BleWatcher:
 
 
 class BleakScanner:
-    """Runs BlueZ scanning through the bleak library and feeds a callback."""
+    """Runs BlueZ scanning through the bleak library and feeds a callback.
 
-    def __init__(self, on_advert):
+    quiet() switches scanning off for a moment, for the friend beacon. A broadcast advert goes
+    out from a throwaway random address, and the Bluetooth rules say a radio may refuse to take
+    a new random address while it's scanning ("Command Disallowed"). Some radios let it pass;
+    the Pi 5's doesn't, and BlueZ only says "Failed to register advertisement". So the beacon
+    asks for a second or two of quiet whenever it goes up, which is rarely."""
+
+    def __init__(self, on_advert, bleak_cls=None):
         self.on_advert = on_advert
         self._scanner = None
+        self._bleak = bleak_cls     # (the tests pass a stand-in)
+        self._holds = 0
+        self._kick = asyncio.Event()     # something changed: look again
+        self._idle = asyncio.Event()     # scanning is off
+        self._idle.set()
+
+    @contextlib.asynccontextmanager
+    async def quiet(self, timeout=5):
+        """Scanning stays off inside this block (or the block starts after timeout seconds anyway)."""
+        self._holds += 1
+        self._kick.set()
+        try:
+            try:
+                await asyncio.wait_for(self._idle.wait(), timeout)
+            except asyncio.TimeoutError:
+                pass
+            yield
+        finally:
+            self._holds -= 1
+            self._kick.set()
+
+    @staticmethod
+    async def _either(*events):
+        waits = [asyncio.ensure_future(e.wait()) for e in events]
+        try:
+            await asyncio.wait(waits, return_when=asyncio.FIRST_COMPLETED)
+        finally:
+            for w in waits:
+                w.cancel()
 
     async def run(self, stop_event):
-        import asyncio
         import logging
-        from bleak import BleakScanner as _BS
+        _BS = self._bleak
+        if _BS is None:
+            from bleak import BleakScanner as _BS
         log = logging.getLogger("ble")
 
         def cb(device, adv):
@@ -455,17 +500,30 @@ class BleakScanner:
             self.on_advert(device.address, props.get("AddressType", "random"), adv.rssi,
                            adv.local_name, adv.manufacturer_data, adv.service_uuids, adv.service_data)
 
+        quietly = False
         while not stop_event.is_set():
+            self._kick.clear()
+            if self._holds:                     # someone wants quiet: wait until they're done
+                await self._either(stop_event, self._kick)
+                quietly = True
+                continue
             try:
                 async with _BS(detection_callback=cb, scanning_mode="active"):
-                    log.info("BLE scanning")
-                    await stop_event.wait()
+                    self._idle.clear()
+                    if not quietly:
+                        log.info("BLE scanning")
+                    quietly = False
+                    await self._either(stop_event, self._kick)
             except Exception as e:  # adapter reset, BlueZ restart...
+                self._idle.set()
                 log.warning("BLE scanner stopped: %s; retrying in 10 s", e)
                 try:
                     await asyncio.wait_for(stop_event.wait(), 10)
                 except asyncio.TimeoutError:
                     pass
+            finally:
+                self._idle.set()
+        self._idle.set()
 
 
 async def classic_search(seconds, on_found):

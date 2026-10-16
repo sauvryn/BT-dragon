@@ -54,15 +54,76 @@ def _dist(a, b):
 
 
 class Motion:
-    """Turns GPS fixes into a movement mode and distance per mode."""
+    """Turns GPS fixes into a movement mode and distance per mode.
+
+    Speed alone can't tell a bus or a tram from a walk: in town they spend much of the
+    time pulling away from stops, slowing for them and crawling in traffic, at walking,
+    running and cycling speeds. Two things sort that out:
+
+      * Riding: once you've gone at least 9 m/s (32 km/h, faster than nearly anyone cycles
+        or runs) for 10 seconds, you're in a vehicle, and everything slower counts as the
+        vehicle too, until you're on your feet again. That's when the step counter sees
+        steps, or, without one, after 90 seconds at walking pace with nothing faster.
+      * The step counter, when it's linked: walking and running make steps, so walking or
+        running speed with no steps (fewer than 15 in the last 45 seconds) is a vehicle
+        crawling along, not you.
+    """
 
     WINDOW_S = 30
+    VEHICLE_MS = 9.0          # sustained for VEHICLE_S: in a vehicle
+    VEHICLE_S = 10
+    OFF_AFTER_S = 90          # (no step counter) this long at walking pace: off the vehicle
+    HOLD_S = 30               # stretches on foot or bike are held back this long, in case
+                              # they turn out to be a vehicle pulling away
 
-    def __init__(self):
+    def __init__(self, feet=None):
         self.speeds = []          # (ts, m/s)
         self.mode = "still"
         self.last_pos = None      # (lat, lon, ts)
         self.pending = {}         # mode -> meters not yet handed out
+        self.feet = feet          # () -> True/False from the step counter, or None without one
+        self.riding = False       # in a vehicle (see above)
+        self._held = []           # (ts, mode, meters): stretches on foot or bike, held back HOLD_S
+        self._slow_since = None   # (no step counter) when walking pace began, while riding
+
+    def _on_feet(self):
+        try:
+            return self.feet() if self.feet else None
+        except Exception:
+            return None
+
+    def _update_riding(self, now, sp):
+        recent = [s for t, s in self.speeds if now - t <= self.VEHICLE_S]
+        span = (now - min(t for t, _ in self.speeds if now - t <= self.VEHICLE_S)) if recent else 0
+        if len(recent) >= 3 and span >= self.VEHICLE_S - 2 and statistics.median(recent) >= self.VEHICLE_MS:
+            if not self.riding:
+                # it was a vehicle pulling away all along: the stretches still held count as the ride
+                self.pending["vehicle"] = self.pending.get("vehicle", 0.0) + sum(d for _, _, d in self._held)
+                self._held = []
+            self.riding, self._slow_since = True, None
+            return
+        if not self.riding:
+            return
+        feet = self._on_feet()
+        if feet:                                   # steps again: off the bus
+            self.riding, self._slow_since = False, None
+        elif feet is None and sp is not None:      # no step counter: a while at walking pace
+            if 0.5 <= sp < 2.5:
+                self._slow_since = self._slow_since or now
+                if now - self._slow_since >= self.OFF_AFTER_S:
+                    self.riding, self._slow_since = False, None
+            elif sp >= 2.5:
+                self._slow_since = None
+
+    def _really(self, mode):
+        """A mode from speed, corrected for riding and for the step counter."""
+        if mode == "still":
+            return mode
+        if self.riding:
+            return "vehicle"
+        if mode in ("walking", "running") and self._on_feet() is False:
+            return "vehicle"
+        return mode
 
     def feed(self, fix):
         now = fix["ts"]
@@ -70,21 +131,44 @@ class Motion:
         if sp is not None:
             self.speeds.append((now, sp))
         self.speeds = [(t, s) for t, s in self.speeds if now - t <= self.WINDOW_S]
+        self._update_riding(now, sp)
         if len(self.speeds) >= 3:
-            self.mode = classify(statistics.median(s for _, s in self.speeds))
+            self.mode = self._really(classify(statistics.median(s for _, s in self.speeds)))
         pos = (fix["lat"], fix["lon"], now)
         if self.last_pos and now - self.last_pos[2] <= 15:
             d = _dist(self.last_pos, pos)
             # Each stretch is credited to how fast you were going right then (the smoothed
             # mode lags ~15 s behind, which would misfile the start of a drive as a walk);
             # readings under 0.5 m/s are GPS wander, not movement.
-            seg_mode = classify(sp) if sp is not None else self.mode
+            raw = classify(sp) if sp is not None else self.mode
+            seg_mode = self._really(raw)
             if seg_mode != "still" and d < 60 * (now - self.last_pos[2] + 1) and fix.get("acc", 10) < 30:
-                self.pending[seg_mode] = self.pending.get(seg_mode, 0.0) + d
+                if raw == "vehicle" and not self.riding and sp is not None:
+                    # a moment above cycling speed (a sprint, downhill) isn't a vehicle by itself:
+                    # held as cycling, and it becomes the ride if the speed keeps up
+                    self._held.append((now, "cycling", d))
+                elif seg_mode == "vehicle":
+                    self.pending["vehicle"] = self.pending.get("vehicle", 0.0) + d
+                else:
+                    self._held.append((now, seg_mode, d))
         self.last_pos = pos
+        self._release(now)
 
-    def take(self):
-        """Distance per mode since the last call."""
+    def _release(self, now):
+        """Hand out held stretches once they're HOLD_S old: by then a vehicle pulling away
+        would have shown itself."""
+        keep = []
+        for t, mode, d in self._held:
+            if now - t >= self.HOLD_S:
+                self.pending[mode] = self.pending.get(mode, 0.0) + d
+            else:
+                keep.append((t, mode, d))
+        self._held = keep
+
+    def take(self, now=None):
+        """Distance per mode since the last call (stretches on foot or by bike HOLD_S late)."""
+        if now is not None:
+            self._release(now)
         out, self.pending = self.pending, {}
         return out
 
@@ -219,7 +303,7 @@ class Activity:
     def __init__(self, store, stride_m=STRIDE_M):
         self.store = store
         self.stride = stride_m
-        self.motion = Motion()
+        self.motion = Motion(feet=self.feet)
         self.trip = {}            # mode -> meters this adventure
         self.trip_start = None
         self.last_moving = 0.0
@@ -262,6 +346,7 @@ class Activity:
             out = ("walk", (total - self.live_steps) * self.stride)
         if self.live_steps is not None and total > self.live_steps:
             self._step_log.append((time.time(), total - self.live_steps))
+            self._step_log = [(t, n) for t, n in self._step_log if time.time() - t <= self.ON_FOOT_S]
         self.live_steps = total
         now = time.time()
         if out or now - getattr(self, "_steps_saved", 0) > 30:  # don't write on every step
@@ -274,6 +359,16 @@ class Activity:
 
     ON_FOOT_S = 120
     ON_FOOT_STEPS = 40
+    FEET_S = 45
+    FEET_STEPS = 15
+
+    def feet(self, now=None):
+        """For telling a walk from a slow bus: True if the step counter saw at least 15
+        steps in the last 45 seconds, False if not, None if there's no step counter."""
+        if self.live_steps is None:
+            return None
+        now = now or time.time()
+        return sum(n for t, n in self._step_log if now - t <= self.FEET_S) >= self.FEET_STEPS
 
     def on_foot(self, now=None):
         """Out walking (or running) right now, by the phone's step counter: at least 40 steps
@@ -294,7 +389,7 @@ class Activity:
     def take_motion(self):
         """Distances since the last call; also tracks when an adventure starts and ends."""
         self._roll_day()
-        got = self.motion.take()
+        got = self.motion.take(time.time())
         now = time.time()
         if self.motion.mode != "still":
             self.last_moving = now

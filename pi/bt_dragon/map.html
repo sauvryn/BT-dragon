@@ -42,6 +42,7 @@
   <div class="score" id="score"></div></div>
   <div class="stats" id="stats">Loading…</div>
   <label><input type="checkbox" id="fog" checked> Fog</label>
+  <label id="offOnly" hidden><input type="checkbox" id="offlineOnly"> Offline map only</label>
   <button onclick="centerOnMe()">Where am I?</button>
 </header>
 <div id="map"></div>
@@ -49,22 +50,24 @@
   ★ famous places seen, ? famous places nearby not seen yet. Green outlines are parks, woods and other
   green spaces: solid once you've been in them, dashed if not yet.
   The fog hides everywhere you haven't taken __NAME__ yet. Map tiles load from OpenStreetMap over your phone's own
-  connection.</div>
+  connection<span id="offNote"></span>.</div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<!--OFFLINE-->
 <script>
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'})[c]);
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const GREEN = css('--moss') || '#7fbf5f', GOLD = css('--rune') || '#d9a441', RED = css('--blood') || '#e8735c';
-let data = null, map = null, layers = [], first = true;
+let data = null, map = null, layers = [], first = true, osm = null, offline = null;
 
 async function load() {
   try { data = await (await fetch('/api/lands')).json(); } catch (e) { $('stats').textContent = 'The dragon is not answering.'; return; }
   const n = data.lands.length, r = data.realms.length;
   $('score').innerHTML = `<b>${(data.conquest || 0).toLocaleString()}</b> Conquest points · <b>${esc(data.conquest_title || '')}</b>`;
   $('stats').innerHTML = `<b>${n.toLocaleString()}</b> land${n === 1 ? '' : 's'} in <b>${r.toLocaleString()}</b> ` +
-    `realm${r === 1 ? '' : 's'} · <b>${data.today}</b> new today`;
+    `realm${r === 1 ? '' : 's'} · <b>${data.today}</b> new today` +
+    (data.locked ? `<br>Claiming land opens at level ${data.locked}, when ${esc(data.name)} is a child.` : '');
   if (typeof L === 'undefined') return drawFallback();
   draw();
 }
@@ -72,9 +75,23 @@ async function load() {
 function draw() {
   if (!map) {
     map = L.map('map', {zoomControl: true, worldCopyJump: true});
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    // the offline map (offlinemap.py): drawn underneath, so wherever OpenStreetMap's own tiles
+    // can't load (no signal), it shows through
+    if (typeof OFFLINE !== 'undefined' && OFFLINE && window.protomapsL) {
+      try {
+        offline = protomapsL.leafletLayer({url: '/offline/{z}/{x}/{y}.mvt', flavor: 'dark', theme: 'dark', lang: 'en',
+          maxDataZoom: 15, maxZoom: 19, attribution: '<a href="https://protomaps.com">Protomaps</a> &copy; ' +
+          '<a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'});
+        offline.addTo(map);
+        $('offOnly').hidden = false;
+        $('offNote').textContent = `; the offline map (${OFFLINE.tiles.toLocaleString()} pieces, kept on the Pi from ` +
+          'Protomaps) shows wherever they can\'t';
+      } catch (e) { offline = null; }
+    }
+    osm = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(map);
+    $('offlineOnly').onchange = () => { if ($('offlineOnly').checked) map.removeLayer(osm); else osm.addTo(map); };
   }
   layers.forEach(l => map.removeLayer(l)); layers = [];
   const ring = ([s, w, n, e]) => [[s, w], [n, w], [n, e], [s, e]];

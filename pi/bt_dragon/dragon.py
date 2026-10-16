@@ -11,7 +11,7 @@ from PIL import ImageDraw
 W, H = 96, 86
 B, P = 0, 255  # black ink, paper
 
-MOODS = ("content", "happy", "eating", "excited", "treat", "stuffed", "hungry", "starving",
+MOODS = ("content", "happy", "eating", "excited", "treat", "stuffed", "hungry", "famished",
          "bored", "lonely", "sleepy", "asleep", "alarmed", "uploading", "proud", "adventure", "riding",
          "ecstatic", "sneezing", "sunglasses", "dazzled")  # new moods go at the end: friends' beacons send the mood's number
 
@@ -337,7 +337,7 @@ def draw_dragon(d: ImageDraw.ImageDraw, ox, oy, mood="content", phase=0, belly=N
         _eye_closed(t, L, EY); _eye_closed(t, R, EY); _mouth_wavy(t); _blush(t)
     elif m == "hungry":
         _eye_sad(t, L, EY, -1); _eye_sad(t, R, EY, 1); _mouth_o(t); _drool(t)
-    elif m == "starving":
+    elif m == "famished":
         _eye_sad(t, L, EY, -1); _eye_sad(t, R, EY, 1); _mouth_frown(t); _sweat(t)
     elif m == "adventure":  # out walking together
         _eye_happy(t, L, EY); _eye_happy(t, R, EY); _mouth_grin(t, tongue=True); _speed_lines(t, phase)

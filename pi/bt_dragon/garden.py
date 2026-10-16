@@ -19,10 +19,16 @@ A larva's life, as in Bookworm:
     already growing are skipped, and a species with separate forms (male and female, or
     queen and worker) stays "not yet raised" until every form has been. Only when there's
     nothing new left at that rarity can a repeat hatch;
-  - growth is the share of its food it has had so far, 0 to 100%. It pupates (a chrysalis for
-    butterflies) at its species' own point, worked out from its real larva and pupa days, as
-    in Bookworm (a little joy), and the adult emerges at 100% (a big joy). The adult joins the
-    Garden Collection, may open a habitat, and earns points towards Bookworm's titles;
+  - growth, 0 to 100%. A larva grows by eating: its share of its food so far. It pupates (a
+    chrysalis for butterflies) at its species' own point, worked out from its real larva and
+    pupa days, as in Bookworm (a little joy). From then on it eats nothing: the pupa simply
+    takes 24 hours (Developer Tools: "Butterfly Garden: hours as a pupa"), its percentage
+    rising steadily from the pupation point to 100%, and the adult emerges by itself at 100%
+    (a big joy), whatever Harald has eaten meanwhile. That keeps the pace of a real garden: a
+    feast in a busy city fills the larvae fast, but each still spends a day as a pupa. (A
+    species that pupates late in its growth needs more food than one that pupates early.)
+    The adult waits in its spot until it's collected from the den, and then joins the Garden
+    Collection, may open a habitat, and earns points towards Bookworm's titles;
   - hunger, as in Bookworm, by how long since a larva last ate: "Well fed" for 24 hours,
     "Satisfied" until 48, "Peckish" until 72, then "Hungry", and "Very hungry" from 96 hours (4 days).
     Pupae don't eat, so they're never hungry;
@@ -274,9 +280,9 @@ class Garden:
         if food <= 0 or not self.unlocked(level):
             return
         self.sync_slots(level, now)
-        # an adult waiting to be collected doesn't eat: only eggs and larvae share the food
+        # an adult waiting to be collected, or a pupa, doesn't eat: only eggs and larvae share the food
         slots = [(i, b) for i, b in enumerate(self.s["slots"][: self.slot_count(level)])
-                 if not b.get("empty") and not b.get("adult")]
+                 if not b.get("empty") and not b.get("adult") and not self.is_pupa(b)]
         if not slots:
             return
         day = time.strftime("%Y-%m-%d", time.localtime(now))
@@ -290,17 +296,52 @@ class Garden:
                 self._hatch(b, c, now)
             self._check_hunger(b, now)      # (did it go hungry before this meal?)
             b["last_fed"] = now
-            b["fed"] = min(b["need"], b["fed"] + share)
-            pct = 100 * b["fed"] / b["need"]
+            # a larva eats only up to its pupation point
+            b["fed"] = min(b["need"] * b["pupAt"] / 100, b["fed"] + share)
+            pct = 100 * b["fed"] / b["need"] + 1e-6          # (rounding: full means full)
             stage = stage_for(pct, b["pupAt"])
             if stage >= 9 and b.get("stage", 0) < 9:
                 b["pupated"] = now
                 self._tell("pupate", b)
             b["stage"] = stage
-            if pct >= 100:
-                self._emerge(i, b, now)
         self.sync_slots(level, now)
         self.save()
+
+    # ---- pupae: a timer, not food
+    @staticmethod
+    def pupa_s():
+        return max(60.0, float(tuning.get("garden_pupa_hours")) * 3600)
+
+    @staticmethod
+    def is_pupa(b):
+        return not b.get("egg") and not b.get("empty") and not b.get("adult") and b.get("stage", 0) >= 9
+
+    def pct(self, b, now=None):
+        """Growth so far: by food up to the pupation point, then by time as a pupa."""
+        if b.get("adult"):
+            return 100.0
+        if self.is_pupa(b):
+            done = min(1.0, max(0.0, ((now or time.time()) - b.get("pupated", now or time.time())) / self.pupa_s()))
+            return b["pupAt"] + (100 - b["pupAt"]) * done
+        return 100 * b["fed"] / b["need"]
+
+    def emerges_at(self, b):
+        return b.get("pupated", time.time()) + self.pupa_s() if self.is_pupa(b) else None
+
+    def check_pupae(self, now=None):
+        """Every few seconds, from the app: an adult emerges when its pupa's time is up (also
+        after the Pi was off: it emerged while he was away)."""
+        now = now or time.time()
+        changed = False
+        for i, b in enumerate(self.s["slots"]):
+            if self.is_pupa(b):
+                if not b.get("pupated"):            # (a pupa from before the timer existed)
+                    b["pupated"], changed = now, True
+                elif now >= self.emerges_at(b):
+                    self._emerge(i, b, now)
+                    changed = True
+        if changed:
+            self.save()
 
     @staticmethod
     def hunger(b, now=None):
@@ -326,6 +367,7 @@ class Garden:
         now = now or time.time()
         if any([self._check_hunger(b, now) for b in self.s["slots"]]):
             self.save()
+        self.check_pupae(now)
 
     def note_belly(self, low, level):
         """(Older versions: the dragon's belly decided. Now each larva's own hunger does.)"""
@@ -413,7 +455,7 @@ class Garden:
                 out["larvae"].append({"egg": True, "slot": i})
                 continue
             sp = data()["countries"][b["country"]]["by_id"][b["species"]]
-            pct = 100 * b["fed"] / b["need"]
+            pct = self.pct(b)
             out["larvae"].append({
                 "egg": False, "species": sp["id"], "name": sp["name"], "sci": sp["sci"], "kind": sp["kind"],
                 "noun": sp["noun"], "young": sp["young"], "pupa": sp["pupa"], "rarity": b["rarity"],
@@ -422,6 +464,7 @@ class Garden:
                 "hunger": self.hunger(b), "last_fed": int(b.get("last_fed") or b.get("hatched") or 0),
                 "fed": round(b["fed"], 1), "need": b["need"], "country": b["country"], "slot": i,
                 "adult": bool(b.get("adult")), "form": b.get("form"),
+                "emerges_at": int(self.emerges_at(b) or 0),
                 "country_name": COUNTRY_NAME.get(b["country"], "")})
         return out
 

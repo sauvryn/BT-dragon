@@ -25,6 +25,7 @@ from . import sky as skymod
 from .landmarks import Landmarks
 from .greens import Greens, visit_words
 from .garden import Garden
+from . import mobilewifi
 from . import garden as gardenmod
 from . import garden_page
 from . import lang as langmod
@@ -47,6 +48,7 @@ from .gps import Gps
 from .wifipos import WifiPosition
 from .lair import Lair, LookupError_, c_and_f, deg_words
 from .pet import Pet
+from . import pet as petmod
 from .screen import render, render_nap, render_sleep
 from .store import Store
 from .sysstats import SysStats
@@ -106,9 +108,12 @@ class Dragon:
         self.wifipos = WifiPosition(self.store)   # only when there's no GPS, and only if switched on
         sky_cfg = cfg["sky"]
         self.lands = skymod.Lands(self.store) if sky_cfg["lands"] else None
+        from .offlinemap import OfflineMap
+        self.offline_map = OfflineMap(self.store, data_dir)
         self.stars = skymod.Stars(self.store) if sky_cfg["stars"] else None
         if self.stars:
-            self.gps.on_gsv = lambda *a, **k: None if self.napping else self.stars.gsv(*a, **k)
+            self.gps.on_gsv = lambda *a, **k: None if self.napping or not self.explore_open() \
+                else self.stars.gsv(*a, **k)
         self.baro = skymod.Barometer(self.store) if sky_cfg["barometer"] else None
         self.landmarks = Landmarks(self.store) if sky_cfg["landmarks"] else None
         self.greens = Greens(self.store) if sky_cfg.get("greens", True) else None
@@ -716,19 +721,21 @@ class Dragon:
                     self.event("friend", "Spotted a wild Pwnagotchi")
                 self._pwna_last = now
                 continue  # not a real network: no treat, never uploaded
+            moving = mobilewifi.kind(ap["ssid"])     # a car's, a bus's, a phone's...: see mobilewifi.py
             is_new, prev = self.store.ap_seen(ap, now, touch=clock)
             if is_new:
-                packed = self.pet.treat(ap)
-                self.event("treat", f"New Wi-Fi: {ap['ssid'] or '(hidden)'} {ap['auth']}"
+                packed = self.pet.treat(ap, mobile=moving)
+                label = {"vehicle": "Vehicle", "phone": "Mobile"}.get(moving, "New")
+                self.event("treat", f"{label} Wi-Fi: {ap['ssid'] or '(hidden)'} {ap['auth']}"
                                     + (f" ({_n(packed)} into the pack)" if packed else ""))
-            elif clock and prev:
+            elif clock and prev and not moving:       # (a vehicle isn't a bush that stays put)
                 # berry bush: one point of food per calendar day since he last picked it
                 days = (datetime.date.fromtimestamp(now) - datetime.date.fromtimestamp(prev)).days
                 food = berry_value(ap.get("security", "wpa2"), days)
                 if food:
                     berry_food += food
                     bushes += 1
-            if obs_ts and now - self._obs_last.get(ap["bssid"], 0) >= 60 and not at_home:
+            if obs_ts and now - self._obs_last.get(ap["bssid"], 0) >= 60 and not at_home and not moving:
                 self.store.ap_observe(ap["bssid"], obs_ts, ap["rssi"], fix)
                 self._obs_last[ap["bssid"]] = now
         if berry_food:
@@ -845,6 +852,23 @@ class Dragon:
         last = self.store.get("wigle_last_try") or 0
         return max(0.0, last + every - time.time(), self._quota_wait())
 
+    async def offline_map_loop(self):
+        """Once a day (when there's internet), the map tiles covering the lands claimed since
+        last time, for the map page without a signal (see offlinemap.py)."""
+        await self._sleep(90)
+        while not self.stop.is_set():
+            om = self.offline_map
+            if self.lands and not self.napping and not self.simulate and om.due():
+                bounds = [skymod.cell_bounds(c, skymod.LAND_M) for c, _ in self.store.lands_all()]
+                if bounds:
+                    result = await asyncio.to_thread(om.run, bounds)
+                    if "new map tiles" in result:
+                        self.event("map", f"Offline map: {result}")
+            for _ in range(120):                      # 10 minutes, or "Update now" in the den
+                if self.stop.is_set() or om.s.get("last_try") == 0:
+                    break
+                await self._sleep(5)
+
     async def wigle_loop(self):
         await self._sleep(120)
         while not self.stop.is_set():
@@ -874,8 +898,13 @@ class Dragon:
             message = self.pet.message
         return {
             "name": self.pet.name, "level": self.pet.level(), "xp_frac": self.pet.xp_frac(),
+            "stage": petmod.stage(self.pet.level())[0], "stage_next": petmod.stage(self.pet.level())[1] or 0,
+            "explore_open": self.explore_open(), "explore_forced": bool(self.store.get("explore_unlocked")),
+            "explore_level": petmod.EXPLORE_LEVEL,
             "lang": self.lang(),
             "mood": self.pet.mood(), "belly": self.pet.belly(), "hunger": round(self.pet.hunger), "pack": round(self.pet.pack, 1), "pack_cap": round(self.pet.pack_cap(), 1),
+            "rations": int(self.pet.rations + 1e-9), "ration_part": round((self.pet.rations + 1e-9) % 1, 2),
+            "ration_room": round(self.pet.ration_room(), 1),
             "belly_holds": round(100 * self.pet.growth()), "growth": round(self.pet.growth(), 3),
             "joy": round(self.pet.joy), "feeling": self.pet.feeling(),
             "moving": self.activity.motion.mode if self.gps.state() == "FIX" else "",
@@ -1056,6 +1085,7 @@ class Dragon:
         fix = self.where_now()
         cq, cq_title = self.conquest_score()
         return {"name": self.pet.name, "conquest": cq, "conquest_title": cq_title,
+                "locked": None if self.explore_open() else petmod.EXPLORE_LEVEL,
                 "lands": [skymod.cell_bounds(c, skymod.LAND_M) for c, _ in rows],
                 "realms": [skymod.cell_bounds(r, skymod.REALM_M) for r in realms],
                 "here": {"lat": round(fix["lat"], 6), "lon": round(fix["lon"], 6),
@@ -1067,9 +1097,15 @@ class Dragon:
                 "greens": [{"name": g["name"], "kind": g["kind"], "seen": g["seen"], "rings": g["rings"]}
                            for g in (self.store.greens_list() if self.greens else [])]}
 
+    def explore_open(self):
+        """The map (lands, famous places, green spaces) and the stars: from level 5, when he's a
+        child (see pet.STAGES), or sooner with the den's "Unlock now (prototype testing)" box.
+        A baby eats, makes friends, and grows."""
+        return self.pet.level() >= petmod.EXPLORE_LEVEL or bool(self.store.get("explore_unlocked"))
+
     def _look_around(self, fix):
         """Famous places: ask Wikipedia about each new realm, then point out what's near."""
-        if not self.landmarks or fix.get("acc", 99) > 100:
+        if not self.landmarks or fix.get("acc", 99) > 100 or not self.explore_open():
             return
         realm = self.landmarks.wanted(fix)
         if realm and (self.home_ssid or self.simulate):
@@ -1086,7 +1122,7 @@ class Dragon:
 
     def _green_tick(self, fix):
         """Parks and woods: ask OpenStreetMap about each new realm, then notice when we're in one."""
-        if not self.greens or fix.get("acc", 99) > 100:
+        if not self.greens or fix.get("acc", 99) > 100 or not self.explore_open():
             return
         realm = self.greens.wanted(fix)
         if realm and (self.home_ssid or self.simulate):
@@ -1243,7 +1279,7 @@ class Dragon:
         self.dot.adventure("moon", text=f"{name} today!")
 
     def _visit_land(self, fix):
-        claimed = self.lands.visit(fix) if self.lands else None
+        claimed = self.lands.visit(fix) if self.lands and self.explore_open() else None
         for new_realm in claimed or []:
             self.pet.land(new_realm, riding=self.activity.motion.mode == "vehicle")
             self.dot.adventure("realm" if new_realm else "land")
@@ -1407,6 +1443,22 @@ class Dragon:
                 return [f"ERR {err}"]
             self.event("care", "The Den password was set")
             return ["OK"]
+        if cmd == "OFFLINEMAP":     # on=, tiles=, bytes=, last=, build=, busy=, state=, ready=, then END
+            return self.offline_map.lines() + ["END"]
+        if cmd == "OFFLINEMAPSET":  # on / off
+            self.offline_map.set_on(arg.lower() in ("on", "1", "yes"))
+            return ["OK"]
+        if cmd == "OFFLINEMAPNOW":  # fetch today's (new) tiles at the next look, within 10 minutes
+            om = self.offline_map
+            if not om.s.get("on"):
+                return ["ERR switch the offline map on first"]
+            om.s.pop("last_day", None)
+            om.s["last_try"] = 0
+            om._save()
+            return ["OK Fetching the map now (it needs the internet)"]
+        if cmd == "EXPLOREUNLOCK":  # on / off: the map and the stars before level 5 (prototype testing)
+            self.store.put("explore_unlocked", arg.lower() in ("on", "1", "yes"))
+            return ["OK"]
         if cmd == "GARDENUNLOCK":
             if arg.lower() in ("on", "1", "yes"):
                 self.garden.unlock_now(self.pet.level())
@@ -1547,6 +1599,13 @@ class Dragon:
                 self.pet.save()
                 self.pet.say(f"XP SET TO {self.pet.xp} (LEVEL {self.pet.level()})")
                 return ["OK"]
+            if which == "rations":
+                try:
+                    self.pet.rations = max(0.0, float(val))
+                except ValueError:
+                    return ["ERR give a number"]
+                self.pet.save()
+                return ["OK"]
             if which == "pack":
                 try:
                     self.pet.pack = max(0.0, min(self.pet.pack_cap(), float(val)))
@@ -1675,6 +1734,7 @@ class Dragon:
             self.store.forget_lands()
             self.store.forget_landmarks_seen()
             self.store.forget_greens_seen()
+            self.offline_map.forget()               # (the offline map shows where he's been, too)
             self.event("land", "Forgot the map of claimed lands (and the Conquest points they earned)")
             self.conquest_score(fresh=True)
             return ["OK"]
@@ -1697,6 +1757,17 @@ class Dragon:
             self.pet.save()
             self.pet.say(f"MY NAME IS {name}!", "happy", 20)
             return ["OK"]
+        if cmd == "RATION":  # give him a ration: the PACK is filled completely
+            if self.napping:
+                return [f"ERR {self.pet.name} is napping: wake {self.pet.name} first"]
+            room = self.pet.ration_room()
+            why = self.pet.give_ration()
+            if why:
+                return [f"ERR {why}"]
+            left = int(self.pet.rations + 1e-9)
+            self.event("ration", f"You gave {self.pet.name} a ration: +{_n(room)} food, the pack is full "
+                                 f"({left} ration{'s' if left != 1 else ''} left).")
+            return [f"OK {self.pet.name}'s pack is full ({left} ration{'s' if left != 1 else ''} left)"]
         if cmd == "NAP":
             return [await self.nap()]
         if cmd == "WAKE":
@@ -2114,7 +2185,8 @@ class Dragon:
             log.info("still napping after a restart; wake up from the den")
         else:
             self.event("wake", f"{self.pet.name} woke up")
-        tasks = [self.pet_loop(), self.display_loop(), self.wigle_loop(), self.activity_loop(), serve_all(self)]
+        tasks = [self.pet_loop(), self.display_loop(), self.wigle_loop(), self.activity_loop(), serve_all(self),
+                 self.offline_map_loop()]
         a = self.cfg["activity"]
         if a["enabled"] and not self.simulate:
             host = a["steps_host"]
@@ -2146,7 +2218,7 @@ class Dragon:
             tasks.append(self.dot.run())
             tasks.append(self._awake_only(self.radio.run))   # the radio stick rests during a nap too
             if self.cfg["friends"]["beacon"]:
-                beacon = friendsmod.Beacon(self.beacon_payload)
+                beacon = friendsmod.Beacon(self.beacon_payload, quiet=scanner.quiet)
                 tasks.append(self._awake_only(beacon.run))
         if self.simulate:
             tasks.append(self.dot._timer_loop())   # timers work without the Dot too

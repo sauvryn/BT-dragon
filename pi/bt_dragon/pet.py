@@ -1,7 +1,7 @@
 """
 Harald's body and feelings: two separate meters.
 
-  FOOD (hunger)  0 = starving .. 100 = stuffed. Drops 1 point every 90 seconds, so a full
+  FOOD (hunger)  0 = famished .. 100 = stuffed. Drops 1 point every 90 seconds, so a full
                  belly lasts about 2.5 hours (hunger_minutes in the config file).
   JOY            0 = sad .. 100 = happy. Drops 1 point every 10 minutes.
 
@@ -32,7 +32,7 @@ JOY
 level = 1 + sqrt(XP / 50): level 2 at 50 XP, 3 at 200, 5 at 800, 10 at 4050
 
 The face: urgent things first (alarm, uploading, short reactions like a feast), then
-starving or a sleepy night, otherwise his JOY picks the eyes and his FOOD can change the
+famished or a sleepy night, otherwise his JOY picks the eyes and his FOOD can change the
 mouth: drooling when hungry, a contented wobble when stuffed.
 """
 import math
@@ -58,6 +58,23 @@ def per_meter(kind):
 
 def level_for(xp):
     return 1 + int(math.sqrt(max(0, xp) / tuning.get("xp_curve")))
+
+
+# Growing up, roughly as people do: what a dragon can do grows with it. A baby eats and
+# makes friends; from 5, a child can also claim land, find famous places and green spaces,
+# learn the stars and raise butterflies (see app.explore_open and garden.UNLOCK_LEVEL).
+STAGES = ((1, "baby"), (5, "child"), (10, "teen"), (20, "adult"))
+EXPLORE_LEVEL = 5
+
+
+def stage(level):
+    """("baby", "child", "teen" or "adult", the level the next stage starts at or None)."""
+    name, nxt = STAGES[0][1], None
+    for i, (lv, nm) in enumerate(STAGES):
+        if level >= lv:
+            name = nm
+            nxt = STAGES[i + 1][0] if i + 1 < len(STAGES) else None
+    return name, nxt
 
 
 def xp_for(level):
@@ -114,7 +131,7 @@ def away_words(s):
 
 
 def hunger_word(h):
-    return "STARVING" if h < 10 else "HUNGRY" if h < 30 else "STUFFED" if h > 92 else "FED"
+    return "FAMISHED" if h < 10 else "HUNGRY" if h < 30 else "STUFFED" if h > 92 else "FED"
 
 
 def joy_word(j):
@@ -129,6 +146,7 @@ class Pet:
         self.xp = st.get("xp", 0)
         self.hunger = st.get("hunger", 60.0)
         self.pack = st.get("pack", 0.0)   # spare berries (see berries() and eat_from_pack())
+        self.rations = st.get("rations", 0.0)   # yours to give him: each fills the PACK (see give_ration())
         self.joy = st.get("joy", 50.0)
         self.total_meals = st.get("total_meals", 0)
         self.total_treats = st.get("total_treats", 0)
@@ -166,6 +184,7 @@ class Pet:
     def save(self):
         self.saved_at = time.time()      # (kept in memory too: a nap's catch-up counts from here)
         self.store.put("pet", {"name": self.name, "xp": self.xp, "hunger": round(self.hunger, 1), "pack": round(self.pack, 2),
+                               "rations": round(self.rations, 3),
                                "joy": round(self.joy, 1), "total_meals": self.total_meals,
                                "total_treats": self.total_treats, "born": self.born,
                                "saved_at": self.saved_at,
@@ -217,6 +236,15 @@ class Pet:
             self.store.event("level", f"{self.name} reached level {now}"
                              + (f": a bigger appetite, belly, joy and pack now hold {more}% more than at level 1"
                                 if bigger else ""))
+            was, _ = stage(before)
+            st, _ = stage(now)
+            if st != was:          # growing up: a new stage
+                news = {"child": "Can now claim land, find famous places and green spaces, learn the stars "
+                                 "and raise butterflies.",
+                        "teen": "", "adult": "All grown up."}.get(st, "")
+                self.store.event("level", f"{self.name} is now {'an' if st[0] in 'aeiou' else 'a'} {st}! {news}".strip())
+                self.say([f"LEVEL {now}! {self.name.upper()} IS NOW {'AN' if st[0] in 'aeiou' else 'A'} {st.upper()}!",
+                          f"NOW {'AN' if st[0] in 'aeiou' else 'A'} {st.upper()}!"], "proud", 60)
             return True
         return False
 
@@ -252,14 +280,53 @@ class Pet:
         self._surplus(spare)
         return food - spare
 
+    # ---------------------------------------------------------------- rations
+    def earn_ration(self, n):
+        """Rations come from feasts and land claims (Developer Tools: "Rations"). They're
+        yours, not his: he can't touch them until you give him one. Fractions add up."""
+        if n <= 0:
+            return
+        self.rations += n
+        most = tuning.get("ration_max")
+        if most > 0:
+            self.rations = min(self.rations, most)
+
+    def ration_room(self):
+        """How much a ration would put in the PACK now."""
+        return max(0.0, self.pack_cap() - self.pack)
+
+    def give_ration(self):
+        """Fills the PACK completely, using one ration. Returns None, or why not."""
+        if self.rations < 1 - 1e-9:
+            return "no rations left"
+        if self.ration_room() < 0.05:
+            return "the PACK is already full"
+        self.pack = self.pack_cap()
+        self.rations = max(0.0, self.rations - 1)
+        self.say(_fit([f"A RATION! {self.name.upper()}'S PACK IS FULL", "A RATION! THE PACK IS FULL", "A RATION!"]),
+                 "happy", 30)
+        self.save()
+        return None
+
     def feast(self, label):
         self.session_species += 1
+        self.earn_ration(tuning.get("ration_feast"))
         if not self._gain(self._share(tuning.get("feast_food")), tuning.get("feast_xp"), tuning.get("feast_joy")):
             self.say([f"FEAST! NEW TYPE: {label}", f"FEAST! {label}"], self.face_for(tuning.get("feast_joy")), 45)
 
-    def treat(self, ap):
+    def treat(self, ap, mobile=None):
+        """A new Wi-Fi network. One that travels (mobilewifi.py: "vehicle" for a car's, a bus's...,
+        "phone" for a phone's hotspot or a pocket router) is a smaller one."""
         self.session_treats += 1
         self.total_treats += 1
+        if mobile:
+            food = tuning.get("treat_food_mobile")
+            packed = self._overflow(food)
+            if not self._gain(food - packed, tuning.get("treat_xp_mobile"), tuning.get("treat_joy_mobile")):
+                name = ap["ssid"] or "A HIDDEN ONE"
+                self.say(_fit([f"VROOM! VEHICLE WI-FI: {name}", f"VROOM! {name}"] if mobile == "vehicle" else
+                              [f"BLEEP! PHONE WI-FI: {name}", f"BLEEP! {name}"]), "treat", 15)
+            return packed
         sec = ap.get("security", "wpa2")
         sec = sec if sec in TREAT_NOTE else "wpa2"
         note = TREAT_NOTE[sec]
@@ -350,6 +417,7 @@ class Pet:
         """A square of the map he's never been to (and maybe a whole new realm)."""
         k = tuning.get("land_vehicle_pct") / 100 if riding else 1.0
         self.lands_today += 1
+        self.earn_ration(tuning.get("ration_land") * k)
         if new_realm:
             joy = tuning.get("realm_joy") * k
             if not self._gain(tuning.get("realm_food") * k, tuning.get("realm_xp") * k, joy):
@@ -543,12 +611,14 @@ class Pet:
                 return
             h, j = hunger_word(self.hunger), joy_word(self.joy)
             extra = {
-                "STARVING": "TAKE ME SOMEWHERE BUSY",
+                "FAMISHED": "TAKE ME SOMEWHERE BUSY",
                 "SAD": "A WALK WOULD CHEER ME UP",
                 "BORED": "LET'S GO EXPLORING?",
             }
             tip = extra.get(h) or extra.get(j) or f"{len(devices_in_range)} DEVICES NEARBY"
-            self.message, self.message_ts = f"{h} AND {j}. {tip}", now
+            # the longest that fits the screen: "FAMISHED AND HAPPY. TAKE ME SOMEWHERE BUSY" doesn't
+            self.message = _fit([f"{h} AND {j}. {tip}", f"{h}. {tip}", f"{h} AND {j}"])
+            self.message_ts = now
 
     def feeling(self):
         return f"{hunger_word(self.hunger)} AND {joy_word(self.joy)}"
@@ -565,7 +635,7 @@ class Pet:
         if self.reaction and self.reaction[1] > now:
             return self.reaction[0]
         if self.hunger < 10:
-            return "starving"
+            return "famished"
         hour = time.localtime(now).tm_hour
         if 1 <= hour < 6 and self.joy < 70:
             return "sleepy"

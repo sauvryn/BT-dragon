@@ -68,7 +68,7 @@ MOOD_NOTES = {
     "content": "the everyday face", "happy": "good mood", "bored": "nothing happening for a while",
     "lonely": "no gadgets around for a long time", "sleepy": "late, or tired", "asleep": "sleeping and napping",
     "eating": "a Bluetooth snack", "treat": "a Wi-Fi treat", "stuffed": "belly full", "hungry": "belly low",
-    "starving": "belly empty", "excited": "something new", "ecstatic": "a big joy boost",
+    "famished": "belly empty", "excited": "something new", "ecstatic": "a big joy boost",
     "proud": "level up", "alarmed": "an unknown tracker following you", "uploading": "sending to WiGLE",
     "adventure": "out walking together", "riding": "in a vehicle",
     "sneezing": "high pollen or poor air at the Lair", "sunglasses": "sunshine",
@@ -116,6 +116,15 @@ class ArtSet:
         for where, folder in (("built in", self.builtin_dir), ("yours", self.user_dir)):
             if folder and os.path.isdir(folder):
                 for fn in sorted(os.listdir(folder)):
+                    if where == "yours" and fn.startswith("starving"):
+                        # the "starving" face is called "famished" now: your picture keeps working
+                        new = "famished" + fn[len("starving"):]
+                        try:
+                            if not os.path.exists(os.path.join(folder, new)):
+                                os.rename(os.path.join(folder, fn), os.path.join(folder, new))
+                                fn = new
+                        except OSError:
+                            pass
                     p = os.path.join(folder, fn)
                     if fn.lower().endswith(".png") and os.path.isfile(p):
                         out.append((where, fn, p, os.path.getmtime(p), os.path.getsize(p)))

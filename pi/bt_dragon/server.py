@@ -201,6 +201,22 @@ async def web_server(app):
         page = f.read()
     with open(os.path.join(HERE, "map.html"), encoding="utf-8") as f:
         map_page = f.read()
+
+    def map_html():
+        """The map page: Leaflet from the Pi when it's here (the same bytes as the CDN's, so
+        the page's integrity checks still pass), and the offline map when there is one."""
+        from html import escape
+        html = map_page.replace("__NAME__", escape(app.pet.name))
+        om = app.offline_map
+        if om.have_vendor():
+            html = html.replace("https://unpkg.com/leaflet@1.9.4/dist/", "/vendor/")
+        if om.ready():
+            n, _ = om.counts()
+            html = html.replace("<!--OFFLINE-->", '<script src="/vendor/protomaps-leaflet.js"></script>\n'
+                                f'<script>const OFFLINE = {{"tiles": {n}}};</script>')
+        else:
+            html = html.replace("<!--OFFLINE-->", "<script>const OFFLINE = null;</script>")
+        return html
     with open(os.path.join(HERE, "shopping.html"), encoding="utf-8") as f:
         shop_page = f.read()
     with open(os.path.join(HERE, "calendar.html"), encoding="utf-8") as f:
@@ -335,7 +351,26 @@ async def web_server(app):
             elif path == "/":
                 out = _response("200 OK", page, "text/html; charset=utf-8")
             elif path == "/map":
-                out = _response("200 OK", map_page.replace("__NAME__", app.pet.name), "text/html; charset=utf-8")
+                out = _response("200 OK", map_html(), "text/html; charset=utf-8")
+            elif path.startswith("/offline/") and path.endswith(".mvt"):
+                # the offline map's tiles (offlinemap.py): /offline/z/x/y.mvt
+                try:
+                    z, x, y = (int(v) for v in path[9:-4].split("/"))
+                    got = app.offline_map.get(z, x, y)
+                except (ValueError, TypeError):
+                    got = None
+                if got is None:
+                    out = _response("404 Not Found", "")
+                else:
+                    data, gz = got
+                    out = _response("200 OK", data, "application/x-protobuf", cache="max-age=86400",
+                                    extra=["Content-Encoding: gzip"] if gz and data else None)
+            elif path.startswith("/vendor/"):
+                data = app.offline_map.vendor_file(path[8:])
+                kind = ("text/javascript; charset=utf-8" if path.endswith(".js") else
+                        "text/css; charset=utf-8" if path.endswith(".css") else "image/png")
+                out = (_response("200 OK", data, kind, cache="max-age=604800") if data is not None
+                       else _response("404 Not Found", ""))
             elif path == "/theme.css":
                 # Color Blindness Mode: loaded last by every Den page (see access.py)
                 from . import access

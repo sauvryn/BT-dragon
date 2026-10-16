@@ -24,6 +24,8 @@ import json
 import sqlite3
 import time
 
+from .mobilewifi import is_mobile
+
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, value TEXT);
 CREATE TABLE IF NOT EXISTS aps (
@@ -199,6 +201,8 @@ class Store:
         for r in rows:
             ssid = r["ssid"] or ""
             if skip_nomap and ssid.lower().endswith("_nomap"):
+                continue
+            if is_mobile(ssid):               # never uploaded: it doesn't stay put (mobilewifi.py)
                 continue
             if not upload_hidden and not ssid:
                 continue

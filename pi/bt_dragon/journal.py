@@ -241,9 +241,11 @@ CATALOGUE = [
      "Zigbee and Bluetooth share the same 2.4 GHz radio band as Wi-Fi: a single bulb can speak two of the three.",
      [("Wikipedia: Philips Hue", "https://en.wikipedia.org/wiki/Philips_Hue")]),
     ("echo", "Around the home", "Amazon Echo or Fire TV", "Uncommon", "house", ["Amazon Echo / Fire"],
-     "An Amazon Echo speaker or Fire TV.",
-     "It advertises Amazon's service (0xFE03) so the Alexa app can set it up and connect gadgets to it.",
-     "If your dragon has an Echo Dot (Level 4), it may well be one of these.",
+     "An Amazon Echo speaker or Fire TV, or another gadget built to work with Alexa.",
+     "It advertises Amazon's service (0xFE03) so the Alexa app can set it up and connect gadgets to it. Headphones "
+     "and speakers from other makers that work with Alexa advertise it too: when one also broadcasts its own name "
+     "(\"JBL Tune 520BT\"), it's filed under that name instead.",
+     "If your dragon has an Echo Dot (Tier 4), it may well be one of these.",
      [ASSIGNED]),
     ("xiaomi", "Around the home", "Xiaomi gadget", "Uncommon", "house", ["Xiaomi Mi device"],
      "A Xiaomi fitness band, thermometer, plant sensor or other smart-home gadget.",

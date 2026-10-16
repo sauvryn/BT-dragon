@@ -34,6 +34,7 @@
   .grow { flex: 1; min-width: 0; overflow-wrap: anywhere; }
   button { background: transparent; color: var(--ink); border: 1px solid var(--rune); border-radius: 6px;
            padding: 7px 11px; font: inherit; font-size: 13.5px; cursor: pointer; white-space: nowrap; }
+  button:disabled { color: var(--dim); border-color: var(--line); cursor: default; }
   button.primary { background: var(--rune); color: #1d1c1a; font-weight: 600; }
   button.danger { border-color: var(--blood); color: var(--blood); }
   .actions { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -179,7 +180,12 @@
     <div class="sub" style="margin-top:8px">Pack <b id="packNow" style="color: var(--ink)">0</b> / <span id="packCap">50</span>
       · spare berries and treats for when <span class="pname" data-nolang>Harald</span> gets hungry</div>
     <div class="meter"><div id="packBar" style="width:0; background: var(--dim)"></div></div>
+    <div class="row" style="margin-top:4px; border-top:0">
+      <div class="grow sub">Rations <b id="rations" style="color: var(--ink)">0</b><span id="rationPart"></span>
+        · yours to give: each fills the pack completely. Earned for every feast and land claimed.</div>
+      <button id="rationBtn" onclick="giveRation()" disabled>Give Ration</button></div>
     <p id="feeling" style="margin:10px 0 0; font-weight:600"></p>
+    <p class="sub" id="stage" style="margin:4px 0 0"></p>
     <p class="sub" id="meta"></p>
     <p class="sub" style="margin:4px 0 0">Awake <b id="awake" style="font-variant-numeric: tabular-nums; color: var(--ink)">00:00:00</b></p>
     <p class="sub" id="vitals" style="margin:4px 0 0"></p>
@@ -321,6 +327,10 @@
         <div class="sub">Now <span id="nowPack">--</span></div></div>
         <input id="setPack" type="number" min="0" step="any" inputmode="decimal"><span class="unit">food</span>
         <button style="visibility:visible; border-color: var(--rune); color: var(--ink)" onclick="setMeter('pack')">Set</button></div>
+      <div class="row knob setmeter"><div class="grow"><b>Set rations</b>
+        <div class="sub">Now <span id="nowRations">--</span></div></div>
+        <input id="setRations" type="number" min="0" step="1" inputmode="decimal"><span class="unit">rations</span>
+        <button style="visibility:visible; border-color: var(--rune); color: var(--ink)" onclick="setMeter('rations')">Set</button></div>
       <div id="knobs-food"></div>
     </details>
     <details class="subtools" id="dt-joy"><summary><b>Joy</b> <span class="sub">· joy meter and what makes <span class="pname" data-nolang>Harald</span> happy</span><span class="changedn" id="chg-joy"></span></summary>
@@ -370,7 +380,8 @@
       <span class="sub" id="gdSummary">Insects raised on spare food</span></summary>
     <p class="sub" style="margin:0 0 6px">Raise insects from <span class="pname" data-nolang>Harald</span>'s spare food: snacks and feasts
       that don't fit in the BELLY, and treats and berries that fit in neither the BELLY nor the PACK, go to the larvae
-      here, shared evenly between them. Data imported from another
+      here, shared evenly between them. Once a larva pupates it eats nothing more: the adult emerges by itself
+      24 hours later. Data imported from another
       of the project author's repos, Bookworm, using its data of species, field notes, and pupation timings. Manual
       fact-checking of Bookworm's data is ongoing.</p>
     <p class="sub" style="margin:0 0 6px">Spiders aren't included at the moment. If they're ever added, there will be an
@@ -497,7 +508,7 @@
         <label class="sub"><input type="checkbox" id="say_lair_aurora" onchange="sayTick(this)"> Northern lights</label>
       </div></div>
     <div class="row wrap"><div class="grow full">Weather information: Phone sensors<div class="sub">From your phone's own
-      barometer and light sensor (Level 3). Phones have no thermometer, pollen or UV sensor, so these are the two there are.</div></div>
+      barometer and light sensor (Tier 3). Phones have no thermometer, pollen or UV sensor, so these are the two there are.</div></div>
       <div class="saybox">
         <label class="sub"><input type="checkbox" id="say_phone_storm" onchange="sayTick(this)"> Storm or change</label>
         <label class="sub"><input type="checkbox" id="say_phone_sun" onchange="sayTick(this)"> Sunshine</label>
@@ -589,14 +600,13 @@
 
   <section data-arrange="conquests">
     <h2>Conquests</h2>
+    <p class="sub" id="expLocked" hidden style="margin:0 0 6px"></p>
+    <div class="row" id="expTestRow" hidden style="border:0"><div class="grow sub">Unlock now (prototype testing)</div>
+      <label class="sub"><input type="checkbox" id="expTest" onchange="exploreUnlock(this.checked)"> On</label></div>
     <p style="margin:0 0 8px"><b id="cqScore">0</b> Conquest points · <b id="cqTitle"></b>
       <span class="sub" id="cqNext"></span></p>
     <p style="margin:0"><b id="cLands">0</b> <span id="cLandsW">lands</span> in <b id="cRealms">0</b> <span id="cRealmsW">realms</span> claimed
       <span class="sub">(squares of the map about 250 m and 1 km across)</span></p>
-    <div class="actions" style="margin-top:10px"><a href="/stars" target="_blank"><button class="primary">Open the Star Chart</button></a></div>
-    <details style="margin-top:8px"><summary>Star chart: <span id="cStars">0</span> satellites seen</summary>
-      <p class="sub">Satellites need GPSd Forwarder, GPS2IP or a USB GPS receiver; SensorServer doesn't pass them on.</p>
-      <div id="starChart" data-nolang></div></details>
     <details style="margin-top:8px"><summary>Landmarks: <span id="cLm">0</span> famous places seen</summary>
       <p class="sub">Famous places (on Wikipedia in many languages) are looked up for each new realm.
         Ones you haven't been near yet are listed too, and shown on the map: go and see them!</p>
@@ -618,10 +628,33 @@
       <div class="row" style="border:0"><div class="grow"><span class="sub" id="wpStatus"></span></div>
         <label class="sub"><input type="checkbox" id="wpCheck" onchange="wifiPosSet(this.checked)"> On</label></div>
     </details>
+    <details style="margin-top:8px" id="omBox"><summary>Offline map: <span id="omOn">off</span></summary>
+      <p class="sub">The map page's streets without a signal. Once a day, when <span class="pname" data-nolang>Harald</span>
+        has the internet, the pieces of the map covering the lands claimed since last time (and a little round them) are
+        fetched and kept on the Pi. The map page draws them underneath OpenStreetMap's own, so wherever those can't load,
+        these show through. They come from <a href="https://protomaps.com" target="_blank" rel="noopener" style="color: var(--ink)">Protomaps</a>,
+        which publishes all of OpenStreetMap as one file each day for exactly this (OpenStreetMap's own servers don't allow it).</p>
+      <p class="sub" style="color: var(--rune)"><b>Privacy:</b> which pieces are asked for shows Protomaps roughly where
+        your dragon has been, to the nearest few hundred meters, as any online map does while you look at it.
+        <b>Forget my map</b> deletes the offline map too.</p>
+      <div class="row" style="border:0"><div class="grow"><span class="sub" id="omStatus"></span></div>
+        <label class="sub"><input type="checkbox" id="omCheck" onchange="offlineMapSet(this.checked)"> On</label></div>
+      <div class="actions"><button onclick="offlineMapNow()">Update now</button></div>
+    </details>
     <div class="actions" style="margin-top:10px">
       <a href="/map" target="_blank"><button class="primary">Open the map</button></a>
       <button class="danger" onclick="forgetMap()">Forget my map</button>
     </div>
+  </section>
+
+  <section data-arrange="stars">
+    <h2>Star Chart</h2>
+    <p class="sub" id="starLocked" hidden style="margin:0 0 6px"></p>
+    <p style="margin:0"><b id="cStars">0</b> satellites seen in <b id="cConsts">0</b> constellations
+      <span class="sub">(navigation satellites)</span></p>
+    <div id="starChart" data-nolang style="margin-top:6px"></div>
+    <p class="sub" style="margin:8px 0 0">Satellites need GPSd Forwarder, GPS2IP or a USB GPS receiver; SensorServer doesn't pass them on.</p>
+    <div class="actions" style="margin-top:10px"><a href="/stars" target="_blank"><button class="primary">Open the Star Chart</button></a></div>
   </section>
 
   <section data-arrange="radio">
@@ -695,9 +728,14 @@ function applyOrder() {
   let saved = null;
   try { saved = JSON.parse(localStorage.getItem(ARRANGE_KEY) || 'null'); } catch (e) {}
   if (!Array.isArray(saved)) return;
-  const box = $('arrange'), byKey = Object.fromEntries(arrangeables().map(x => [x.dataset.arrange, x]));
+  const box = $('arrange'), all = arrangeables(), byKey = Object.fromEntries(all.map(x => [x.dataset.arrange, x]));
+  const usualPrev = new Map(all.map((x, i) => [x, all[i - 1] || null]));
   saved.forEach(k => { if (byKey[k]) { box.appendChild(byKey[k]); delete byKey[k]; } });
-  Object.values(byKey).forEach(x => box.appendChild(x));      // sections added by an update: at the end
+  // sections added by an update: just after the one they usually follow (or at the end)
+  all.filter(x => x.dataset.arrange in byKey).forEach(x => {
+    const prev = usualPrev.get(x);
+    if (prev) prev.after(x); else box.appendChild(x);
+  });
 }
 function saveOrder() {
   try { localStorage.setItem(ARRANGE_KEY, JSON.stringify(arrangeables().map(x => x.dataset.arrange))); } catch (e) {}
@@ -840,8 +878,26 @@ async function refresh() {
     $('nowFood').textContent = v.hunger; $('nowJoy').textContent = v.joy;
     $('packNow').textContent = v.pack; $('packCap').textContent = v.pack_cap;
     $('bellyHolds').textContent = v.belly_holds > 100 ? `· holds ${v.belly_holds} food (growing up: ${v.belly_holds - 100}% more than at level 1)` : ''; $('packBar').style.width = Math.min(100, v.pack * 100 / Math.max(1, v.pack_cap)) + '%'; $('nowPack').textContent = v.pack + ' food';
+    if ('rations' in v) {
+      $('rations').textContent = v.rations; $('nowRations').textContent = v.rations + (v.ration_part ? ` (+${Math.round(v.ration_part * 100)}% of the next)` : '');
+      $('rationPart').textContent = v.ration_part ? ` (+${Math.round(v.ration_part * 100)}% of the next)` : '';
+      const rb = $('rationBtn'); rb.disabled = v.rations < 1 || v.ration_room < 0.05 || !!v.napping;
+      rb.title = v.rations < 1 ? 'No rations yet: feasts and new lands earn them' : v.ration_room < 0.05 ? 'The pack is already full'
+        : v.napping ? PET + ' is napping' : `Fills the pack: +${v.ration_room} food`;
+    }
     $('nowXp').textContent = `${v.xp.toLocaleString()} XP, level ${v.level} (next at ${v.next_xp.toLocaleString()})`;
     $('feeling').textContent = v.feeling.charAt(0) + v.feeling.slice(1).toLowerCase();
+    // growing up (pet.STAGES): what each stage can do
+    const can = {baby: 'eats, makes friends and grows', child: 'can now claim land, find famous places and green spaces, learn the stars and raise butterflies',
+      teen: 'explores, collects and raises butterflies', adult: 'all grown up'}[v.stage] || '';
+    $('stage').textContent = `Growing up: ${v.stage === 'adult' ? 'an' : 'a'} ${v.stage} (${can})` +
+      (v.stage_next ? `. ${v.stage === 'baby' ? 'A child' : v.stage === 'child' ? 'A teen' : 'An adult'} at level ${v.stage_next}.` : '.');
+    const lockNote = `Opens at level ${v.explore_level}, when ${PET} is a child (now level ${v.level}).`;
+    $('expLocked').hidden = $('starLocked').hidden = v.explore_open && !v.explore_forced;
+    $('expLocked').textContent = v.explore_open ? 'Unlocked early for testing.' : lockNote;
+    $('starLocked').textContent = v.explore_open ? 'Unlocked early for testing.' : lockNote + ' (Unlocked with the map, under Conquests.)';
+    $('expTestRow').hidden = v.level >= v.explore_level;
+    if (document.activeElement !== $('expTest')) $('expTest').checked = v.explore_forced;
     const km = m => m >= 100 ? (m / 1000).toFixed(1) + ' km' : Math.round(m) + ' m';
     $('aWalk').textContent = km(v.walked_today); $('aRide').textContent = km(v.rode_today);
     $('aTold').textContent = km(v.told_today);
@@ -925,6 +981,7 @@ async function refresh() {
   let inView = 0;
   stars.forEach(l => { const [key, c, prn, , , now] = split(l); inView += +now;
     (byConst[c] = byConst[c] || []).push({prn, now: +now}); });
+  $('cConsts').textContent = Object.keys(byConst).length;
   // satellites he can hear right now are bold and bright; the rest of his chart stays dim
   $('starChart').innerHTML = Object.keys(byConst).length ?
     `<p class="sub" style="margin:4px 0">${inView ? `<b style="color: var(--ink)">${inView}</b> in view right now, shown in bold`
@@ -1149,9 +1206,15 @@ async function setKnob(key, value) {
   toast(r[0] && r[0].startsWith('OK') ? 'Set ' + r[0].slice(3).replace('=', ' = ') : (r[0] || PET + ' is not answering').replace(/^ERR /, ''));
   loadKnobs();
 }
+async function giveRation() {
+  const r = await cmd('RATION');
+  toast((r[0] || PET + ' is not answering').replace(/^(OK|ERR) /, ''));
+  refresh();
+}
 async function setMeter(which) {
-  const box = $({food: 'setFood', joy: 'setJoy', xp: 'setXp', pack: 'setPack'}[which]);
-  if (box.value === '') return toast({xp: 'Type an amount of XP first', pack: 'Type an amount of food first'}[which]
+  const box = $({food: 'setFood', joy: 'setJoy', xp: 'setXp', pack: 'setPack', rations: 'setRations'}[which]);
+  if (box.value === '') return toast({xp: 'Type an amount of XP first', pack: 'Type an amount of food first',
+                                      rations: 'Type a number of rations first'}[which]
                                      || 'Type a percentage first');
   await cmd(`METER ${which} ${box.value}`, true);
   box.value = ''; refresh();
@@ -1206,6 +1269,20 @@ async function restoreBackup(input) {
     $('restoreNote').textContent = 'The dragon is not answering, so nothing was restored.';
   }
 }
+
+async function offlineMapLoad() {
+  const a = Object.fromEntries((await cmd('OFFLINEMAP')).map(l => [l.split('=')[0], l.slice(l.indexOf('=') + 1)]));
+  if (!('on' in a)) return;
+  if (document.activeElement !== $('omCheck')) $('omCheck').checked = a.on === '1';
+  $('omOn').textContent = a.on === '1' ? (+a.tiles ? `${(+a.tiles).toLocaleString()} pieces` : 'on') : 'off';
+  const mb = (+a.bytes / 1e6).toFixed(1);
+  $('omStatus').textContent = a.busy === '1' ? (a.state || 'Fetching...')
+    : (+a.tiles ? `${(+a.tiles).toLocaleString()} pieces of the map kept (${mb} MB)` : 'Nothing kept yet') +
+      (+a.last ? `; last fetched ${new Date(+a.last * 1000).toLocaleString([], {dateStyle: 'medium', timeStyle: 'short'})}` : '') +
+      (a.state ? `: ${a.state}` : '') + '.';
+}
+async function offlineMapSet(on) { await cmd('OFFLINEMAPSET ' + (on ? 'on' : 'off'), true); offlineMapLoad(); }
+async function offlineMapNow() { await cmd('OFFLINEMAPNOW', true); setTimeout(offlineMapLoad, 1500); }
 
 async function forgetMap() {
   if (!confirm('Forget every land and realm ' + PET + ' has claimed, and which landmarks and green spaces ' + PET + ' has seen? This can\'t be undone.')) return;
@@ -1397,6 +1474,11 @@ async function loadGarden() {
     : `All ${g.max} spots open. Food is shared between the ones with an egg or a larva in them.`;
   gardenArtFrame(g.art);
   const cap1 = t => t.charAt(0).toUpperCase() + t.slice(1);
+  // a pupa eats nothing: it just takes its time (Developer Tools: hours as a pupa)
+  const emergesIn = at => { const s = at - Date.now() / 1000;
+    if (s <= 60) return 'any moment now';
+    const h = Math.floor(s / 3600), m = Math.round((s % 3600) / 60);
+    return 'in ' + (h ? `${h} h ${m} min` : `${m} min`); };
   const html = g.larvae.map(b => {
     if (b.empty) return `<div class="larva egg"><b>An empty spot</b><div class="sub">Nothing grows here until you put an
       egg in it, so the spare food goes further for the others.</div>
@@ -1432,7 +1514,8 @@ async function loadGarden() {
       </div>${art ? `<div class="gd-art lv-art art-wrap${!b.adult && b.stage < 9 ? ' crawl' : ''}">${art}</div>` : ''}</div>
       ${b.adult ? '' : `<div class="stemlbl top"><span style="left:${b.pupAt}%${b.pupAt > 78 ? ';transform:translateX(-88%)' : ''}">${esc(pupa)} ${b.pupAt}%</span></div>
       <div class="stem"><span class="track"></span><span class="fill" style="width:${b.pct}%"></span>${nodes.join('')}</div>`}
-      <div class="sub">${esc(moodWord)}${b.adult ? '' : ` · Last fed ${lastFed(b.last_fed)}`} · <b>${b.adult ? 'tap to add to Collection' : 'tap for field notes'}</b></div></button>`;
+      <div class="sub">${esc(moodWord)}${b.adult ? '' : b.stage >= 9 ? ` · Emerges ${emergesIn(b.emerges_at)}`
+        : ` · Last fed ${lastFed(b.last_fed)}`} · <b>${b.adult ? 'tap to add to Collection' : 'tap for field notes'}</b></div></button>`;
   }).join('');
   if (html !== gdLast) { gdLast = html; $('gdLarvae').innerHTML = html; }   // redrawn only on a change, so they keep crawling
   $('gdCountryNote').textContent = "Which country's insects:";
@@ -1456,6 +1539,7 @@ async function gardenEgg(slot, lay) {
   if (r[0] !== 'OK') toast((r[0] || PET + ' is not answering').replace(/^ERR /, ''));
   loadGarden();
 }
+async function exploreUnlock(on) { await cmd('EXPLOREUNLOCK ' + (on ? 'on' : 'off'), true); refresh(); }
 async function gardenUnlock(on) {
   const r = await cmd('GARDENUNLOCK ' + (on ? 'on' : 'off'));
   if (r[0] !== 'OK') toast((r[0] || PET + ' is not answering').replace(/^ERR /, ''));
@@ -1631,7 +1715,7 @@ function tickAwake() {  // HH:MM:SS, hours grow to three digits like Sub-GHz Sle
   const p = n => String(n).padStart(2, '0');
   $('awake').textContent = `${p(Math.min(999, Math.floor(s / 3600)))}:${p(Math.floor(s / 60) % 60)}:${p(s % 60)}`;
 }
-refresh(); setInterval(refresh, 10000); denAuthLoad(); setInterval(denAuthLoad, 5000); trackTick(); setInterval(tickAwake, 1000);
+refresh(); setInterval(refresh, 10000); denAuthLoad(); setInterval(denAuthLoad, 5000); offlineMapLoad(); setInterval(offlineMapLoad, 10000); trackTick(); setInterval(tickAwake, 1000);
 </script>
 </body>
 </html>

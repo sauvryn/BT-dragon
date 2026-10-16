@@ -153,14 +153,101 @@ class FriendBook:
 
 
 class Beacon:
-    """Broadcasts Harald's friend advert through BlueZ's LEAdvertisingManager1 (D-Bus)."""
+    """Broadcasts Harald's friend advert through BlueZ's LEAdvertisingManager1 (D-Bus).
 
-    PATH = "/org/btdragon/beacon0"
+    BlueZ can't change an advert's contents while it's on the air, so a new level, mood or
+    name means taking the old one down and putting a new one up. Done straight away under the
+    same name, BlueZ (5.82, on a Pi 5) sometimes refused the new one ("Failed to register
+    advertisement") and kept refusing: so each one gets a name of its own, and goes up a
+    moment after the old one came down.
 
-    def __init__(self, payload_fn):
+    On a Pi 5 it was refused even the very first time, every time. A broadcast advert goes out
+    from a throwaway random address, and the Bluetooth rules let a radio refuse to take a new
+    random address while it's scanning, which a dragon always is. So, when there's a scanner,
+    scanning is paused for the second or two it takes to put the beacon up (see
+    ble.BleakScanner.quiet)."""
+
+    PATH = "/org/btdragon/beacon"
+    GAP_S = 1.5
+    MOOD_EVERY_S = 600      # a new mood alone is re-announced at most this often (moods change a lot)
+
+    @staticmethod
+    def _same_but_mood(a, b):
+        """The same dragon, level and name, only another mood (byte 8: see encode())."""
+        return a is not None and b is not None and len(a) == len(b) and a[:8] == b[:8] and a[9:] == b[9:]
+
+    def __init__(self, payload_fn, quiet=None, bus_fn=None):
         self.payload_fn = payload_fn
+        self.quiet = quiet          # the scanner's quiet(): see ble.BleakScanner
+        self.bus_fn = bus_fn        # (the tests pass a stand-in for BlueZ)
+        self.failures = 0
 
     async def run(self, stop):
+        import contextlib
+        if self.bus_fn:
+            connect, Advert = self.bus_fn()
+        else:
+            connect, Advert = self._bluez()
+        while not stop.is_set():
+            bus = None
+            try:
+                bus, mgr = await connect()
+                registered, path, since = None, None, 0.0
+                while not stop.is_set():
+                    data = self.payload_fn()
+                    if self._same_but_mood(data, registered) and time.monotonic() - since < self.MOOD_EVERY_S:
+                        data = registered       # (only the mood changed, and only just: later)
+                    if data != registered:  # level/mood/name changed: re-announce
+                        # (with scanning paused: a radio may refuse a new random address mid-scan)
+                        async with (self.quiet() if self.quiet else contextlib.nullcontext()):
+                            if path is not None:
+                                try:
+                                    await mgr.call_unregister_advertisement(path)
+                                except Exception:
+                                    pass
+                                bus.unexport(path)
+                                path = None
+                                await asyncio.sleep(self.GAP_S)
+                            self._n = getattr(self, "_n", 0) + 1
+                            p = f"{self.PATH}{self._n}"
+                            adv = Advert()
+                            adv.data = data
+                            bus.export(p, adv)
+                            try:
+                                await mgr.call_register_advertisement(p, {})
+                            except Exception:
+                                bus.unexport(p)
+                                raise
+                            path = p
+                        registered, since = data, time.monotonic()
+                        self.failures = 0
+                        log.info("friend beacon on (%d bytes)", len(data))
+                    try:
+                        await asyncio.wait_for(stop.wait(), 60)   # (a rename shows within a minute)
+                    except asyncio.TimeoutError:
+                        pass
+                if path is not None:
+                    try:
+                        await mgr.call_unregister_advertisement(path)
+                    except Exception:
+                        pass
+            except Exception as e:
+                self.failures += 1
+                why = getattr(e, "text", None) or str(e)
+                kind = getattr(e, "type", "") or type(e).__name__
+                if self.failures <= 3 or self.failures % 30 == 0:     # (not every minute, all night)
+                    log.warning("friend beacon unavailable: %s (%s; %d in a row%s); retrying in 60 s",
+                                why, kind, self.failures, ", scanning paused" if self.quiet else "")
+                try:
+                    await asyncio.wait_for(stop.wait(), 60)
+                except asyncio.TimeoutError:
+                    pass
+            finally:
+                if bus:
+                    bus.disconnect()
+
+    @staticmethod
+    def _bluez():
         from dbus_fast import BusType, Variant
         from dbus_fast.aio import MessageBus
         from dbus_fast.service import ServiceInterface, dbus_property, method, PropertyAccess
@@ -182,39 +269,11 @@ class Beacon:
             def ManufacturerData(self) -> "a{qv}":
                 return {COMPANY: Variant("ay", self.data)}
 
-        while not stop.is_set():
-            bus = None
-            try:
-                bus = await MessageBus(bus_type=BusType.SYSTEM).connect()
-                intro = await bus.introspect("org.bluez", "/org/bluez/hci0")
-                mgr = bus.get_proxy_object("org.bluez", "/org/bluez/hci0", intro) \
-                         .get_interface("org.bluez.LEAdvertisingManager1")
-                adv = Advert()
-                bus.export(self.PATH, adv)
-                registered = None
-                while not stop.is_set():
-                    data = self.payload_fn()
-                    if data != registered:  # level/mood/name changed: re-announce
-                        if registered is not None:
-                            await mgr.call_unregister_advertisement(self.PATH)
-                        adv.data = data
-                        await mgr.call_register_advertisement(self.PATH, {})
-                        registered = data
-                        log.info("friend beacon on (%d bytes)", len(data))
-                    try:
-                        await asyncio.wait_for(stop.wait(), 300)
-                    except asyncio.TimeoutError:
-                        pass
-                try:
-                    await mgr.call_unregister_advertisement(self.PATH)
-                except Exception:
-                    pass
-            except Exception as e:
-                log.warning("friend beacon unavailable: %s; retrying in 60 s", e)
-                try:
-                    await asyncio.wait_for(stop.wait(), 60)
-                except asyncio.TimeoutError:
-                    pass
-            finally:
-                if bus:
-                    bus.disconnect()
+        async def connect():
+            bus = await MessageBus(bus_type=BusType.SYSTEM).connect()
+            intro = await bus.introspect("org.bluez", "/org/bluez/hci0")
+            mgr = bus.get_proxy_object("org.bluez", "/org/bluez/hci0", intro) \
+                     .get_interface("org.bluez.LEAdvertisingManager1")
+            return bus, mgr
+
+        return connect, Advert

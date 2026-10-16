@@ -457,6 +457,10 @@ class DotLink:
         if ok and self.s["serial"] and serial != self.s["serial"]:
             log.info("found a different Echo at %s (not the claimed one); leaving it alone", ip)
             ok = False
+        if ok and await self._owned_by_another():
+            log.info("the Echo at %s is in use by another dragon; leaving it alone", ip)
+            self.state = "this Echo Dot is in use by another dragon"
+            ok = False
         if not ok:
             await self._adb("disconnect", self.target, target=False, timeout=5)
             self.target = None
@@ -467,6 +471,38 @@ class DotLink:
         self.s["last_ip"] = ip
         self.save()
         return True
+
+    # ------------------------------------------------------------ one Dot, one dragon
+    # Two dragons on the same hotspot would both find the Dot and fight over it (its player,
+    # its speaker, its ears). The one using it leaves a note on the Dot (its own random ID,
+    # renewed with every health check, every 20 seconds); another dragon finding a fresh note
+    # that isn't its own leaves the Dot alone. A note older than OWNER_FRESH_S is from a dragon
+    # that's gone (switched off, or the Dot switched off in its den): then it's free again.
+    OWNER_FRESH_S = 120
+
+    @property
+    def owner_id(self):
+        oid = self.store.get("dot_owner_id")
+        if not oid:
+            oid = os.urandom(6).hex()
+            self.store.put("dot_owner_id", oid)
+        return oid
+
+    async def _owned_by_another(self):
+        out = await self.sh(f"cat {H}/owner 2>/dev/null; echo; date +%s; "
+                            f"stat -c %Y {H}/owner 2>/dev/null || echo 0", 10)
+        lines = [x.strip() for x in (out or "").splitlines()]
+        if len(lines) < 3:
+            return False
+        who = lines[0]
+        try:
+            age = int(lines[-2]) - int(lines[-1])
+        except ValueError:
+            return False
+        return bool(who) and who != self.owner_id and int(lines[-1]) > 0 and age < self.OWNER_FRESH_S
+
+    def _owner_note(self):
+        return f"mkdir -p {H}; echo {self.owner_id} > {H}/owner"
 
     async def find(self, full=True):
         if not shutil.which("adb"):
@@ -528,7 +564,7 @@ class DotLink:
         # pause too. Without it the chip sleeps between sounds and the amplifier, left on,
         # whines; so the amplifier is switched off and only turned on while Harald speaks.
         # old button and microphone readers from before a restart would hold micgrab busy
-        if await self.sh(f"for s in ledcontroller mixer {services}; do stop $s; done; "
+        if await self.sh(f"{self._owner_note()}; for s in ledcontroller mixer {services}; do stop $s; done; "
                          f"tinymix '{AMP}' Off; mkdir -p {H}/anim; "
                          f"pkill -f 'micgrab [k]eys'; pkill -f 'micgrab [s]tream'", 30) is None:
             return False
@@ -618,7 +654,7 @@ class DotLink:
         """Hooked into the diary: things that happened, for the ring."""
         name = {"species": "ev_species", "level": "ev_level", "landmark": "ev_landmark",
                 "star": "ev_star", "green": "ev_landmark", "friend": "ev_friend", "treat": "ev_treat", "berries": "ev_nom",
-                "pack": "ev_nom", "tracker": "ev_alert", "adventure": "ev_realm"}.get(kind)
+                "pack": "ev_nom", "ration": "ev_nom", "tracker": "ev_alert", "adventure": "ev_realm"}.get(kind)
         if kind == "weather":
             name = "ev_storm" if text.startswith("A storm") else "ev_weather"
         elif kind == "land" and "new realm" in text:
@@ -954,7 +990,7 @@ class DotLink:
             if doubt or now - last_health >= 20:
                 last_health = now
                 self._doubt = None
-                if "ok" not in (await self.sh("echo ok", 10) or ""):   # any other answer: not really there
+                if "ok" not in (await self.sh(self._owner_note() + "; echo ok", 10) or ""):   # (and still ours)
                     self._fails += 1
                     if doubt:      # its setup network is up AND it didn't answer: it's gone
                         self.mark_lost("its setup network is on the air and it didn't answer")
@@ -1863,8 +1899,11 @@ class DotLink:
             if self.mic.proc and self.mic.proc.returncode is None:
                 self.mic.proc.kill()
             cmd = (f"touch {H}/quit; tinymix '{AMP}' Off; pkill -f 'micgrab [k]eys'; pkill -f 'micgrab [s]tream'; "
-                   f"pkill -f 'harald/[e]ars.py'")
+                   f"pkill -f 'harald/[e]ars.py'; grep -q {self.owner_id} {H}/owner 2>/dev/null && rm -f {H}/owner")
             if restore:   # Amazon's mixer switches the amplifier on and keeps it fed
+                # (and the lock on its setup network comes off: it's Amazon's again)
+                cmd += ("; for i in $(ls /sys/class/net); do iptables -D INPUT -i $i -j DROP 2>/dev/null; "
+                        "ip6tables -D INPUT -i $i -j DROP 2>/dev/null; done")
                 cmd += (f"; sleep 1; tinymix 'PCM Playback Volume' 127 127; tinymix '{AMP}' On; "
                         f"for s in mixer ledcontroller {services}; do start $s; done")
             await self.sh(cmd, 15)

@@ -167,7 +167,7 @@ MOOD_ANIM = {
     "treat": lambda: breathe(LEAF, 1.5, 0.3, 0.9),
     "stuffed": lambda: breathe(AMBER, 5.0, 0.4, 0.7),
     "hungry": lambda: breathe(ORANGE, 3.0, 0.1, 0.6),
-    "starving": lambda: breathe(RED, 2.5, 0.05, 0.7),
+    "famished": lambda: breathe(RED, 2.5, 0.05, 0.7),
     "bored": lambda: breathe(scale(SILVER, 0.6), 6.0, 0.15, 0.4),
     "lonely": lambda: breathe(BLUE, 6.0, 0.1, 0.4),
     "sleepy": lambda: breathe(NIGHT, 7.0, 0.1, 0.35),
