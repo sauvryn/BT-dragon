@@ -15,15 +15,15 @@ Optional GPS integration unlocks the ability to "conquer" squares on a real-worl
 **Added**
 
 - **Rations (untested):** every feast and every land claimed earns you a ration. Harald can't touch them. Press **Give Ration** in the Den and his pack is filled completely, for days when you're stuck indoors and can't take him out. They can be stockpiled.
-- **Northern lights alerts (untested):** Harald tells you when the aurora might be visible from the Lair on dark evenings.
-- **The Gadget Journal (untested):** every type of gadget as a collection, with rarities, cards, points and titles.
-- **The Star Chart (untested):** navigation satellite constellations as a collection, with each one's rarity worked out for where the Lair is.
+- **Northern lights alerts:** Harald tells you when the aurora might be visible from the Lair on dark evenings.
+- **The Gadget Journal:** every type of gadget as a collection, with rarities, cards, points and titles.
+- **The Star Chart:** navigation satellite constellations as a collection, with each one's rarity worked out for where the Lair is.
 - **Growing up (untested):** Harald's belly, joy and pack hold a little more at each level. An option in Developer Tools lets the Butterfly Garden's needs grow too.
 - **Sharing with the garden (untested change):** when Harald's belly is full, snacks and feasts go straight to the Butterfly Garden.
-- **Gentler on the memory card (untested on a real Pi):** changes are saved together every 10 minutes, and the system log is kept in memory.
+- **Gentler on the memory card:** changes are saved together every 10 minutes, and the system log is kept in memory.
 - **Mobile Wi-Fi (car treats tested; phone hotspots and keeping them off WiGLE untested):** networks that travel (cars, dashcams, buses, trains, phone hotspots and pocket routers) are a smaller treat of their own, grow no berries, and are never uploaded to WiGLE.
-- **New defaults from a day in Manchester:** joy drains faster and everyday snacks and treats lift it less, so joy means something at home; open and office networks give less XP.
-- **The offline map (tested):** once a day, Harald fetches the map around the lands he's claimed, so the map page still shows streets with no mobile signal.
+- **New defaults from a day in a big city:** joy drains faster and everyday snacks and treats lift it less, so joy means something at home; open and office networks give less XP.
+- **The offline map:** once a day, Harald fetches the map around the lands he's claimed, so the map page still shows streets with no mobile signal.
 - **Features In Development and Future Development Options:** two new sections at the end of this README.
 - **In development:** a password for the Den, and reaching the Den from anywhere with Tailscale.
 
