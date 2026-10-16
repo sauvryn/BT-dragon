@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__NAME__'s Den</title>
+<style>
+  :root { --stone: #1d1c1a; --stone2: #282623; --line: #3d3a35; --ink: #ece6da; --dim: #a69f92;
+          --rune: #d9a441; --blood: #e8735c; }
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--stone); color: var(--ink);
+               font: 16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 420px; margin: 0 auto; padding: 48px 16px; }
+  h1 { margin: 0 0 6px; font-size: 13px; letter-spacing: 2px; text-transform: uppercase; color: var(--rune); }
+  p { color: var(--dim); font-size: 14.5px; }
+  label { display: block; margin: 18px 0 6px; }
+  input { width: 100%; background: var(--stone2); color: var(--ink); border: 1px solid var(--line); border-radius: 8px;
+          padding: 11px 12px; font: inherit; }
+  button { margin-top: 14px; width: 100%; background: var(--rune); color: #1d1c1a; border: 0; border-radius: 8px;
+           padding: 11px; font: inherit; font-weight: 700; cursor: pointer; }
+  .msg { color: var(--blood); min-height: 1.4em; margin: 12px 0 0; }
+</style>
+<script src="/lang.js"></script>
+<link rel="stylesheet" href="/theme.css">
+</head>
+<body>
+<main>
+  <h1 data-nolang>__NAME__'s Den</h1>
+  <p>The Den has a password. Log in once on this phone or computer and it stays logged in for 30 days.</p>
+  <form method="POST" action="/login">
+    <label for="pw">Password</label>
+    <input id="pw" name="password" type="password" autocomplete="current-password" required autofocus>
+    <button type="submit">Log in</button>
+  </form>
+  <p class="msg" role="alert">__MSG__</p>
+</main>
+</body>
+</html>

@@ -21,6 +21,7 @@ log = logging.getLogger("dotears")
 
 PORT = 5577
 LOCAL_PORT = 15577                   # on the Pi, when going through adb instead
+LOST_KEEP_S = 30 * 60                # how long to keep trying the ears after the debug link is lost
 D = "/data/local/tmp/deb"            # the Dot's Debian and its tools
 HERE = os.path.dirname(os.path.abspath(__file__))
 
@@ -34,6 +35,7 @@ class DotEars:
         self.state = ""              # a few words for the den
         self.last_up = 0.0           # when they were last connected (or started)
         self.task = None
+        self.ip = ""                 # the Dot's address on the hotspot, for the ears' own line
         self._writer = None
         self._pending = {}
         self._seq = 0
@@ -78,6 +80,7 @@ class DotEars:
                 if rc == 0:
                     await d.sh(f"rm -rf {D}/root/opt/vosk-spk; mv {D}/root/opt/vosk-spk.new {D}/root/opt/vosk-spk", 20)
         self.via_adb = False
+        self.ip = (d.target or "").split(":")[0]
         await self.restart()
         if self.task is None or self.task.done():
             self.task = asyncio.ensure_future(self.run())
@@ -116,11 +119,27 @@ class DotEars:
             self._writer.close()
 
     # ------------------------------------------------------------ the connection
+    def keep_going(self):
+        """Keep (re)connecting to the ears? While the Dot is connected, and also for a while
+        after the debug link (adb) is lost: the ears have a line of their own, so they may
+        well still be there, and they can mend the debug link (fix_adb)."""
+        d = self.dot
+        if d.app.stop.is_set() or getattr(d.app, "napping", False) or not d.s["enabled"]:
+            return False
+        if d.connected:
+            return True
+        return bool(self.ip) and not self.via_adb and d._lost_at is not None \
+            and time.time() - d._lost_at < LOST_KEEP_S
+
+    async def fix_adb(self):
+        """Ask the ears to restart the Dot's adbd. The reply, or None."""
+        return await self._request({"cmd": "fix_adb"}, 15)
+
     async def run(self):
         d = self.dot
         fails = 0
-        while d.connected and not d.app.stop.is_set():
-            ip, port = (d.target or "").split(":")[0], PORT
+        while self.keep_going():
+            ip, port = self.ip or (d.target or "").split(":")[0], PORT
             if not self.via_adb and fails >= 3:
                 # can't get through directly (a firewall?): the same connection can go
                 # through adb instead, which already reaches the Dot. Only words travel on it.
@@ -137,7 +156,7 @@ class DotEars:
                 fails += 1
                 if fails >= 6:
                     self.state = "the ears on the Dot aren't answering; trying again"
-                if fails % 12 == 0:              # about a minute: start them again
+                if fails % 12 == 0 and d.connected:   # about a minute: start them again (needs adb)
                     await self.restart()
                 await d.app._sleep(5)
                 continue
@@ -161,7 +180,7 @@ class DotEars:
                 pinger = asyncio.ensure_future(self._ping(writer))
                 while True:
                     line = await asyncio.wait_for(reader.readline(), 60)
-                    if not line:
+                    if not line or not self.keep_going():
                         break
                     self.last_up = time.time()
                     try:
@@ -172,7 +191,7 @@ class DotEars:
                 log.info("the Dot's ears: %s", e or type(e).__name__)
                 if not self.connected:          # never got as far as hello
                     fails += 1
-                    if fails % 12 == 0:
+                    if fails % 12 == 0 and d.connected:
                         await self.restart()
             finally:
                 if pinger:

@@ -140,6 +140,7 @@
   .devnote { font-weight: 800; color: var(--ink); text-transform: none; letter-spacing: 0; }
 </style>
 <script src="/lang.js"></script>
+<script src="/auth.js"></script>
 <link rel="stylesheet" href="/theme.css">
 </head>
 <body>
@@ -173,7 +174,7 @@
     </div>
     <div class="sub" style="margin-top:10px">Joy</div>
     <div class="meter"><div id="joy" style="width:50%; background: var(--rune)"></div></div>
-    <div class="sub" style="margin-top:8px">Belly (food)</div>
+    <div class="sub" style="margin-top:8px">Belly (food) <span id="bellyHolds"></span></div>
     <div class="meter"><div id="hunger" style="width:50%"></div></div>
     <div class="sub" style="margin-top:8px">Pack <b id="packNow" style="color: var(--ink)">0</b> / <span id="packCap">50</span>
       · spare berries and treats for when <span class="pname" data-nolang>Harald</span> gets hungry</div>
@@ -275,6 +276,20 @@
         <option value="protanopia">Protanopia</option>
         <option value="deuteranopia">Deuteranopia</option>
         <option value="tritanopia">Tritanopia</option></select></div>
+    <div class="row" style="margin-top:10px"><div class="grow">Den password <span class="devnote">(In Development, Untested)</span>
+      <div class="sub">Asks for a password before the Den opens, for when the Den can be reached from outside your own
+        network (see Tailscale in the README). Each phone or computer logs in once and stays logged in for 30 days.
+        The phone voice has its own ticket: download its script again after setting or changing the password.</div></div></div>
+    <div class="row" style="border:0; flex-wrap:wrap; gap:8px">
+      <input id="denPw1" type="password" autocomplete="new-password" placeholder="New password (8 or more characters)" style="flex:1 1 200px">
+      <input id="denPw2" type="password" autocomplete="new-password" placeholder="The same again" style="flex:1 1 200px">
+      <button onclick="denPassSet()">Set password</button></div>
+    <div class="row" style="border:0; flex-direction:column; align-items:flex-start; gap:8px">
+      <label class="sub"><input type="checkbox" id="denAuthOn" disabled onchange="denAuthSet(this)"> Require the password</label>
+      <label class="sub"><input type="checkbox" id="denFailsafe" onchange="denFailsafeSet(this.checked)"> Failsafe for testing:
+        switch the password off again 5 minutes after it's switched on</label>
+      <div class="sub" id="denAuthNote"></div>
+      <form method="POST" action="/logout" id="denLogout" hidden><button type="submit">Log out on this device</button></form></div>
   </section>
 
   <section data-arrange="backup">
@@ -353,8 +368,9 @@
   <section data-arrange="garden" class="dotctl">
     <details class="fold" id="fold-garden" open><summary class="foldhead"><h2>Butterfly Garden</h2>
       <span class="sub" id="gdSummary">Insects raised on spare food</span></summary>
-    <p class="sub" style="margin:0 0 6px">Raise insects from <span class="pname" data-nolang>Harald</span>'s spare food: treats and berries
-      that fit in neither the BELLY nor the PACK go to the larvae here, shared evenly between them. Data imported from another
+    <p class="sub" style="margin:0 0 6px">Raise insects from <span class="pname" data-nolang>Harald</span>'s spare food: snacks and feasts
+      that don't fit in the BELLY, and treats and berries that fit in neither the BELLY nor the PACK, go to the larvae
+      here, shared evenly between them. Data imported from another
       of the project author's repos, Bookworm, using its data of species, field notes, and pupation timings. Manual
       fact-checking of Bookworm's data is ongoing.</p>
     <p class="sub" style="margin:0 0 6px">Spiders aren't included at the moment. If they're ever added, there will be an
@@ -538,7 +554,8 @@
       <p class="sub" style="margin:0 0 6px">After a restart an unregistered Echo goes into setup mode (spinning orange ring), switches
         your hotspot off and broadcasts an open network of its own. With its name below, <span class="pname" data-nolang>Harald</span> hops onto it
         for a moment, checks it's your Dot, switches your hotspot back on and hops home. Look for the name in your phone's
-        Wi-Fi list while the ring is orange (like "Amazon-XY7").</p>
+        Wi-Fi list while the ring is orange (like "Amazon-XY7"). If nothing answers there, the tries get further apart
+        (up to 30 minutes); unplugging the Dot for 10 seconds starts it afresh.</p>
       <div class="row"><input type="text" id="dotSetupNet" maxlength="20" placeholder="Amazon-…"
         onkeydown="if(event.key==='Enter') dotSet('setup_network', this.value)">
         <button onclick="dotSet('setup_network', $('dotSetupNet').value)">Save</button></div>
@@ -756,6 +773,49 @@ const split = l => l.split('|');
 const ago = s => s < 0 ? 'never' : s < 60 ? 'just now' : s < 3600 ? Math.round(s/60) + ' min ago'
   : s < 86400 ? Math.round(s/3600) + ' h ago' : Math.round(s/86400) + ' days ago';
 
+// ---- the Den password (denauth.py)
+let PHONE_T = '';
+async function denAuthLoad() {
+  const a = Object.fromEntries((await cmd('DENAUTH')).map(l => [l.split('=')[0], l.slice(l.indexOf('=') + 1)]));
+  if (!('on' in a)) return;
+  const keep = el => document.activeElement === el;
+  PHONE_T = a.phone_token || '';
+  if (!keep($('denAuthOn'))) $('denAuthOn').checked = a.on === '1';
+  $('denAuthOn').disabled = a.has_password !== '1';
+  if (!keep($('denFailsafe'))) $('denFailsafe').checked = a.failsafe === '1';
+  $('denLogout').hidden = a.on !== '1';
+  $('denAuthNote').textContent = a.has_password !== '1' ? 'No password set yet.'
+    : a.on !== '1' ? 'A password is set, but the Den is open to anyone on your network.'
+    : 'The Den asks for the password.' + (a.failsafe_in !== '' ? ` The failsafe switches it off in ${Math.floor(a.failsafe_in / 60)} min ${a.failsafe_in % 60} s.` : '');
+  phoneCmdLine();
+}
+function phoneCmdLine() {
+  const e = $('phoneCmd');
+  if (e) e.textContent = PHONE_T
+    ? `curl -o bt_dragon_voice.py "http://${location.host}/phone/bt_dragon_voice.py?t=${PHONE_T}" && python bt_dragon_voice.py`
+    : `curl -O http://${location.host}/phone/bt_dragon_voice.py && python bt_dragon_voice.py`;
+}
+async function denPassSet() {
+  const a = $('denPw1').value, b = $('denPw2').value;
+  if (a !== b) return toast("The two passwords don't match");
+  try {
+    const j = await (await fetch('/api/denpass', {method: 'POST', body: a})).json();
+    toast(j.ok ? 'Password set: this device stays logged in' : 'Not set: ' + j.error);
+    if (j.ok) { $('denPw1').value = $('denPw2').value = ''; }
+  } catch (e) { toast(PET + ' is not answering'); }
+  denAuthLoad();
+}
+async function denAuthSet(box) {
+  if (box.checked && !confirm('Require the password?\n\nIf it is ever lost, the ways back in are:\n' +
+      '• the testing failsafe below, if ticked (the password switches itself off after 5 minutes);\n' +
+      '• a file named forget-den-password on the card\'s boot partition (the one Windows can open): ' +
+      'it switches the password off on the next start;\n' +
+      '• over SSH on the Pi:  echo "DENAUTHSET off" | nc -q1 localhost 5151')) { box.checked = false; return; }
+  await cmd('DENAUTHSET ' + (box.checked ? 'on' : 'off'), true);
+  denAuthLoad();
+}
+async function denFailsafeSet(on) { await cmd('DENFAILSAFE ' + (on ? 'on' : 'off'), true); denAuthLoad(); }
+
 async function refresh() {
   $('screen').src = '/screen.png?' + Date.now();
   try {
@@ -778,7 +838,8 @@ async function refresh() {
     $('sTreats').textContent = v.session_treats; $('hunger').style.width = v.hunger + '%';
     $('joy').style.width = v.joy + '%';
     $('nowFood').textContent = v.hunger; $('nowJoy').textContent = v.joy;
-    $('packNow').textContent = v.pack; $('packCap').textContent = v.pack_cap; $('packBar').style.width = Math.min(100, v.pack * 100 / Math.max(1, v.pack_cap)) + '%'; $('nowPack').textContent = v.pack + ' food';
+    $('packNow').textContent = v.pack; $('packCap').textContent = v.pack_cap;
+    $('bellyHolds').textContent = v.belly_holds > 100 ? `· holds ${v.belly_holds} food (growing up: ${v.belly_holds - 100}% more than at level 1)` : ''; $('packBar').style.width = Math.min(100, v.pack * 100 / Math.max(1, v.pack_cap)) + '%'; $('nowPack').textContent = v.pack + ' food';
     $('nowXp').textContent = `${v.xp.toLocaleString()} XP, level ${v.level} (next at ${v.next_xp.toLocaleString()})`;
     $('feeling').textContent = v.feeling.charAt(0) + v.feeling.slice(1).toLowerCase();
     const km = m => m >= 100 ? (m / 1000).toFixed(1) + ' km' : Math.round(m) + ' m';
@@ -1077,8 +1138,6 @@ async function loadKnobs() {
   lines.forEach(l => { const [key, section, , value, dflt] = split(l);
     if (section in changedN && +value !== +dflt) changedN[section]++; });
   for (const s in changedN) $('chg-' + s).textContent = changedN[s] ? `${changedN[s]} changed` : '';
-  const cap = lines.find(l => l.startsWith('pack_cap|'));
-  if (cap) $('packCap').textContent = cap.split('|')[3];
   const curve = +(lines.find(l => l.startsWith('xp_curve|')) || '|||50').split('|')[3];
   $('levelTable').textContent = 'With this curve: ' + [2, 3, 4, 5, 10, 20].map(
     lv => `level ${lv} at ${Math.ceil(curve * (lv - 1) ** 2).toLocaleString()} XP`).join(' · ');
@@ -1176,7 +1235,7 @@ async function loadDot() {
   }
   $('phoneNote').textContent = (d.phone_listening === 'True' ? 'A phone is listening.' : 'No phone listening yet: see "Set up the phone voice" below.')
     + (d.phone_route === 'phone' && d.phone !== 'True' ? ' Standing in for the Dot right now.' : '');
-  $('phoneCmd').textContent = `curl -O http://${location.host}/phone/bt_dragon_voice.py && python bt_dragon_voice.py`;
+  phoneCmdLine();
   if (!keep($('dotChatty'))) $('dotChatty').value = d.chatty;
   $('dotChattyNote').textContent = {all: 'Every message on the screen is spoken', big: 'New types, landmarks, storms, level-ups...',
     recap: 'Only a summary on coming home', silent: "No announcements, but questions are still answered out loud. The Dot, if connected, will still display the mood ring lights and animations.",
@@ -1332,8 +1391,8 @@ async function loadGarden() {
   $('gdTitle').textContent = g.title;
   $('gdScore').textContent = `${g.score.toLocaleString()} points · ${g.raised} raised in ${g.country_name}`;
   const bellyFull = g.belly >= 99.5, packFull = g.pack >= g.pack_cap - 0.05;
-  $('gdFood').innerHTML = `Spare food today: <b>${g.fed_today}</b>. It only reaches the garden once the BELLY is full
-    (now ${Math.round(g.belly)}%${bellyFull ? ' ✓' : ''}) and the PACK is full (${g.pack} of ${g.pack_cap}${packFull ? ' ✓' : ''}).`;
+  $('gdFood').innerHTML = `Spare food today: <b>${g.fed_today}</b>. Snacks and feasts reach the garden once the BELLY is full
+    (now ${Math.round(g.belly)}%${bellyFull ? ' ✓' : ''}); treats and berries once the PACK is full too (${g.pack} of ${g.pack_cap}${packFull ? ' ✓' : ''}).`;
   $('gdSpots').textContent = g.slots < g.max ? `${g.slots} of ${g.max} spots: one more opens with each level gained (next at level ${g.level + 1}).`
     : `All ${g.max} spots open. Food is shared between the ones with an egg or a larva in them.`;
   gardenArtFrame(g.art);
@@ -1572,7 +1631,7 @@ function tickAwake() {  // HH:MM:SS, hours grow to three digits like Sub-GHz Sle
   const p = n => String(n).padStart(2, '0');
   $('awake').textContent = `${p(Math.min(999, Math.floor(s / 3600)))}:${p(Math.floor(s / 60) % 60)}:${p(s % 60)}`;
 }
-refresh(); setInterval(refresh, 10000); trackTick(); setInterval(tickAwake, 1000);
+refresh(); setInterval(refresh, 10000); denAuthLoad(); setInterval(denAuthLoad, 5000); trackTick(); setInterval(tickAwake, 1000);
 </script>
 </body>
 </html>

@@ -89,6 +89,13 @@ LIMITS = {"volume": (0, 100), "adv_volume": (0, 100), "brightness": (0, 100), "r
 
 
 SETUP_IP = "10.201.126.241"      # the Dot's address on its own setup network
+SETUP_NET_PREFIX = "10.201.126."  # (its setup network's addresses)
+LOCK_AGAIN_S = 600               # the setup network seen again while the Dot answers: lock it again, at most this often
+RESCUE_WAIT_S = 180              # between rescue tries...
+RESCUE_WAIT_MAX_S = 1800         # ...doubling, up to this, while the Dot doesn't answer on its setup network
+RESCUE_RETRY_S = 30              # its network vanished while joining (it restarting, say): soon again
+ADB_FIX_EVERY_S = 180            # the ears restarting adbd: at most this often...
+ADB_FIX_MAX = 3                  # ...and this many times for each time the Dot is lost
 SETUP_NET_RE = re.compile(r"^Amazon-[A-Za-z0-9]{2,8}$")
 AMP = "Ext_Speaker_Amp_Switch"   # the speaker amplifier's on/off switch
 LEAD_S, TAIL_S = 0.6, 0.6        # silence around each sentence (see dot_speak.sh)
@@ -231,6 +238,10 @@ class DotLink:
         self._setup_ok_until = 0.0     # its setup network lingering while it answers us: fine
         self._missing_since = time.time()
         self._last_rescue_try = 0.0
+        self._rescue_wait = RESCUE_WAIT_S   # until the next rescue try (longer after ones that got nowhere)
+        self._adb_fixes = 0                 # times the ears restarted adbd since the Dot was lost
+        self._adb_fixed_at = 0.0
+        self._locked_at = 0.0               # when the setup network was last locked and closed
         self.rescuing = False
         self.spoken = 0
         # questions, buttons and timers
@@ -521,6 +532,7 @@ class DotLink:
                          f"tinymix '{AMP}' Off; mkdir -p {H}/anim; "
                          f"pkill -f 'micgrab [k]eys'; pkill -f 'micgrab [s]tream'", 30) is None:
             return False
+        await self.lock_setup_network()
         if not await self.push_animations():
             return False
         await self.sh(f"mv -f {H}/micgrab.new {H}/micgrab; chmod 755 {H}/micgrab", 10)
@@ -694,7 +706,7 @@ class DotLink:
             words = {1: "A new land", 2: "Two new lands", 3: "Three new lands", 4: "Four new lands",
                      5: "Five new lands"}.get(n, f"{n} new lands")
             self.say(f"{words}! I claim {'it' if n == 1 else 'them'}!")
-        cap = tuning.get("pack_cap")
+        cap = self.app.pet.pack_cap()
         full = cap > 0 and self.app.pet.pack >= cap - 0.05
         if a["pack_full"] is None:
             a["pack_full"] = full                    # don't announce a pack that was already full
@@ -922,11 +934,16 @@ class DotLink:
                     if await self.find(full):
                         self.connected, self._fails = True, 0
                         self._missing_since = None
+                        self._rescue_wait, self._adb_fixes = RESCUE_WAIT_S, 0
+                        if self._lost_at:
+                            log.info("found the Dot again")
                         self._prepare_recap(now)
                         if not await self.setup():
                             self.connected = self.ready = False
                             self.state = self.state if "didn't" in self.state else "couldn't set up the Dot"
-                if self._lost_at and now - self._lost_at > 300:
+                if not self.connected and self.dot_ears.connected:
+                    await self._half_connected(now)
+                if self._lost_at and now - self._lost_at > 300 and not self.dot_ears.connected:
                     await self.voice.stop()        # give the memory back while he's apart
                     self.ears.forget()
                     self._lost_at = None
@@ -951,6 +968,8 @@ class DotLink:
                     self._fails = 0
                     self._setup_ok_until = now + 120
                     log.info("the Dot's setup network showed up, but the Dot still answers: staying")
+                    if now - self._locked_at >= LOCK_AGAIN_S:
+                        await self.lock_setup_network()
                 else:
                     self._fails = 0
                     self._contact(now)
@@ -1674,6 +1693,60 @@ class DotLink:
     # sees *your* Dot's setup network and the Dot is missing from the hotspot, he hops over
     # for a moment, checks it really is your Dot (serial number), switches its saved
     # networks back on and hops home. That also closes the open network quickly.
+    async def lock_setup_network(self):
+        """Lock and close the Dot's own setup network, once Harald is in over the hotspot.
+
+        After a restart the Dot runs an open network (like "Amazon-XY7") on a second Wi-Fi
+        interface (p2p0 on a 2nd-generation Dot: wpa_supplicant hosting it, dnsmasq handing out
+        addresses), and adb answers on it with no password. A rescue switches its saved networks
+        back on, but with Amazon's setup program paused the setup network can stay on the air.
+        So, on the Dot:
+          1. the lock: its firewall drops everything arriving on that interface (anyone joining
+             it can't reach adb, or anything else). Firewall rules are forgotten when the Dot
+             restarts, so the next rescue still gets in;
+          2. closing it: wpa_supplicant is asked to take the network down.
+        Returns the interface's name, or "" if no setup network was up."""
+        self._locked_at = time.time()
+        out = await self.sh("ifconfig -a 2>/dev/null || netcfg", 10) or ""
+        iface, current = "", ""
+        for line in out.splitlines():
+            if line and not line[0].isspace():
+                current = line.split()[0].rstrip(":")
+            if SETUP_NET_PREFIX in line and current:
+                iface = current
+                break
+        iface = re.sub(r"[^A-Za-z0-9_.-]", "", iface)
+        if not iface or iface.startswith("wlan0"):
+            return ""
+        rule = f"INPUT -i {iface} -j DROP"
+        res = await self.sh(
+            f"iptables -C {rule} 2>/dev/null || iptables -I {rule}; "
+            f"ip6tables -C {rule} 2>/dev/null || ip6tables -I {rule} 2>/dev/null; "
+            f"wpa_cli -i {iface} p2p_group_remove {iface} 2>/dev/null || "
+            f"wpa_cli -i wlan0 p2p_group_remove {iface} 2>/dev/null; echo done", 20)
+        log.info("the Dot's setup network (on %s): locked and asked to close%s", iface,
+                 "" if res and "done" in res else " (no answer)")
+        return iface
+
+    async def _half_connected(self, now):
+        """The Dot's ears still answer on their own line, but the debug link (adb) doesn't: the
+        Dot is on the hotspot, and only adbd, its end of the debug link, is stuck. The ears run
+        as root on the Dot, so they can restart it; Fire OS starts a fresh one by itself."""
+        self.state = "half-connected: the Dot's ears answer, but its debug link doesn't"
+        if self._adb_fixes >= ADB_FIX_MAX or now - self._adb_fixed_at < ADB_FIX_EVERY_S:
+            if self._adb_fixes >= ADB_FIX_MAX:
+                self.state += " (unplugging the Dot for 10 seconds will fix it)"
+            return
+        self._adb_fixes += 1
+        self._adb_fixed_at = now
+        reply = await self.dot_ears.fix_adb()
+        log.info("half-connected: asked the Dot's ears to restart adbd (try %d): %s", self._adb_fixes,
+                 "stopped it" if reply and reply.get("ok") else (reply or {}).get("error") or "no luck")
+        if reply and reply.get("ok"):
+            await self._adb("kill-server", target=False, timeout=10)   # and a fresh start at the Pi's end, too
+            await self.app._sleep(4)      # a moment for the new adbd to start
+            self._last_scan = self._last_full = 0.0
+
     def mark_lost(self, why, now=None):
         """The Dot isn't on the hotspot any more: stop using it and look for it again."""
         now = now or time.time()
@@ -1682,6 +1755,7 @@ class DotLink:
         self.state = "lost the Dot; looking again"
         self._lost_at, self._last_scan, self._last_full = now, 0.0, 0.0
         self._missing_since = now
+        self._adb_fixes, self._adb_fixed_at = 0, 0.0
         self._fails = 0
         self._doubt = None
         self.queue.clear()
@@ -1710,9 +1784,11 @@ class DotLink:
                 self._doubt = now
         if self.connected or self.rescuing or self.app._switching:
             return False
+        if self.dot_ears.connected:
+            return False        # its ears answer over the hotspot, so it's here: no use hopping away
         if self._missing_since is None or now - self._missing_since < 60:
             return False        # give it a minute: it may just be rejoining by itself
-        if now - self._last_rescue_try < 180:
+        if now - self._last_rescue_try < self._rescue_wait:
             return False
         return any(ap.get("ssid") == name and ap.get("rssi", -100) >= -85 for ap in aps)
 
@@ -1734,21 +1810,32 @@ class DotLink:
                 return result
             ok, msg = await wifimod.connect_profile(wifimod.RESCUE_PROFILE, timeout=30)
             if not ok:
+                # (often the Dot restarting, its network gone mid-join: try again soon, once)
                 result = f"couldn't join {name}: {msg}"
+                self._rescue_wait = RESCUE_RETRY_S if self._rescue_wait != RESCUE_RETRY_S else RESCUE_WAIT_S
                 return result
             await asyncio.sleep(2)
             await self._adb("connect", addr, target=False, timeout=10)
             rc, out = await self._adb("-s", addr, "shell", "getprop ro.serialno", target=False, timeout=10)
-            serial = out.strip().splitlines()[-1].strip() if out.strip() else ""
-            if rc != 0 or serial != self.s["serial"]:
-                log.warning("Dot rescue: the device on %s isn't the claimed Dot; leaving it alone", name)
-                result = "the device on that network isn't your Dot, so it was left alone"
+            serial = out.strip().splitlines()[-1].strip() if rc == 0 and out.strip() else ""
+            if not serial or " " in serial:
+                # nothing answered on the debug link (adbd stuck or not started yet): not the
+                # same as a stranger's Echo. Wait longer each time it gets nowhere.
+                self._rescue_wait = min(max(self._rescue_wait, RESCUE_WAIT_S) * 2, RESCUE_WAIT_MAX_S)
+                result = (f"the Dot didn't answer on {name}; trying again in {self._rescue_wait // 60} min "
+                          "(if it keeps happening, unplug the Dot for 10 seconds)")
+                return result
+            if serial != self.s["serial"]:
+                log.warning("Dot rescue: the Echo on %s isn't the claimed Dot; leaving it alone", name)
+                self._rescue_wait = RESCUE_WAIT_MAX_S
+                result = "a different Echo answered on that network, so it was left alone"
                 return result
             rc, out = await self._adb("-s", addr, "shell",
                                       "wpa_cli -i wlan0 enable_network all; wpa_cli -i wlan0 save_config",
                                       target=False, timeout=15)
             if rc == 0 and "FAIL" not in out:
                 result = "ok"
+                self._rescue_wait = RESCUE_WAIT_S
                 self.store.put("dot_last_rescue", time.time())
                 self.app.event("dot", f"{self.app.pet.name} rescued the Echo Dot from setup mode")
                 self.app.pet.say("I WOKE THE DOT UP!", "proud", 20)

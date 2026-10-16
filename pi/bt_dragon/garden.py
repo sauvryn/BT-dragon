@@ -257,14 +257,19 @@ class Garden:
                 return tier
         return "Common"
 
-    @staticmethod
-    def need(tier):
-        return max(1.0, float(tuning.get("garden_food_" + tier.lower())))
+    growth = staticmethod(lambda: 1.0)       # the dragon's appetite (set by the app)
+
+    def need(self, tier):
+        """Food to raise one of this rarity: as set, or growing with his appetite if
+        "Growing up: the Butterfly Garden's needs grow too" is on (for larvae from then on)."""
+        g = self.growth() if tuning.get("garden_grows") >= 1 else 1.0
+        return max(1.0, float(tuning.get("garden_food_" + tier.lower())) * g)
 
     # ---- feeding
     def feed(self, food, level, lair_code=None, belly_low=False, now=None):
         # (belly_low is no longer used: a larva's hunger is its own, by how long since it ate)
-        """Surplus food from treats and berries: split between everything in the garden."""
+        """Spare food: snacks and feasts that don't fit in his belly, and treats and berries that fit
+        in neither his belly nor his PACK. Split between everything in the garden."""
         now = now or time.time()
         if food <= 0 or not self.unlocked(level):
             return

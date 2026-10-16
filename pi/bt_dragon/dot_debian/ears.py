@@ -16,6 +16,8 @@ from ears.key, which only the Pi and the Dot have. One line of JSON per message:
                   matches free_if)
               {"cmd": "wake", "on": true}                   listen for "hey dragon" (or stop)
               {"cmd": "busy", "on": true}                   he's talking: don't hear himself
+              {"cmd": "fix_adb", "id": 9}                   the debug link (adb) is stuck: restart
+                  the Dot's adbd (Fire OS starts it again by itself)
               {"cmd": "ping"}
   Dot -> Pi   {"hello": "ok", "ready": true/false}        ready = the speech model is loaded
               {"line": "KEY ACTION 1"}                    a button, straight away
@@ -24,6 +26,7 @@ from ears.key, which only the Pi and the Dot have. One line of JSON per message:
               {"pong": 1, "ready": true, "wake_state": {...}}
               {"wake": 1, "wake_state": {...}}              "hey dragon" was heard
               {"id": 8, "ok": true, "speech_s": 2.4, "tts_s": 1.9}
+              {"id": 9, "ok": true, "stopped": 1}           adbd stopped, to be started again
 
 Runs as:  python3 -u /harald/ears.py [--port 5577]
 """
@@ -175,6 +178,29 @@ def _level(blk):
     s.frombytes(blk)
     return sum(abs(x) for x in s) // max(1, len(s))
 
+
+
+def restart_adbd(proc="/proc"):
+    """Stop the Dot's adbd, the program at the Dot's end of the debug link. Fire OS's init
+    watches it and starts a fresh one within a second or two, which clears a stuck link
+    without restarting the whole Dot. (These ears run as root, with the Dot's own /proc
+    borrowed, so they can see and stop it.) Returns (how many stopped, an error or "")."""
+    n, err = 0, ""
+    for pid in os.listdir(proc):
+        if not pid.isdigit():
+            continue
+        try:
+            with open(os.path.join(proc, pid, "cmdline"), "rb") as f:
+                prog = f.read().split(b"\0")[0]
+        except OSError:
+            continue
+        if os.path.basename(prog) == b"adbd":
+            try:
+                os.kill(int(pid), 9)
+                n += 1
+            except OSError as e:
+                err = str(e)
+    return n, err
 
 class Vad:
     """When someone starts and stops talking: the same rules as micgrab's own recording."""
@@ -693,6 +719,10 @@ class Ears:
                     self.wake.busy = bool(req.get("on"))
                     if not self.wake.busy:
                         self.wake.busy_until = time.time() + 0.7
+                elif cmd == "fix_adb":         # the Pi can't get through on adb, but can here
+                    n, err = restart_adbd()
+                    log(f"restarting adbd for the Pi: {n} stopped" + (f" ({err})" if err else ""))
+                    await self.send({"id": req.get("id"), "ok": n > 0, "stopped": n, "error": err}, writer)
                 elif cmd == "ping":
                     await self.send({"pong": 1, "ready": self.loaded.is_set(), "wake_state": self.wake.state()},
                                     writer)

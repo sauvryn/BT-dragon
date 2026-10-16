@@ -65,6 +65,8 @@ class Dragon:
         os.makedirs(data_dir, exist_ok=True)
         self.data_dir = data_dir
         self.store = Store(os.path.join(data_dir, "dragon.db"))
+        from .denauth import DenAuth
+        self.den_auth = DenAuth(self.store)
         from . import art as artmod
         from .backup import art_dir
         self.art = artmod.configure(art_dir(cfg.get("_path"), data_dir))
@@ -176,6 +178,7 @@ class Dragon:
         # the Butterfly Garden (from the Bookworm project): raised on food that fits nowhere else
         self._nap_redraw = False
         self.garden = Garden(self.store)
+        self.garden.growth = lambda: self.pet.growth()          # (only if its knob is on)
         self.garden.on_event = self._garden_event
         # which English (British, American, Canadian) his screen and the Den are in, and the
         # garden's starting country: from the Pi's own country (set in Raspberry Pi Imager)
@@ -200,7 +203,7 @@ class Dragon:
     def _tuning_changed(self):
         """A knob changed in Developer Tools: a smaller PACK spills what no longer fits (it
         would otherwise show as more than full, and nothing could go into it)."""
-        cap = tuning.get("pack_cap")
+        cap = self.pet.pack_cap()
         if self.pet.pack > cap:
             self.pet.pack = cap
             self.pet.save()
@@ -329,6 +332,9 @@ class Dragon:
         """gb, us or ca: the English his screen and the Den are written in."""
         return self.language.current(self._lair_code())
 
+    GARDEN_FED_EVERY_S = 300     # "FED 12 FOOD TO THE BUTTERFLY GARDEN": at most every 5 minutes (with
+                                 # a full belly, snacks go to the garden all the time)
+
     def _garden_feed(self, food):
         if self.napping or not self.garden.unlocked(self.pet.level()):
             return
@@ -345,7 +351,7 @@ class Dragon:
         now = time.time()
         if now < getattr(self.pet, "message_hold", 0):
             return
-        waiting = self._garden_news or (self._garden_fed >= 0.05 and now - self._garden_fed_said >= 30)
+        waiting = self._garden_news or (self._garden_fed >= 0.05 and now - self._garden_fed_said >= self.GARDEN_FED_EVERY_S)
         if not waiting:
             self._garden_shown = None
             return
@@ -356,7 +362,7 @@ class Dragon:
                                             # place there's always one: then it waits 30 s at most)
         self._garden_shown = now
         if not self._garden_news:
-            if self._garden_fed >= 0.05 and time.time() - self._garden_fed_said >= 30:
+            if self._garden_fed >= 0.05 and time.time() - self._garden_fed_said >= self.GARDEN_FED_EVERY_S:
                 n = self._garden_fed
                 self._garden_fed, self._garden_fed_said = 0.0, time.time()
                 self.pet.say([f"FED {_n(n)} FOOD TO THE BUTTERFLY GARDEN", f"FED {_n(n)} FOOD TO THE GARDEN",
@@ -419,6 +425,12 @@ class Dragon:
     def garden_page(self, c=""):
         c = c if c in gardenmod.COUNTRY_NAME else self.garden.country(self._lair_code())
         return garden_page.build(dict(self.garden.page_data(c), name=self.pet.name, lang=self.lang()))
+
+    def _den_auth_news(self):
+        """The Den password switching itself off (the failsafe, or the boot file): into the diary."""
+        self.den_auth.enabled()
+        while self.den_auth.news:
+            self.event("care", self.den_auth.news.pop(0))
 
     # ================================================================ events
     def event(self, kind, text):
@@ -863,7 +875,8 @@ class Dragon:
         return {
             "name": self.pet.name, "level": self.pet.level(), "xp_frac": self.pet.xp_frac(),
             "lang": self.lang(),
-            "mood": self.pet.mood(), "belly": self.pet.belly(), "hunger": round(self.pet.hunger), "pack": round(self.pet.pack, 1), "pack_cap": tuning.get("pack_cap"),
+            "mood": self.pet.mood(), "belly": self.pet.belly(), "hunger": round(self.pet.hunger), "pack": round(self.pet.pack, 1), "pack_cap": round(self.pet.pack_cap(), 1),
+            "belly_holds": round(100 * self.pet.growth()), "growth": round(self.pet.growth(), 3),
             "joy": round(self.pet.joy), "feeling": self.pet.feeling(),
             "moving": self.activity.motion.mode if self.gps.state() == "FIX" else "",
             "headless": self.display.headless, "headless_why": self.display.headless_why,
@@ -949,6 +962,7 @@ class Dragon:
                 await self._sleep(5)
                 continue
             self._catch_up()
+            self._den_auth_news()
             self._headcount_snacks(time.time())
             self._sky_tick(time.time())
             self.ble.prune()
@@ -1189,7 +1203,7 @@ class Dragon:
         now = time.time()
         heard = self.stars.last_heard if self.stars else {}
         in_view = {k for k, t in heard.items() if now - t <= self.STAR_NOW_S}
-        return starchart.page_data(self.pet.name, self.store.stars(), in_view, now)
+        return starchart.page_data(self.pet.name, self.store.stars(), in_view, now, where=self.lair.where())
 
     def journal_data(self):
         from . import journal
@@ -1371,9 +1385,28 @@ class Dragon:
         if cmd == "GARDEN":
             v = self.garden.view(self.pet.level(), self._lair_code())
             h = self.pet.hunger
-            v.update(belly=round(h, 1), pack=round(self.pet.pack, 1), pack_cap=tuning.get("pack_cap"))
+            v.update(belly=round(h, 1), pack=round(self.pet.pack, 1), pack_cap=round(self.pet.pack_cap(), 1))
             v["art"] = self.garden_art_version() if hasattr(self, "garden_art_version") else ""
             return [json.dumps(v), "END"]
+        if cmd == "DENAUTH":        # the Den password: on=, has_password=, failsafe=, failsafe_in=, phone_token=
+            a = self.den_auth
+            return a.lines() + [f"phone_token={a.phone_token() if a.has_password else ''}", "END"]
+        if cmd == "DENAUTHSET":     # on / off
+            on = arg.lower() in ("on", "1", "yes")
+            err = self.den_auth.set_on(on)
+            if err:
+                return [f"ERR {err}"]
+            self.event("care", "The Den password was switched " + ("on" if on else "off"))
+            return ["OK"]
+        if cmd == "DENFAILSAFE":    # on / off: switch the password off again five minutes after it's switched on
+            self.den_auth.set_failsafe(arg.lower() in ("on", "1", "yes"))
+            return ["OK"]
+        if cmd == "DENPASS":        # a new password (over SSH; the Den uses /api/denpass, which logs it in too)
+            err = self.den_auth.set_password(arg)
+            if err:
+                return [f"ERR {err}"]
+            self.event("care", "The Den password was set")
+            return ["OK"]
         if cmd == "GARDENUNLOCK":
             if arg.lower() in ("on", "1", "yes"):
                 self.garden.unlock_now(self.pet.level())
@@ -1516,7 +1549,7 @@ class Dragon:
                 return ["OK"]
             if which == "pack":
                 try:
-                    self.pet.pack = max(0.0, min(tuning.get("pack_cap"), float(val)))
+                    self.pet.pack = max(0.0, min(self.pet.pack_cap(), float(val)))
                 except ValueError:
                     return ["ERR give a number"]
                 self.pet.save()

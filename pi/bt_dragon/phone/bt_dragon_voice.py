@@ -17,9 +17,11 @@ import socket
 import subprocess
 import sys
 import time
+import urllib.error
 import urllib.request
 
 ADDRESS = "__ADDRESS__"          # "ip:port" of Harald's den, filled in when downloaded
+TOKEN = "__TOKEN__"              # its ticket, for when the Den has a password (filled in, too)
 DISCOVERY_PORT = 5150
 
 
@@ -59,7 +61,9 @@ def main():
     after, fails, said_hello = -1, 0, False
     while True:
         try:
-            with urllib.request.urlopen(f"http://{address}/api/phone?after={after}", timeout=75) as r:
+            req = urllib.request.Request(f"http://{address}/api/phone?after={after}",
+                                         headers={"X-Den-Token": TOKEN} if TOKEN and not TOKEN.startswith("__") else {})
+            with urllib.request.urlopen(req, timeout=75) as r:
                 reply = json.load(r)
             fails = 0
             if not said_hello:
@@ -71,6 +75,12 @@ def main():
             after = reply.get("seq", after)
         except KeyboardInterrupt:
             break
+        except urllib.error.HTTPError as e:
+            if e.code == 401:
+                print("The Den has a (new) password: download this script again from the Den.")
+                break
+            fails += 1
+            time.sleep(5)
         except Exception as e:
             fails += 1
             if fails in (1, 10):

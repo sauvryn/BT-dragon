@@ -166,8 +166,14 @@ CONSTELLATIONS = {
 ORDER = ("GPS", "Galileo", "GLONASS", "BeiDou", "SBAS", "QZSS", "NavIC")
 
 
-def page_data(name, stars, in_view, now=None):
-    """What the page shows. `stars`: store.stars() rows; `in_view`: keys heard just now."""
+RECEIVERS = ("Not every phone or GPS receiver listens for every system: many sold in Europe and the Americas "
+             "don't decode QZSS or NavIC, for one, so a system in your sky may still go unheard.")
+
+
+def page_data(name, stars, in_view, now=None, where=None, where_label="the Lair"):
+    """What the page shows. `stars`: store.stars() rows; `in_view`: keys heard just now;
+    `where`: (lat, lon) the rarities are worked out for (the Lair), or None for the usual ones."""
+    from . import skygeo
     now = now or time.time()
     by = {}
     for r in stars:
@@ -175,17 +181,26 @@ def page_data(name, stars, in_view, now=None):
     items = []
     for c in ORDER:
         info = CONSTELLATIONS[c]
+        if where:
+            rarity, _, top, hours = skygeo.sky(c, where[0], where[1])
+            why = skygeo.reason(c, rarity, top, hours, where_label)
+            if c not in skygeo.GLOBAL:
+                why += " " + RECEIVERS
+        else:
+            rarity, why = info["rarity"], ("Set the Lair to see how common this is in your own sky. (These are the "
+                                          "rarities for Europe and North America.)")
         mine = sorted(by.get(c, []), key=lambda r: r["prn"])
         first = min((r["first_seen"] for r in mine), default=None)
         items.append({
-            "id": c, "title": info["title"], "rarity": info["rarity"], "found": bool(mine),
+            "id": c, "title": info["title"], "rarity": rarity, "found": bool(mine),
             "sub": info["country"] if len(info["country"]) < 30 else "Many countries",
             "count": len(mine), "now": sum(1 for r in mine if r["key"] in in_view),
             "shape": info["shape"],
             "card": {
-                "title": info["full"], "rarity": info["rarity"],
-                "facts": [("From", info["country"]), ("Run by", info["run"]), ("Since", info["since"]),
-                          ("Satellites", info["sats"]), ("Orbit", info["orbit"]), ("Numbered", info["numbers"])],
+                "title": info["full"], "rarity": rarity,
+                "facts": [("In your sky", why), ("From", info["country"]), ("Run by", info["run"]),
+                          ("Since", info["since"]), ("Satellites", info["sats"]), ("Orbit", info["orbit"]),
+                          ("Numbered", info["numbers"])],
                 "text": info["text"], "dyk": info["dyk"], "sources": info["sources"],
                 "mine": {"first": first, "label": "stars",
                          "list": [{"label": str(r["prn"]), "bold": r["key"] in in_view,
@@ -199,7 +214,10 @@ def page_data(name, stars, in_view, now=None):
             "subtitle": f"{len(stars)} star{'s' if len(stars) != 1 else ''} in {found} of {len(items)} constellations"
                         + (f" · {len(in_view)} in view now" if in_view else ""),
             "intro": f"Every navigation satellite {name} has heard is a star on the chart, and each system they belong to "
-                     "is a constellation. Tap one to learn who runs it and how it works. (Stars need GPSd "
+                     "is a constellation. Tap one to learn who runs it and how it works. "
+                     + (f"Rarities are worked out for {where_label}: how much of the time each system's satellites "
+                        "are in your sky. " if where else "Set the Lair to see rarities for your own sky. ")
+                     + "(Stars need GPSd "
                      "Forwarder, GPS2IP or a USB GPS receiver: SensorServer doesn't pass the satellites on.)",
             "explain_title": "How satellite navigation works",
             "explain": [(h, p.replace("Harald", name)) for h, p in HOW_IT_WORKS],

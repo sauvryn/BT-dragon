@@ -60,9 +60,10 @@ class PhoneVoice:
                 pass
 
 
-def script(address):
-    """The Termux program, with this dragon's address filled in."""
+def script(address, token=""):
+    """The Termux program, with this dragon's address (and its ticket, for when the Den has a
+    password: see denauth.py) filled in."""
     import os
     path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "phone", "bt_dragon_voice.py")
     with open(path, encoding="utf-8") as f:
-        return f.read().replace("__ADDRESS__", address)
+        return f.read().replace("__ADDRESS__", address).replace("__TOKEN__", token)

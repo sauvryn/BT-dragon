@@ -176,11 +176,31 @@ class Pet:
                                          "storms": self.storms_today}})
 
     # ---------------------------------------------------------------- gains
+    # ---------------------------------------------------------------- growing up
+    def growth(self, level=None):
+        """How much more his belly, joy and pack hold than at level 1: 1.0 at level 1, a
+        few percent more each level (Developer Tools: "Growing up"), up to a limit. FOOD and
+        JOY are still shown as percentages and still empty in the same time when full; each
+        snack, treat or cheer just fills a smaller share of a bigger dragon."""
+        lv = level_for(self.xp) if level is None else level
+        g = 1 + tuning.get("growth_pct") / 100 * max(0, lv - 1)
+        return max(1.0, min(g, max(1.0, tuning.get("growth_max") / 100)))
+
+    def pack_cap(self):
+        """What his PACK holds now (it grows with him)."""
+        return tuning.get("pack_cap") * self.growth()
+
+    def belly_room(self):
+        """Food that would fit in his belly right now (in food, not percent)."""
+        return max(0.0, 100.0 - self.hunger) * self.growth()
+
     def _gain(self, hunger, xp, joy=0.0):
-        """Add food, XP and joy. Returns True if he leveled up (and says so)."""
+        """Add food, XP and joy (amounts of food and joy: a bigger dragon's meters move less
+        for the same amount). Returns True if he leveled up (and says so)."""
         before = level_for(self.xp)
-        self.hunger = max(0.0, min(100.0, self.hunger + hunger))
-        self.joy = max(0.0, min(100.0, self.joy + joy))
+        g = self.growth(before)
+        self.hunger = max(0.0, min(100.0, self.hunger + hunger / g))
+        self.joy = max(0.0, min(100.0, self.joy + joy / g))
         # XP is whole points; fractions (berries, a few meters of walking) carry over
         self._xp_frac_carry = getattr(self, "_xp_frac_carry", 0.0) + xp
         whole = int(self._xp_frac_carry)
@@ -188,8 +208,15 @@ class Pet:
         self.xp += whole
         if level_for(self.xp) > before:
             self.joy = min(100.0, self.joy + tuning.get("levelup_joy"))
-            self.say(f"LEVEL UP! {self.name.upper()} IS NOW LEVEL {level_for(self.xp)}", "proud", 60)
-            self.store.event("level", f"{self.name} reached level {level_for(self.xp)}")
+            now = level_for(self.xp)
+            bigger = self.growth(now) > g + 1e-9
+            self.say([f"LEVEL UP! {self.name.upper()} IS NOW LEVEL {now} · BIGGER APPETITE",
+                      f"LEVEL UP! NOW LEVEL {now} · BIGGER APPETITE"] if bigger else
+                     f"LEVEL UP! {self.name.upper()} IS NOW LEVEL {now}", "proud", 60)
+            more = round((self.growth(now) - 1) * 100)
+            self.store.event("level", f"{self.name} reached level {now}"
+                             + (f": a bigger appetite, belly, joy and pack now hold {more}% more than at level 1"
+                                if bigger else ""))
             return True
         return False
 
@@ -215,11 +242,19 @@ class Pet:
         self.session_meals += 1
         self.total_meals += 1
         self._pending_snacks += 1
-        self._gain(tuning.get("snack_food"), tuning.get("snack_xp"), tuning.get("snack_joy"))
+        self._gain(self._share(tuning.get("snack_food")), tuning.get("snack_xp"), tuning.get("snack_joy"))
+
+    def _share(self, food):
+        """Snacks and feasts that don't fit in his belly are shared with the Butterfly Garden
+        straight away (they don't keep: unlike treats and berries, they don't go in the PACK).
+        Returns what he eats himself."""
+        spare = max(0.0, food - self.belly_room())
+        self._surplus(spare)
+        return food - spare
 
     def feast(self, label):
         self.session_species += 1
-        if not self._gain(tuning.get("feast_food"), tuning.get("feast_xp"), tuning.get("feast_joy")):
+        if not self._gain(self._share(tuning.get("feast_food")), tuning.get("feast_xp"), tuning.get("feast_joy")):
             self.say([f"FEAST! NEW TYPE: {label}", f"FEAST! {label}"], self.face_for(tuning.get("feast_joy")), 45)
 
     def treat(self, ap):
@@ -241,8 +276,8 @@ class Pet:
     def _overflow(self, food):
         """Of `food`, how much doesn't fit in his belly; that much goes into his PACK
         (as far as it has room). Returns the amount packed; the rest is his to eat."""
-        spare = max(0.0, food - max(0.0, 100.0 - self.hunger))
-        packed = min(spare, max(0.0, tuning.get("pack_cap") - self.pack))
+        spare = max(0.0, food - self.belly_room())
+        packed = min(spare, max(0.0, self.pack_cap() - self.pack))
         self.pack += packed
         self._surplus(spare - packed)
         return packed
@@ -260,8 +295,8 @@ class Pet:
         if food <= 0:
             return 0
         # what doesn't fit in his belly goes into his PACK (until that's full too)
-        eat = min(food, max(0.0, 100.0 - self.hunger))
-        packed = min(food - eat, max(0.0, tuning.get("pack_cap") - self.pack))
+        eat = min(food, self.belly_room())
+        packed = min(food - eat, max(0.0, self.pack_cap() - self.pack))
         self.pack += packed
         self._surplus(food - eat - packed)
         if not self._gain(eat, tuning.get("berry_xp") * food, tuning.get("berry_joy") * food):
@@ -289,13 +324,13 @@ class Pet:
         bite = self.pack * tuning.get("pack_portion") / 100
         if bite < 1:
             bite = self.pack
-        bite = min(bite, 100.0 - self.hunger)
+        bite = min(bite, self.belly_room())
         if bite <= 0:
             return 0.0
         self.pack -= bite
         if self.pack < 0.01:
             self.pack = 0.0
-        self.hunger += bite
+        self.hunger = min(100.0, self.hunger + bite / self.growth())
         return bite
 
     # ---------------------------------------------------------------- joy

@@ -24,13 +24,22 @@ KNOBS = [
     ("berry_per_day", "food", "Berries: regrowth per day", 1, "food/day",
      "A known network regrows this much per day since it was last seen, up to its treat value."),
     ("pack_cap", "food", "PACK: how much it holds", 50, "food",
-     "Berries and treats found while the belly is full go into the PACK, up to this much."),
+     "Berries and treats found while the belly is full go into the PACK, up to this much (at level 1: it grows as "
+     "your dragon levels up, see Growing up)."),
+    ("growth_pct", "food", "Growing up: bigger appetite each level", 5, "%",
+     "Each level, the belly, joy and PACK hold this much more than at level 1 (each snack fills a smaller share). "
+     "0 = the same at every level."),
+    ("growth_max", "food", "Growing up: at most", 200, "% of level 1",
+     "The limit, so a grown dragon somewhere quiet can still be kept fed. 200 = twice level 1."),
+    ("garden_grows", "food", "Growing up: the Butterfly Garden's needs grow too", 0, "0/1",
+     "1 = new larvae need more food at higher levels, in step with the growing appetite; 0 = the same at every level."),
     ("pack_trigger", "food", "PACK: eat from it when FOOD drops to", 25, "%", ""),
     ("pack_portion", "food", "PACK: how much of it gets eaten each time", 50, "%",
      "Never more than it takes to fill the belly back to 100."),
     ("land_food", "food", "New land claimed", 3, "food", "A square of the map about 250 m across."),
     ("garden_food_common", "food", "Butterfly Garden: food to raise a Common one", 40, "food",
-     "Only food that fits in neither the BELLY nor the PACK reaches the garden, shared between the larvae there."),
+     "Snacks and feasts that don't fit in the BELLY, and treats and berries that fit in neither the BELLY nor the "
+     "PACK, reach the garden, shared between the larvae there."),
     ("garden_food_uncommon", "food", "Butterfly Garden: food to raise an Uncommon one", 80, "food", ""),
     ("garden_food_rare", "food", "Butterfly Garden: food to raise a Rare one", 120, "food", ""),
     ("realm_food", "food", "New realm claimed", 3, "food", "A square of the map about 1 km across."),
@@ -232,6 +241,10 @@ def set_value(key, value):
         return "must be a percentage, 0 to 100"
     if key in ("xp_curve", "climb_step_m", "storm_hpa", "rise_hpa") and v < 0.5:
         return "too small"
+    if key == "growth_max" and v < 100:
+        return "at least 100 (the same as level 1)"
+    if key == "garden_grows" and v not in (0, 1):
+        return "0 or 1"
     if key == "card_save_min" and v < 1:
         return "at least 1 minute"
     if key == "lair_temp_every_h" and (v < 1 or v != int(v)):

@@ -23,7 +23,7 @@ worked out here from the first few numbers of the International Geomagnetic Refe
 
 Measured from that magnet, every place has a magnetic latitude. The tilt puts North America
 magnetically further north than Europe: Toronto, at 43.7°N, is at a magnetic latitude of
-about 49°, and Manchester, at 53.5°N, about 52°. That's why the lights reach so much further
+about 49°, and London, at 51.5°N, about 50°: closer to the pole than you'd think from the map. That's why the lights reach so much further
 south in Canada and the US than in Europe. (This is a simplification of the real field, good
 to a few degrees, like the rest of this.)
 

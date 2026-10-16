@@ -38,7 +38,11 @@ import threading
 import time
 import urllib.parse
 
+from . import denauth
+
 log = logging.getLogger("server")
+# what anyone may load with the Den password on: the login page and what it's drawn with
+PUBLIC_PATHS = ("/login", "/theme.css", "/lang.js", "/auth.js", "/favicon.ico")
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -66,6 +70,9 @@ async def control_server(app):
         app.clients.add(writer)
         peer = writer.get_extra_info("peername")
         log.info("link client %s connected", peer)
+        # with the Den password on, the control link wants it too ("AUTH <password>"), except
+        # from the Pi itself (over SSH): that's one of the ways back in
+        authed = bool(peer) and peer[0] in ("127.0.0.1", "::1")
         try:
             while not app.stop.is_set():
                 line = await reader.readline()
@@ -79,6 +86,17 @@ async def control_server(app):
                     # never run the lines of its body as commands
                     log.info("link client %s sent a web request; hanging up", peer)
                     break
+                if app.den_auth.enabled() and not authed:
+                    word = text.split(" ", 1)[0].upper()
+                    if word == "AUTH":
+                        authed = app.den_auth.check(text[5:].strip())
+                        writer.write(b"OK\n" if authed else b"ERR wrong password\n")
+                        await writer.drain()
+                        continue
+                    if word != "HELLO":
+                        writer.write(b"ERR the Den password is on: send AUTH <password> first\n")
+                        await writer.drain()
+                        continue
                 for out in await app.command(text, writer):
                     writer.write((out + "\n").encode())
                 await writer.drain()
@@ -97,12 +115,18 @@ async def control_server(app):
 
 # ---------------------------------------------------------------- the den (HTTP)
 
-_LOCAL_SUFFIXES = (".local", ".lan", ".home", ".home.arpa", ".internal", ".localdomain")
+_LOCAL_SUFFIXES = (".local", ".lan", ".home", ".home.arpa", ".internal", ".localdomain",
+                   # Tailscale's names for the devices on your own private network
+                   # ("bt-dragon.tail1234.ts.net"). Only Tailscale can say where a ts.net name
+                   # points, and it points only within your own Tailscale network, so a web page
+                   # can't use one to rebind its way in (see Features In Development in the README).
+                   ".ts.net")
 
 
 def host_ok(host):
     """Is this Host header a name for the Pi on your own network? An IP address, a one-word
-    name ("bt-dragon"), or a local-only name ("bt-dragon.local") is; a site on the internet
+    name ("bt-dragon"), a local-only name ("bt-dragon.local") or a Tailscale name
+    ("bt-dragon.tail1234.ts.net") is; a site on the internet
     ("example.com", which could have been pointed at the Pi's address) isn't."""
     h = (host or "").strip().lower()
     if h.startswith("["):                              # an IPv6 address, [fe80::1]:8080
@@ -185,6 +209,14 @@ async def web_server(app):
         art_page = f.read()
     with open(os.path.join(HERE, "collection.html"), encoding="utf-8") as f:
         coll_page = f.read()
+    with open(os.path.join(HERE, "login.html"), encoding="utf-8") as f:
+        login_page = f.read()
+    with open(os.path.join(HERE, "auth.js"), encoding="utf-8") as f:
+        auth_js = f.read()
+
+    def login_html(msg=""):
+        from html import escape
+        return login_page.replace("__NAME__", escape(app.pet.name)).replace("__MSG__", escape(msg))
 
     def collection(data):
         """The Star Chart or the Gadget Journal: one page, its data written into it."""
@@ -248,9 +280,59 @@ async def web_server(app):
             n = min(int(headers.get("content-length", "0") or 0), limit)
             if n and path != "/api/restore":
                 body = await asyncio.wait_for(reader.readexactly(n), 30)
+            auth = app.den_auth
+            if auth.enabled() and path not in PUBLIC_PATHS and not auth.session_ok(headers.get("cookie")) \
+                    and not (path == "/api/phone" and auth.phone_ok(headers.get("x-den-token"))) \
+                    and not (path.startswith("/phone/") and auth.phone_ok(
+                        (urllib.parse.parse_qs(urllib.parse.urlparse(target).query).get("t") or [""])[0])):
+                # (the phone voice can't log in: it, and its download in Termux, carry its own ticket)
+                # the Den password is on, and this browser hasn't logged in (see denauth.py)
+                if path.startswith("/api/") or method != "GET":
+                    writer.write(_response("401 Unauthorized", json.dumps(
+                        {"error": "login", "lines": ["ERR The Den is locked: log in again"]}), "application/json"))
+                else:
+                    writer.write(_response("303 See Other", "", extra=["Location: /login"]))
+                await writer.drain()
+                return
             if path.startswith("/api/") and path != "/api/phone":
                 app.den_seen = time.time()   # an open den (or map) page checks in every few seconds
-            if path == "/":
+            if path == "/login" and method == "POST":
+                form = urllib.parse.parse_qs(body.decode(errors="replace"))
+                pw = (form.get("password") or [""])[0]
+                token = auth.login(pw) if auth.enabled() else None
+                if token:
+                    out = _response("303 See Other", "", extra=[
+                        "Location: /", f"Set-Cookie: {denauth.COOKIE}={token}; Path=/; Max-Age={denauth.SESSION_S}; "
+                                       "HttpOnly; SameSite=Strict"])
+                elif not auth.enabled():
+                    out = _response("303 See Other", "", extra=["Location: /"])
+                else:
+                    wait = auth.locked_for()
+                    out = _response("401 Unauthorized", login_html(
+                        f"Too many wrong passwords: try again in {wait} seconds." if wait else "That's not the password."),
+                        "text/html; charset=utf-8")
+            elif path == "/login":
+                out = (_response("200 OK", login_html(), "text/html; charset=utf-8") if auth.enabled()
+                       else _response("303 See Other", "", extra=["Location: /"]))
+            elif path == "/logout" and method == "POST":
+                auth.logout(headers.get("cookie"))
+                out = _response("303 See Other", "", extra=[
+                    "Location: /login", f"Set-Cookie: {denauth.COOKIE}=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict"])
+            elif path == "/auth.js":
+                out = _response("200 OK", auth_js, "text/javascript; charset=utf-8")
+            elif path == "/api/denpass" and method == "POST":
+                # a new password, from the Den: this browser stays logged in with it
+                pw = body.decode(errors="replace")
+                err = auth.set_password(pw)
+                extra = []
+                if not err:
+                    app.event("care", "The Den password was set")
+                    token = auth.login(pw)
+                    extra = [f"Set-Cookie: {denauth.COOKIE}={token}; Path=/; Max-Age={denauth.SESSION_S}; "
+                             "HttpOnly; SameSite=Strict"]
+                out = _response("200 OK" if not err else "400 Bad Request",
+                                json.dumps({"ok": not err, "error": err or ""}), "application/json", extra)
+            elif path == "/":
                 out = _response("200 OK", page, "text/html; charset=utf-8")
             elif path == "/map":
                 out = _response("200 OK", map_page.replace("__NAME__", app.pet.name), "text/html; charset=utf-8")
@@ -375,7 +457,7 @@ async def web_server(app):
             elif path in ("/phone/bt_dragon_voice.py", "/phone/harald_voice.py"):   # (the older name too)
                 from .phonevoice import script
                 host = headers.get("host") or f"{app.my_ip or '127.0.0.1'}:{app.cfg['link']['web_port']}"
-                out = _response("200 OK", script(re.sub(r"[^A-Za-z0-9.:\-\[\]]", "", host)),
+                out = _response("200 OK", script(re.sub(r"[^A-Za-z0-9.:\-\[\]]", "", host), app.den_auth.phone_token()),
                                 "text/x-python; charset=utf-8",
                                 [f'Content-Disposition: attachment; filename="{path.rsplit("/", 1)[1]}"'])
             elif path == "/api/backup":
