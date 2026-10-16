@@ -53,6 +53,11 @@ print(classify(None, {0x004C: bytes([0x10, 0x05, 1, 2, 3, 4, 5])}, [], {}))
 print(classify("Bob's AirPods", {0x004C: bytes([0x07, 0x19, 0x01, 0x14, 0x20]) + bytes(22)}, [], {}))
 print(classify(None, {}, [], {"0000feaa-0000-1000-8000-00805f9b34fb": bytes([0x41, 1])}))
 print(classify("Sam's Fitbit", {}, [], {}), species_from_name("MI_SCALE"), species_from_name("Charge 5 A1B2"))
+# Amazon's service: an Echo (no name) is an Echo; Alexa-ready headphones with a name go by the name
+AMZ = ["0000fe03-0000-1000-8000-00805f9b34fb"]
+assert classify(None, {}, AMZ, {})[1] == "Amazon Echo / Fire"
+assert "JBL Tune" in classify("JBL Tune 520BT-LE", {0x0057: b"\x01"}, AMZ, {})[1]
+assert classify("JBL Tune 520BT-LE", {}, ["0000feed-0000-1000-8000-00805f9b34fb"] + AMZ, {})[1] == "Tile tracker"
 assert address_is_stable("C0:00:00:00:00:00", "random") and not address_is_stable("5A:00:00:00:00:00", "random")
 print(build_csv([{"bssid": "AA", "ssid": "x,y", "auth": "[ESS]", "ts": 0, "channel": 1, "freq": 2412, "rssi": -50,
                   "lat": 39.8, "lon": -98.5, "alt": 90, "acc": 5}]))

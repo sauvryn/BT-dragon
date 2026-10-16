@@ -33,6 +33,70 @@ for i in range(30):
 print("mode", m.mode, {k: round(v) for k, v in m.take().items()})
 assert classify(1.3) == "walking" and classify(13) == "vehicle"
 
+
+# --- a tram (or bus) in town: pulling away, a fast stretch, slowing, a stop, crawling.
+# Speed alone files the slow parts as walking, running and cycling.
+def tram(m, t, lat, laps=4):
+    profile = ([1.0, 2.0, 3.5, 5.0, 7.0] + [11.0] * 25 + [7.0, 5.0, 3.5, 2.0, 1.0] + [0.0] * 20
+               + [1.5] * 20)                                    # crawling behind traffic
+    for _ in range(laps):
+        for sp in profile:
+            lat += sp / 111320
+            m.feed({"lat": lat, "lon": -2.24, "ts": t, "speed": sp, "acc": 5})
+            t += 1
+    return t, lat
+
+
+def own(d):
+    return round(sum(v for k, v in d.items() if k != "vehicle"))
+
+
+old = Motion()                                                  # (speed alone, the old way:)
+old._update_riding = lambda now, sp: None
+t, lat = tram(old, 0.0, 53.48)
+assert own(old.take(t + 60)) > 100                              # lots of "walking" on a tram
+m = Motion()
+t, lat = tram(m, 0.0, 53.48)
+got = m.take(t + 60)
+assert own(got) == 0 and got["vehicle"] > 1300, got             # now: all of it the ride
+assert m.riding
+# getting off, no step counter: 90 s at walking pace, then it's a walk again
+for i in range(120):
+    lat += 1.3 / 111320; m.feed({"lat": lat, "lon": -2.24, "ts": t + i, "speed": 1.3, "acc": 5})
+assert not m.riding and m.mode == "walking"
+walk = m.take(t + 200)
+assert 30 < walk.get("walking", 0) < 70, walk                   # the last half minute or so
+# with a step counter: off the tram the moment the steps start
+steps = {"on": False}
+m = Motion(feet=lambda: steps["on"])
+t, lat = tram(m, 0.0, 53.48, laps=2)
+m.take()
+steps["on"] = True
+for i in range(30):
+    lat += 1.3 / 111320; m.feed({"lat": lat, "lon": -2.24, "ts": t + i, "speed": 1.3, "acc": 5})
+assert not m.riding and m.mode == "walking" and m.take(t + 100).get("walking", 0) > 30
+# ...and walking speed without any steps (a bus in a queue, never fast) isn't a walk
+steps["on"] = False
+m = Motion(feet=lambda: steps["on"])
+for i in range(60):
+    lat += 1.3 / 111320; m.feed({"lat": lat, "lon": -2.24, "ts": 5000 + i, "speed": 1.3, "acc": 5})
+got = m.take(6000)
+assert m.mode == "vehicle" and own(got) == 0 and got["vehicle"] > 50, got
+# a bike ride (fast, but never 9 m/s for long) stays a bike ride
+m = Motion()
+for i in range(120):
+    sp = 6.0 + (3.5 if i % 30 == 0 else 0)                      # a quick burst now and then
+    lat += sp / 111320; m.feed({"lat": lat, "lon": -2.24, "ts": 9000 + i, "speed": sp, "acc": 5})
+assert not m.riding and m.mode == "cycling" and m.take(9500).get("cycling", 0) > 700
+
+# the step counter's evidence: steps in the last 45 s
+a = Activity(Store(":memory:"))
+assert a.feet() is None                                          # no step counter
+a.steps(100, True)
+assert a.feet() is False
+a.steps(130, True)
+assert a.feet() is True and a.feet(time.time() + 60) is False
+
 # --- steps: Harald off overnight, phone counted 4000 steps
 a = Activity(st)
 st.put("steps_last", 10000)

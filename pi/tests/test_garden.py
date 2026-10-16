@@ -65,7 +65,20 @@ g.feed(need * (pup - 1) / 100, 5, "GB")
 assert [e[0] for e in events] == ["hatch"]
 g.feed(need * 0.02, 5, "GB")
 assert [e[0] for e in events] == ["hatch", "pupate"] and g.s["slots"][0]["stage"] == 9
+# a pupa eats nothing: food goes elsewhere, and its growth rises by time alone, over 24 hours
+fed = g.s["slots"][0]["fed"]
+assert abs(fed - need * pup / 100) < 0.01                       # (it ate only up to its pupation point)
 g.feed(need, 5, "GB")
+assert g.s["slots"][0]["fed"] == fed and [e[0] for e in events] == ["hatch", "pupate"]
+assert G.tuning.get("garden_pupa_hours") == 24 and g.pupa_s() == 24 * 3600
+t0 = g.s["slots"][0]["pupated"]
+assert abs(g.pct(g.s["slots"][0], t0) - pup) < 0.01
+assert abs(g.pct(g.s["slots"][0], t0 + 12 * 3600) - (pup + (100 - pup) / 2)) < 0.01   # halfway through the day
+v = g.view(5, "GB")["larvae"][0]
+assert v["stage"] == 9 and v["emerges_at"] == int(t0 + 24 * 3600) and G.Garden.hunger(g.s["slots"][0]) is None
+g.check_pupae(t0 + 23 * 3600)
+assert [e[0] for e in events] == ["hatch", "pupate"]          # not yet
+g.check_pupae(t0 + 24 * 3600)                                  # the adult emerges by itself
 kinds = [e[0] for e in events]
 assert kinds[:3] == ["hatch", "pupate", "emerge"], kinds
 em = events[2][1]
@@ -95,8 +108,9 @@ g.lay_egg(1, 3)
 g.lay_egg(2, 3)
 g.feed(0.003, 3, "GB")
 ids = [x["species"] for x in g.s["slots"]]
-g.s["slots"][0]["fed"] = g.s["slots"][0]["need"] - 0.0001
+g.s["slots"][0]["fed"] = g.s["slots"][0]["need"] * g.s["slots"][0]["pupAt"] / 100 - 0.0001
 g.feed(0.003, 3, "GB")
+g.check_pupae(time.time() + g.pupa_s() + 1)
 assert g.s["slots"][0]["adult"]
 assert g.collect(0, 3) is None
 assert [x.get("species") for x in g.s["slots"][:2]] == ids[1:] and g.s["slots"][2] == {"empty": True}
@@ -104,8 +118,9 @@ assert [x.get("species") for x in g.s["slots"][:2]] == ids[1:] and g.s["slots"][
 g = G.Garden(Store(os.path.join(tmp, "g4c.db")), random.Random(6))
 g.set_country("ie")
 g.feed(0.001, 5)
-g.s["slots"][0]["fed"] = g.s["slots"][0]["need"] - 0.0001
+g.s["slots"][0]["fed"] = g.s["slots"][0]["need"] * g.s["slots"][0]["pupAt"] / 100 - 0.0001
 g.feed(0.001, 5)
+g.check_pupae(time.time() + g.pupa_s() + 1)
 g.set_country("gb")
 assert g.collect(0, 5) is None
 assert len(g.cdata("ie")["collection"]) == 1 and g.cdata("gb")["collection"] == []
@@ -130,13 +145,15 @@ assert [x.get("slot") for x in v["larvae"]] == [0, 1] and v["fed_today"] == 15
 # the first spot gets a new egg
 evs = []
 g.on_event = lambda k, i: evs.append(k)
-c["fed"] = c["need"] - 0.01
+c["fed"] = c["need"] * c["pupAt"] / 100 - 0.01
 g.feed(0.1, 6, "US")
+g.check_pupae(time.time() + g.pupa_s() + 1)
 assert "emerge" in evs and g.s["slots"][1]["adult"]
 assert g.collect(1, 6) is None and g.s["slots"][1] == {"empty": True}
 a = g.s["slots"][0]
-a["fed"] = a["need"] - 0.01
+a["fed"] = a["need"] * a["pupAt"] / 100 - 0.01
 g.feed(0.1, 6, "US")
+g.check_pupae(time.time() + g.pupa_s() + 1)
 assert g.collect(0, 6) is None and g.s["slots"][0].get("egg")
 
 # picking: forms count separately; a species with all forms raised isn't picked again while others remain
@@ -192,12 +209,14 @@ g.s["slots"] = [{"species": caste["id"], "country": "gb", "sex": "f", "rarity": 
 g.check_hunger(1)
 assert g.s["slots"][0]["hungry"] and g.view(1)["larvae"][0]["hunger"] == "very hungry"
 g.feed(20, 1, "GB")
+g.check_pupae(time.time() + g.pupa_s() + 1)
 assert [e for e in evs if e[0] == "emerge"][0][1]["form"] == "w"
 g.collect(0, 1)
 assert g.cdata("gb")["collection"][-1]["sex"] == "w"
 g.s["slots"] = [{"species": caste["id"], "country": "gb", "sex": "f", "rarity": caste["rarity"], "need": 10.0, "fed": 0.0,
                  "pupAt": caste["pupAt"], "hatched": time.time(), "stage": 0, "caste": True, "hungry": False}]
 g.feed(20, 1, "GB")
+g.check_pupae(time.time() + g.pupa_s() + 1)
 g.collect(0, 1)
 assert g.cdata("gb")["collection"][-1]["sex"] == "q"
 
@@ -211,6 +230,7 @@ assert g.title() == "Egg Explorer"
 g.s["slots"] = [{"species": pool[0]["id"], "country": "gb", "sex": None, "rarity": "Common", "need": 1.0, "fed": 0.0,
                  "pupAt": pool[0]["pupAt"], "hatched": time.time(), "stage": 0, "caste": False, "hungry": False}]
 g.feed(5, 1, "GB")
+g.check_pupae(time.time() + g.pupa_s() + 1)
 g.collect(0, 1)
 assert ("title", {"name": "Bluetooth Beetle"}) in evs and g.title() == "Bluetooth Beetle"
 assert not any(w in " ".join(t[2] for t in G.TITLES).lower() for w in ("book", "chapter", "librar", "manuscript", "paperback"))

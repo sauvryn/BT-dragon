@@ -15,9 +15,15 @@ run = lambda c: asyncio.run(app.command(c))                             # noqa: 
 st = app.store
 assert conquest.score(st) == 0 and conquest.title(0) == "Fledgling Forager"
 
-# claims as they happen: walking through new squares of the map
+# a baby (level 1-4) can't claim land yet: from level 5, or with "Unlock now (prototype testing)"
 LAT, LON = 51.5007, -0.1246
 t = time.time()
+assert not app.explore_open()
+app._visit_land({"lat": LAT, "lon": LON, "acc": 5, "ts": t, "speed": 1.4})
+assert st.land_counts() == (0, 0) and run("STATUS") and "explore_open=False" in run("STATUS")
+assert "locked=" not in str(app.map_data()) and app.map_data()["locked"] == 5
+assert run("EXPLOREUNLOCK on") == ["OK"] and app.explore_open() and app.map_data()["locked"] is None
+# claims as they happen: walking through new squares of the map
 for i in range(12):
     app._visit_land({"lat": LAT, "lon": LON + i * 0.004, "acc": 5, "ts": t + i * 60, "speed": 1.4})
 lands, realms = st.land_counts()
@@ -70,8 +76,9 @@ app.pet.xp = 900
 app.garden.unlock_now(app.pet.level())
 app.garden.feed(0.01, app.pet.level())
 b = app.garden.s["slots"][0]
-b["fed"] = b["need"] - 0.001
+b["fed"] = b["need"] * b["pupAt"] / 100 - 0.001
 app.garden.feed(0.01, app.pet.level())
+app.garden.check_pupae(time.time() + app.garden.pupa_s() + 1)
 assert app.garden.s["slots"][0]["adult"] and app.garden.cdata(app.garden.country())["collection"] == []
 assert run("GARDENCOLLECT 0") == ["OK"] and run("GARDENCOLLECT 0")[0].startswith("ERR")
 app._garden_news = [x for x in app._garden_news if x[0] == "collect"]

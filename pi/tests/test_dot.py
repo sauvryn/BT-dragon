@@ -218,6 +218,16 @@ async def main():
     # its open setup network is locked (nothing gets in on p2p0) and closed, never the hotspot's
     assert "iptables -I INPUT -i p2p0 -j DROP" in log and "ip6tables -I INPUT -i p2p0 -j DROP" in log, log
     assert "p2p_group_remove p2p0" in log and "-i wlan0 -j DROP" not in log
+    # one Dot, one dragon: the one using it leaves a note; another dragon leaves it alone
+    note = os.path.join(ROOT, "data", "harald", "owner")
+    assert open(note).read().strip() == d.owner_id and not await d._owned_by_another()
+    open(note, "w").write("0123456789ab\n")                       # another dragon, just now
+    assert await d._owned_by_another()
+    assert not await d._try("127.0.0.1") and "another dragon" in d.state
+    os.utime(note, (time.time() - 600, time.time() - 600))      # ...that went away 10 minutes ago
+    assert not await d._owned_by_another()
+    assert await d._try("127.0.0.1")
+    open(note, "w").write(d.owner_id + "\n")
     os.rename(IFCONFIG, IFCONFIG + ".off")                 # no setup network up: nothing to do
     open(IFCONFIG, "w").write("#!/bin/sh\necho 'wlan0     Link encap:Ethernet'\necho '          inet addr:10.154.85.84'\n")
     os.chmod(IFCONFIG, 0o755)

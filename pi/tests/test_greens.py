@@ -153,6 +153,7 @@ class Obj:
 
 said, spoken, events = [], [], []
 app = Obj()
+app.explore_open = lambda: True
 app.greens = greens.Greens(store)
 app.greens.today = set()
 store.db.execute("UPDATE greens SET first_seen=NULL")

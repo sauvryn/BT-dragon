@@ -37,7 +37,7 @@ try:
 
     # belly and joy knobs are read when they're needed, so a change applies straight away
     run("TUNE food_empty_min 150")
-    assert tuning.get("food_empty_min") == 150 and tuning.get("joy_empty_min") == 1000
+    assert tuning.get("food_empty_min") == 150 and tuning.get("joy_empty_min") == 600
     run("TUNE snack_food 5")
     app.pet.hunger = 50.0
     app.pet.snack()
