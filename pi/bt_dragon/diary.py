@@ -8,6 +8,10 @@ A new file starts at local midnight, and files older than keep_days are deleted.
 
 CSV ("comma-separated values") is plain text that any spreadsheet program opens. The file
 starts with a byte-order mark so Excel knows it's UTF-8 and shows names like ᚺᚨᚱᚨᛚᛞ properly.
+
+New rows wait in memory and go onto the card together when his database does (flush()),
+so a busy hour is one write instead of hundreds. Anything that reads the files writes the
+waiting rows first.
 """
 import csv
 import datetime
@@ -29,6 +33,7 @@ class DiaryFiles:
         self.location = location
         self.context = context          # callback() -> dict(food, joy, pack, level, xp, lat, lon)
         self._day = None
+        self._waiting = []              # [(day, row)] not yet on the card
         os.makedirs(folder, exist_ok=True)
         self.prune()
 
@@ -42,22 +47,35 @@ class DiaryFiles:
             if day != self._day:
                 self._day = day
                 self.prune()            # a new day: tidy away the oldest files
-            path = self.path_for(day)
-            new = not os.path.exists(path)
             ctx = (self.context() if self.context else None) or {}
             if not self.location:
                 ctx = dict(ctx, lat=None, lon=None)
-            with open(path, "a", newline="", encoding="utf-8-sig" if new else "utf-8") as f:
-                w = csv.writer(f)
-                if new:
-                    w.writerow(COLUMNS)
-                w.writerow([day, time.strftime("%H:%M:%S", lt), kind, text]
-                           + ["" if ctx.get(k) is None else ctx[k] for k in COLUMNS[4:]])
-        except OSError as e:
-            log.warning("couldn't write the diary file: %s", e)
+            self._waiting.append((day, [day, time.strftime("%H:%M:%S", lt), kind, text]
+                                  + ["" if ctx.get(k) is None else ctx[k] for k in COLUMNS[4:]]))
+        except Exception as e:
+            log.warning("couldn't note the diary row: %s", e)
+
+    def flush(self):
+        """The waiting rows onto the card: one append per day's file."""
+        rows, self._waiting = self._waiting, []
+        by_day = {}
+        for day, row in rows:
+            by_day.setdefault(day, []).append(row)
+        for day, day_rows in by_day.items():
+            path = self.path_for(day)
+            try:
+                new = not os.path.exists(path)
+                with open(path, "a", newline="", encoding="utf-8-sig" if new else "utf-8") as f:
+                    w = csv.writer(f)
+                    if new:
+                        w.writerow(COLUMNS)
+                    w.writerows(day_rows)
+            except OSError as e:
+                log.warning("couldn't write the diary file: %s", e)
 
     def files(self):
         """[(name, bytes)] newest first."""
+        self.flush()
         out = []
         try:
             for name in os.listdir(self.folder):
@@ -110,6 +128,7 @@ class DiaryFiles:
         """The bytes of one diary file, or None (only real diary file names are allowed)."""
         if not NAME_RE.match(name or ""):
             return None
+        self.flush()
         try:
             with open(os.path.join(self.folder, name), "rb") as f:
                 return f.read()

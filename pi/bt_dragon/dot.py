@@ -77,12 +77,12 @@ DEFAULTS = {
     "say_lair_temp": True, "say_lair_storm": True, "say_lair_sun": True, "say_lair_warnings": True,
     "say_lair_pollen": True, "say_lair_pollen_when": "increased",    # "all" high readings, or "increased" only
     "say_lair_uv": True, "say_lair_uv_when": "increased",
-    "say_lair_air": True, "say_lair_air_when": "increased",
+    "say_lair_air": True, "say_lair_air_when": "increased", "say_lair_aurora": True,
     # ...and from the phone's own sensors
     "say_phone_storm": True, "say_phone_sun": True,
 }
 SAY_BOOLS = ("say_lair_temp", "say_lair_storm", "say_lair_sun", "say_lair_warnings", "say_lair_pollen", "say_lair_uv",
-             "say_lair_air",
+             "say_lair_air", "say_lair_aurora",
              "say_phone_storm", "say_phone_sun")
 LIMITS = {"volume": (0, 100), "adv_volume": (0, 100), "brightness": (0, 100), "red": (0, 100), "green": (0, 100),
           "blue": (0, 100), "pitch": (-8, 8), "speed": (0.6, 1.6), "gap": (0, 120)}
@@ -202,6 +202,13 @@ class DotLink:
         self.dir = os.path.join(app.data_dir, "dot")
         self.stage = os.path.join(self.dir, "harald")       # copied to the Dot as-is
         os.makedirs(os.path.join(self.stage, "anim"), exist_ok=True)
+        # speech and recordings are made, used and thrown away in moments: they go in the Pi's
+        # memory (/dev/shm, a folder that lives in RAM), never onto the card
+        self.tmp = os.path.join("/dev/shm", "bt-dragon") if os.path.isdir("/dev/shm") else self.dir
+        try:
+            os.makedirs(self.tmp, exist_ok=True)
+        except OSError:
+            self.tmp = self.dir
         self.target = None          # "ip:5555" while connected
         self.connected = False
         self.ready = False          # player running with current animations
@@ -737,8 +744,8 @@ class DotLink:
     async def _make_speech_here(self, text, name="say.wav"):
         """Piper on the Pi, converted for the Dot's speaker and copied over as `name`.
         Returns the seconds of speech, or None."""
-        raw = os.path.join(self.dir, "voice-raw.wav")
-        wav = os.path.join(self.dir, name)
+        raw = os.path.join(self.tmp, "voice-raw.wav")
+        wav = os.path.join(self.tmp, name)
         ok = await self.voice.say(text, raw)
         if not ok:
             ok = await voicemod.espeak(text, raw, self.s["pitch"])
@@ -1016,7 +1023,7 @@ class DotLink:
         """Record until the speaker stops; returns the local WAV path, or None if nobody spoke.
         From the wake-word stream if it's running (the microphones can't be opened twice),
         otherwise with micgrab on the Dot."""
-        local = os.path.join(self.dir, name)
+        local = os.path.join(self.tmp, name)
         if self.mic.active:
             return local if await self.mic.capture(local, max_s, wait_s, pre_s) else None
         out = await self.sh(f"{H}/micgrab {H}/{name} {max_s}", timeout=max_s + 12) or ""

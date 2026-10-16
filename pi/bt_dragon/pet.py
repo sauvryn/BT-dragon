@@ -341,6 +341,13 @@ class Pet:
             self._gain(0, 0, tuning.get("star_again_joy") * len(risen))
             self._pending_stars_again.extend(risen)
 
+    def radio_find(self, food, xp, joy, text=None, mood=None):
+        """Planes and little radios heard with the radio stick: food (into the pack if he's
+        full), XP and joy, and a word on his screen for the new ones."""
+        packed = self._overflow(food)
+        if not self._gain(food - packed, xp, joy) and text:
+            self.say(text, mood or self.face_for(joy), 45)
+
     def landmark(self, title, first):
         joy = tuning.get("landmark_joy") if first else tuning.get("landmark_again_joy")
         xp = tuning.get("landmark_xp") if first else 0

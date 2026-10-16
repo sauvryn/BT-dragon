@@ -97,6 +97,11 @@ async def simulate(app: Dragon, seconds):
             from .friends import encode, COMPANY
             app.on_advert("C2:AA:00:00:00:01", "random", -66, None,
                           {COMPANY: encode(bytes.fromhex("0badf00d"), 3, 1, "Sigrid")}, [], {})
+        if t in (10, 50):  # the radio stick: a plane overhead, and a neighbour's weather station
+            app.on_radio("planes", "*8D4840D6202CC371C32CE0576098;")
+            app.on_radio("planes", "*8D40621D58C382D690C8AC2863A7;")
+            app.on_radio("sensors", '{"model": "Fineoffset-WH25", "id": 112, "temperature_C": 12.3, "humidity": 81}')
+            app.on_radio("sensors", '{"model": "Schrader-EG53MA4", "type": "TPMS", "id": "a1b2c3", "pressure_kPa": 230}')
         if t == 30:
             app.handle_aps([{"bssid": "DE:AD:BE:EF:DE:AD", "ssid": "", "auth": "[ESS]", "security": "open",
                              "channel": 1, "rssi": -60, "freq": 2412}])

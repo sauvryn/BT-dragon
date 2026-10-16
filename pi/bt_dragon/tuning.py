@@ -35,6 +35,9 @@ KNOBS = [
     ("garden_food_rare", "food", "Butterfly Garden: food to raise a Rare one", 120, "food", ""),
     ("realm_food", "food", "New realm claimed", 3, "food", "A square of the map about 1 km across."),
     ("star_food", "food", "A star (satellite) never seen before", 3, "food", ""),
+    ("radio_food", "food", "Radio stick: each plane or little radio, once a day", 1, "food",
+     "Sky Dragons and Radio Whispers (with an RTL-SDR stick)."),
+    ("radio_kind_food", "food", "Radio stick: a new kind of aircraft or device", 6, "food", ""),
     ("constellation_food", "food", "The first star of a new constellation", 6, "food", ""),
     # ---------------------------------------------------------------- joy
     ("joy_empty_min", "joy", "Full joy empties in", 1000, "min",
@@ -69,6 +72,10 @@ KNOBS = [
     ("storm_joy", "joy", "A storm coming: later ones that day", 4, "joy", ""),
     ("rise_joy", "joy", "Pressure rising fast: weather change", 3, "joy", ""),
     ("sun_joy", "joy", "Sunrise or sunset at the Lair", 2, "joy", "With the Lair's Local announcements on."),
+    ("radio_kind_joy", "joy", "Radio stick: a new kind of aircraft or device", 8, "joy", ""),
+    ("radio_find_joy", "joy", "Radio stick: a new airline, country, or make and model", 3, "joy", ""),
+    ("aurora_joy", "joy", "Northern lights possible at the Lair", 10, "joy",
+     "Once a night (again if the chance gets better), with the Lair's Local announcements on."),
     ("sunny_joy", "joy", "Sunshine on the phone's light sensor", 3, "joy",
      "\"Wow! It's sunny out today!\" At most once per Sunshine wait (Detection)."),
     ("climb_joy", "joy", "Climbing (stairs, hills)", 2, "joy/10 m", ""),
@@ -88,6 +95,8 @@ KNOBS = [
      "times (level = 1 + square root of XP / this)."),
     ("snack_xp", "xp", "Snack", 1, "XP", ""),
     ("feast_xp", "xp", "Feast", 20, "XP", ""),
+    ("radio_kind_xp", "xp", "Radio stick: a new kind of aircraft or device", 15, "XP", ""),
+    ("radio_find_xp", "xp", "Radio stick: a new airline, country, or make and model", 5, "XP", ""),
     ("treat_xp_wpa2", "xp", "Treat: new WPA2 network", 5, "XP", ""),
     ("treat_xp_wpa3", "xp", "Treat: new WPA3 network", 8, "XP", ""),
     ("treat_xp_enterprise", "xp", "Treat: new office network", 8, "XP", ""),
@@ -171,6 +180,9 @@ KNOBS = [
     ("conquest_star", "points", "Conquest points: a star (satellite) never seen before", 20, "points", ""),
     ("conquest_constellation", "points", "Conquest points: the first star of a new constellation", 80, "points",
      "On top of that star's own points."),
+    ("card_save_min", "detect", "Memory card: save everything every", 10, "min",
+     "Changes wait in memory and go onto the card together. Napping, sleeping and restarting always save first; "
+     "pulling the plug without them loses at most this long. Smaller wears the card faster."),
     ("landmark_langs", "detect", "Landmarks: how famous", 10, "languages",
      "A place counts as famous when Wikipedia has an article about it in at least this many languages."),
     ("landmark_m", "detect", "Landmarks: point them out within", 250, "m",
@@ -220,6 +232,8 @@ def set_value(key, value):
         return "must be a percentage, 0 to 100"
     if key in ("xp_curve", "climb_step_m", "storm_hpa", "rise_hpa") and v < 0.5:
         return "too small"
+    if key == "card_save_min" and v < 1:
+        return "at least 1 minute"
     if key == "lair_temp_every_h" and (v < 1 or v != int(v)):
         return "a whole number of hours, at least 1"
     if key == "xp_curve" and v < 1:

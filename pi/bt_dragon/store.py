@@ -5,6 +5,15 @@ SQLite writes through a journal, so if the power is cut mid-write the database r
 to the last complete transaction instead of being left half-written. That matters on a Pi
 that may be unplugged without warning.
 
+Gentle on the memory card: changes are gathered in memory and written to the card together,
+every few minutes (store.flush()), rather than one at a time as they happen. A memory card
+wears out with writing, and it writes in whole blocks: changing one number in the database
+rewrites at least a 4 KB page, and a busy street can change hundreds of numbers a minute
+(every gadget eaten updates its type's meal count). Gathered up, the same page changed a
+hundred times is written once. Napping, going to sleep, restarting, making a backup and
+reading the diary files all write everything first; only pulling the plug without a nap
+or sleep loses anything, and then only the last few minutes.
+
 What is kept, and what deliberately isn't:
   * Wi-Fi networks: kept (they are public broadcasts, and that's what WiGLE maps).
   * Bluetooth: only *species* (kinds of device) and counts are kept. Individual addresses
@@ -45,6 +54,9 @@ CREATE TABLE IF NOT EXISTS greens (
 CREATE INDEX IF NOT EXISTS greens_lat ON greens(minlat);
 CREATE TABLE IF NOT EXISTS greens_asked (realm TEXT PRIMARY KEY, ts REAL);
 CREATE TABLE IF NOT EXISTS exercise (start REAL PRIMARY KEY, end REAL, kind TEXT, meters REAL);
+CREATE TABLE IF NOT EXISTS finds (
+    coll TEXT, key TEXT, label TEXT, kind TEXT, first_seen REAL, last_seen REAL, count INT DEFAULT 1,
+    PRIMARY KEY (coll, key));
 CREATE TABLE IF NOT EXISTS stars (
     key TEXT PRIMARY KEY, const TEXT, prn INT, first_seen REAL, last_seen REAL, nights INT DEFAULT 1);
 """
@@ -61,12 +73,37 @@ def _maker_label(label_for, code):
 
 class Store:
     def __init__(self, path):
-        self.db = sqlite3.connect(path, isolation_level=None, check_same_thread=False)
+        # "DEFERRED": the first change opens a transaction, and nothing reaches the card
+        # until flush() commits it
+        self.db = sqlite3.connect(path, isolation_level="DEFERRED", check_same_thread=False)
         self.db.row_factory = sqlite3.Row
         self.db.execute("PRAGMA journal_mode=WAL")
         self.db.execute("PRAGMA synchronous=NORMAL")
         self.db.executescript(SCHEMA)
         self._add_columns("greens", (("walks", "INT DEFAULT 0"), ("runs", "INT DEFAULT 0"), ("rides", "INT DEFAULT 0")))
+        self.db.commit()
+        self.flushes = 0             # how many times changes have gone to the card (for the Den)
+        self.flushed_at = time.time()
+        self.before_flush = []       # callables run first (the diary files' waiting lines)
+
+    def flush(self):
+        """Write everything waiting onto the card, as one transaction."""
+        for f in self.before_flush:
+            try:
+                f()
+            except Exception:
+                pass
+        if self.db.in_transaction:
+            self.db.commit()
+            self.flushes += 1
+        self.flushed_at = time.time()
+
+    def pending(self):
+        return self.db.in_transaction
+
+    def close(self):
+        self.flush()
+        self.db.close()
 
     def _add_columns(self, table, cols):
         """Older databases (and restored backups) get columns added since they were made."""
@@ -175,6 +212,22 @@ class Store:
         self.db.executemany("UPDATE ap_obs SET uploaded=1 WHERE id=?", [(i,) for i in ids])
         # keep uploaded observations a month, then let them go
         self.db.execute("DELETE FROM ap_obs WHERE uploaded=1 AND ts < ?", (time.time() - 30 * 86400,))
+
+    # ---------------------------------------------------------------- collection finds
+    def find_seen(self, coll, key, label, kind, now):
+        """A find for a collection (a kind of aircraft, an airline, a kind of sensor...).
+        Returns True the first time."""
+        r = self.db.execute("SELECT 1 FROM finds WHERE coll=? AND key=?", (coll, key)).fetchone()
+        if r:
+            self.db.execute("UPDATE finds SET last_seen=?, count=count+1 WHERE coll=? AND key=?", (now, coll, key))
+            return False
+        self.db.execute("INSERT INTO finds (coll, key, label, kind, first_seen, last_seen) VALUES (?, ?, ?, ?, ?, ?)",
+                        (coll, key, label, kind, now, now))
+        return True
+
+    def finds(self, coll):
+        return [dict(r) for r in self.db.execute(
+            "SELECT key, label, kind, first_seen, last_seen, count FROM finds WHERE coll=? ORDER BY first_seen", (coll,))]
 
     def prune_obs(self, now=None, days=90):
         """Wardriving sightings are kept 90 days at most, uploaded or not: each one says where

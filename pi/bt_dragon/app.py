@@ -29,6 +29,11 @@ from . import garden as gardenmod
 from . import garden_page
 from . import lang as langmod
 from . import conquest
+from . import journal as journalmod
+from . import scores
+from . import planes as planesmod
+from . import whispers as whispersmod
+from .rtlsdr import RadioStick
 from .diary import DiaryFiles
 from .dot import DotLink
 from . import moon as moonmod
@@ -36,6 +41,7 @@ from . import tuning
 from .pet import _n, berry_value, hunger_word, joy_word, xp_for
 from . import friends as friendsmod
 from .homezone import HomeZone, SIZES as HOME_SIZES
+from .aurora import words as aurora_words
 from .dragon import MOODS
 from .gps import Gps
 from .wifipos import WifiPosition
@@ -111,6 +117,8 @@ class Dragon:
         self.diary_files = DiaryFiles(os.path.join(data_dir, "diary"), dcfg["keep_days"], dcfg["location"],
                                       self._diary_context) if dcfg["files"] else None
         self.store.diary = self.diary_files
+        if self.diary_files:
+            self.store.before_flush.append(self.diary_files.flush)   # its rows go when the database does
         from .ble import COMPANIES
         named = f"{len(COMPANIES)}+unbranded"
         if self.store.get("makers_named") != named:   # once per new company list
@@ -123,7 +131,9 @@ class Dragon:
         self.stats = SysStats()
         self.vitals = self.stats.sample()
         self.wifi = wifimod.WifiScanner()
-        png = os.path.join(out_dir or data_dir, "screen.png")
+        # the simulation saves each picture as a file to look at; on the Pi the Den gets it
+        # from memory (/screen.png), so nothing is written to the card every few seconds
+        png = os.path.join(out_dir or data_dir, "screen.png") if simulate else None
         self.display = Display(cfg["display"]["enabled"] and not simulate,
                                cfg["display"]["full_refresh_minutes"] * 60, png,
                                cfg["display"]["rotate"], cfg["display"]["model"])
@@ -144,6 +154,11 @@ class Dragon:
         self._pal_present = {k: float(v) for k, v in (self.store.get("pal_present", {}) or {}).items()}
         self._obs_last = {}
         self.home_zone = HomeZone(self.store)
+        # the radio stick (RTL-SDR): planes and the little radios around homes
+        self.sky = planesmod.Sky(self.store)
+        self.whispers = whispersmod.Whispers(self.store)
+        self.radio = RadioStick(self.store, self.on_radio,
+                                region=lambda: self._lair_code() or (getattr(self, "os_country", "") or ""))
         self._obs_pruned = 0.0
         self._clock_ok = (False, 0.0)
         self.upload_lock = asyncio.Lock()
@@ -218,6 +233,78 @@ class Dragon:
             self._cq = conquest.score(self.store, tuning.get("landmark_langs"))
             self._cq_at = now
         return self._cq, conquest.title(self._cq)
+
+    # ================================================================ the radio stick
+    def on_radio(self, what, line, now=None):
+        """A line from rtl_adsb (planes) or rtl_433 (the little radios)."""
+        if self.napping:
+            return
+        now = now or time.time()
+        if what == "planes":
+            fix = self.gps.current()
+            ref = (fix["lat"], fix["lon"]) if fix else self.lair.where()
+            news = self.sky.heard(line, now, ref)
+            for n in news:
+                if n[0] == "plane":
+                    self.pet.radio_find(tuning.get("radio_food"), 0, 0)
+                elif n[0] == "kind":
+                    title = planesmod.KINDS[n[1]][0]
+                    pts = scores.POINTS[planesmod.KINDS[n[1]][1]]
+                    self.pet.radio_find(tuning.get("radio_kind_food"), tuning.get("radio_kind_xp"),
+                                        tuning.get("radio_kind_joy"),
+                                        [f"A NEW SKY DRAGON: {title.upper()}!", f"NEW SKY DRAGON: {title.upper()}",
+                                         "A NEW SKY DRAGON!"], "excited")
+                    self.event("sky", f"New sky dragon: {title} +{pts} Sky Dragon points.")
+                elif n[0] in ("airline", "country"):
+                    word = "AIRLINE" if n[0] == "airline" else "COUNTRY"
+                    self.pet.radio_find(0, tuning.get("radio_find_xp"), tuning.get("radio_find_joy"),
+                                        [f"A NEW {word} IN THE SKY: {n[2].upper()}", f"NEW {word}: {n[2].upper()}"])
+                    pts = planesmod.AIRLINE_POINTS if n[0] == "airline" else planesmod.COUNTRY_POINTS
+                    self.event("sky", (f"New airline in the sky: {n[2]} ({n[1]})" if n[0] == "airline"
+                                       else f"New country in the sky: an aircraft registered in {n[2]}")
+                               + f" +{pts} Sky Dragon points.")
+            if news:
+                self._new_titles("sky_titles", scores.SKY_TITLES, planesmod.score(self.store), "Sky Dragon", "sky")
+            return
+        news = self.whispers.heard(line, now)
+        for n in news:
+            if n[0] == "device":
+                self.pet.radio_find(tuning.get("radio_food"), 0, 0)
+            elif n[0] == "kind":
+                title, rarity = whispersmod.KINDS[n[1]][:2]
+                self.pet.radio_find(tuning.get("radio_kind_food"), tuning.get("radio_kind_xp"),
+                                    tuning.get("radio_kind_joy"),
+                                    [f"A NEW RADIO WHISPER: {title.upper()}!", f"NEW WHISPER: {title.upper()}",
+                                     "A NEW RADIO WHISPER!"], "excited")
+                self.event("radio", f"New radio whisper: {title} +{scores.POINTS[rarity]} Radio Whisper points.")
+            elif n[0] == "model":
+                self.pet.radio_find(0, tuning.get("radio_find_xp"), tuning.get("radio_find_joy"),
+                                    [f"A NEW WHISPER: {n[1].upper()}", "A NEW MAKE AND MODEL!"])
+                self.event("radio", f"New make and model heard: {n[1]} ({whispersmod.KINDS[n[2]][0].lower()}) "
+                                    f"+{whispersmod.MODEL_POINTS} Radio Whisper points.")
+        if news:
+            self._new_titles("whisper_titles", scores.WHISPER_TITLES, whispersmod.score(self.store), "Radio Whisper",
+                             "radio")
+
+    def sky_data(self):
+        return planesmod.page_data(self.pet.name, self.store, self.sky)
+
+    def whispers_data(self):
+        return whispersmod.page_data(self.pet.name, self.store, self.whispers)
+
+    def journal_score(self, fresh=False):
+        """Gadget Journal points, counted from his life list (at most every 20 s, unless fresh)."""
+        now = time.time()
+        if fresh or now - getattr(self, "_jn_at", 0) > 20:
+            self._jn = journalmod.score(self.store.species_list())
+            self._jn_at = now
+        return self._jn
+
+    def _new_titles(self, key, titles, s, what, kind):
+        """Any title newly reached in a collection ("Gadget Journal"): on his screen, and in the diary."""
+        for name in scores.new_titles(self.store, key, titles, s):
+            self.pet.say([f"NEW {what.upper()} TITLE: {name.upper()}!", f"NEW TITLE: {name.upper()}!"], "proud", 30)
+            self.event(kind, f"New {what} title: {name}")
 
     def _conquered(self, text, pts, kind="land"):
         """A claim for the diary, with its points; and any new title it brings."""
@@ -348,9 +435,12 @@ class Dragon:
     # ================================================================ Bluetooth
     def _eat_species(self, key, label, kind, now):
         """Count a meal of this species; a species he's never had before is a feast."""
+        before = self.journal_score(fresh=True) if key not in self._known_species else None
         if self.store.species_seen(key, label, kind, now):
             self.pet.feast(label)
-            self.event("species", f"New type: {label}")
+            gained = self.journal_score(fresh=True) - (before or 0)
+            self.event("species", f"New type: {label}" + (f" +{gained} Gadget Journal points." if gained else ""))
+            self._new_titles("journal_titles", scores.JOURNAL_TITLES, self.journal_score(), "Gadget Journal", "species")
         self._known_species.add(key)
 
     def _headcount_snacks(self, now):
@@ -788,6 +878,8 @@ class Dragon:
             "gps": self.gps.state(), "wigle_pending": self.store.pending_count(p["skip_nomap"], p["upload_hidden"]),
             "awake": int(now - self.started), "uptime": self.vitals["uptime"], "temp": self.vitals["temp"], "cpu": self.vitals["cpu"],
             "mem": self.vitals["mem"], "message": message.upper(),
+            "card_saved": int(now - self.store.flushed_at), "card_saves": self.store.flushes,
+            "journal": scores.view(scores.JOURNAL_TITLES, self.journal_score()),
             "alert": bool(self.trackers.alerts), "home": bool(self.home_ssid), "linked": bool(self.clients) or now - self.den_seen < self.DEN_OPEN_S,
             "nearby": len(in_range), "xp": self.pet.xp, "next_xp": xp_for(self.pet.level() + 1),
             "network": self.home_ssid or "", "network_rank": self.network_rank(self.home_ssid),
@@ -873,6 +965,8 @@ class Dragon:
                 self.activity.save()
                 self._save_ble()
                 last_save = time.time()
+            if time.time() - self.store.flushed_at > tuning.get("card_save_min") * 60:
+                self.store.flush()          # everything gathered since, onto the card in one go
             await self._sleep(5)
 
     # ================================================================ sky: lands, stars, weather
@@ -1062,6 +1156,21 @@ class Dragon:
                 if say["say_lair_warnings"]:
                     self.dot.news(f"Weather warning at the Lair: {w['spoken']}.", big=True)
                 self.event("weather", f"Weather warning at the Lair: {w['spoken']}")
+            elif kind == "aurora":
+                level, kp, south, how = ev[1], ev[2], ev[3], ev[4]
+                lights = "SOUTHERN LIGHTS" if south else "NORTHERN LIGHTS"
+                screen = {"overhead": [f"{lights} OVERHEAD AT THE LAIR? LOOK UP!", f"{lights} AT THE LAIR!", f"{lights}!"],
+                          "horizon": [f"{lights} POSSIBLE AT THE LAIR!", f"{lights} POSSIBLE!", f"{lights}?"],
+                          "camera": [f"{lights}: TRY A CAMERA AT THE LAIR", f"{lights}: TRY A CAMERA", f"{lights}?"]}[level]
+                self.pet.cheer(tuning.get("aurora_joy"), 0, screen, "ecstatic" if level == "overhead" else "excited",
+                               60, speak=False)
+                if say["say_lair_aurora"]:
+                    self.dot.news(("Northern lights alert! " if not south else "Southern lights alert! ")
+                                  + aurora_words(level, south), big=True)
+                self.event("weather", f"{lights.capitalize()} possible at the Lair tonight: Kp {kp:.1f} "
+                                      f"({'measured' if how == 'observed' else how or 'forecast'}), "
+                                      + {"overhead": "maybe overhead", "horizon": "low in the sky",
+                                         "camera": "a phone camera might catch it"}[level])
             elif kind in ("sunrise", "sunset"):
                 self.pet.cheer(tuning.get("sun_joy"), 0, "THE SUN IS RISING AT THE LAIR!" if kind == "sunrise"
                                else "THE SUN IS SETTING AT THE LAIR", "happy", 30, speak=False)
@@ -1074,6 +1183,29 @@ class Dragon:
             w = next((x for x in warned if x.get("severe")), warned[0])
             self.pet.say([f"{w['title'].upper()} AT THE LAIR", w["title"].upper(), "WEATHER WARNING AT THE LAIR!"],
                          "alarmed", 60, speak=False)
+
+    def star_chart_data(self):
+        from . import starchart
+        now = time.time()
+        heard = self.stars.last_heard if self.stars else {}
+        in_view = {k for k, t in heard.items() if now - t <= self.STAR_NOW_S}
+        return starchart.page_data(self.pet.name, self.store.stars(), in_view, now)
+
+    def journal_data(self):
+        from . import journal
+        return journal.page_data(self.pet.name, self.store.species_list())
+
+    def _aurora_lines(self):
+        """For the Den: the Kp each kind of sighting needs at the Lair, and the latest reading."""
+        needs, south = self.lair.aurora_needs()
+        if not needs:
+            return []
+        fmt = lambda v: "" if v is None else f"{v:g}"          # noqa: E731
+        last = self.lair.s.get("aurora_last") or {}
+        return [f"aurora_south={1 if south else 0}", f"aurora_camera={fmt(needs['camera'])}",
+                f"aurora_horizon={fmt(needs['horizon'])}", f"aurora_overhead={fmt(needs['overhead'])}",
+                f"aurora_kp={fmt(last.get('kp'))}", f"aurora_kind={last.get('kind', '')}",
+                "aurora_at=" + (time.strftime("%H:%M", time.localtime(last["ts"])) if last.get("ts") else "")]
 
     def _moon_tick(self, now):
         """On the day of each major moon phase, once (needs a clock that's been set)."""
@@ -1435,7 +1567,7 @@ class Dragon:
                     f"warn_region={(lr.s.get('warn') or {}).get('area', '') if lr.warnings_where()[0] == 'uk' else ''}",
                     "warn_active=" + " || ".join(w["title"] for w in lr.s.get("warn_active") or []),
                     "temp_said=" + (f"{lr.s['temp_said'][1]} at {time.strftime('%H:%M', time.localtime(lr.s['temp_said'][0]))}"
-                                    if lr.s.get("temp_said") else ""), "END"]
+                                    if lr.s.get("temp_said") else "")] + self._aurora_lines() + ["END"]
         if cmd == "LAIRSET":  # place|country: looked up straight away
             place, _, country = arg.partition("|")
             ok, words = await self.lair.set_place(place, country)
@@ -1465,6 +1597,18 @@ class Dragon:
             self.wifipos.set_enabled(on)
             self.event("network", f"Finding {self.pet.name} by Wi-Fi switched " + ("on (beaconDB)" if on else "off"))
             return ["OK"]
+        if cmd == "RADIO":  # the radio stick: mode=, status=, listening=, found=, scores, planes now
+            sky = scores.view(scores.SKY_TITLES, planesmod.score(self.store))
+            wh = scores.view(scores.WHISPER_TITLES, whispersmod.score(self.store))
+            return self.radio.lines() + [
+                "sky=" + json.dumps(sky), "whispers=" + json.dumps(wh),
+                "planes_now=" + json.dumps(self.sky.now()[:8]),
+                "whispers_recent=" + json.dumps([{"ago": int(time.time() - t), "model": m,
+                                                  "kind": whispersmod.KINDS[k][0]} for t, m, k in self.whispers.recent]),
+                "installed=" + json.dumps(self.radio.installed()), "END"]
+        if cmd == "RADIOSET":  # both / planes / sensors / off
+            err = self.radio.set_mode(arg.strip().lower())
+            return [f"ERR {err}" if err else "OK"]
         if cmd == "HOMEZONE":  # on=, r=, set=, sizes=
             z = self.home_zone.state()
             return [f"on={1 if z['on'] else 0}", f"r={z['r']}", f"set={1 if z['set'] else 0}",
@@ -1724,6 +1868,7 @@ class Dragon:
         self.nap_since = time.time()
         self.store.put("napping", {"since": self.nap_since})    # so a restart doesn't wake him
         self.napping = True
+        self.store.flush()
         await asyncio.to_thread(self._flush_to_card)
         return "OK napping"
 
@@ -1751,6 +1896,7 @@ class Dragon:
         from .pet import away_words
         self.event("wake", f"{self.pet.name} woke up from a nap" + (f" ({away_words(away).lower()})" if away >= 60 else ""))
         self.pet.say(["YAWN! HELLO!"], "happy", 20)
+        self.store.flush()          # awake for sure, even if the power goes in the next minute
         return "OK awake"
 
     def _trip_view(self):
@@ -1776,6 +1922,7 @@ class Dragon:
         """Restart the program (not the Pi) in a moment: systemd stops him cleanly and
         starts him again."""
         log.info("restarting: %s", why)
+        self.store.flush()
         if self.simulate:
             return
         asyncio.get_running_loop().call_later(
@@ -1794,6 +1941,8 @@ class Dragon:
         self.pet.save()
         self.activity.save()
         self._save_ble()
+        self.store.flush()
+        await asyncio.to_thread(self._flush_to_card)
         async with self._draw_lock:     # wait for any picture being drawn right now to finish first
             pic = (self.art.screen("sleep") if how == "SLEEP" and self.sleep_screens()["sleep"]
                    else render_sleep(self.view()))
@@ -1962,10 +2111,14 @@ class Dragon:
             tasks.append(self._awake_only(scanner.run))      # the Bluetooth radio rests during a nap
             tasks.append(self.wifi_loop())
             tasks.append(self.dot.run())
+            tasks.append(self._awake_only(self.radio.run))   # the radio stick rests during a nap too
             if self.cfg["friends"]["beacon"]:
                 beacon = friendsmod.Beacon(self.beacon_payload)
                 tasks.append(self._awake_only(beacon.run))
         if self.simulate:
             tasks.append(self.dot._timer_loop())   # timers work without the Dot too
         tasks.extend(extra_tasks)
-        await asyncio.gather(*tasks)
+        try:
+            await asyncio.gather(*tasks)
+        finally:
+            self.store.flush()          # however he stops, nothing waiting is lost

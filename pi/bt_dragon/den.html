@@ -136,6 +136,8 @@
   @keyframes flap { 0%,100% { transform: scaleX(1); } 50% { transform: scaleX(.72); } }
   .egg-g { animation: eggrock 3.2s ease-in-out infinite; transform-origin: 160px 156px; }
   @keyframes eggrock { 0%,80%,100% { transform: rotate(0); } 86% { transform: rotate(-4deg); } 93% { transform: rotate(4deg); } }
+  /* features not yet tried on real hardware */
+  .devnote { font-weight: 800; color: var(--ink); text-transform: none; letter-spacing: 0; }
 </style>
 <script src="/lang.js"></script>
 <link rel="stylesheet" href="/theme.css">
@@ -222,7 +224,9 @@
 
   <section data-arrange="life">
     <h2>Life list</h2>
+    <p style="margin:0 0 8px" id="jnLine"></p>
     <details><summary>Every type of gadget <span class="pname" data-nolang>Harald</span> has eaten</summary><div id="species" data-nolang></div></details>
+    <div class="actions" style="margin-top:10px"><a href="/journal" target="_blank"><button class="primary">Open the Gadget Journal</button></a></div>
   </section>
 
   <section data-arrange="diary">
@@ -322,7 +326,7 @@
     <details class="subtools" id="dt-points"><summary><b>Conquest points</b> <span class="sub">· what each claim is worth</span><span class="changedn" id="chg-points"></span></summary>
       <div id="knobs-points"></div>
     </details>
-    <details class="subtools" id="dt-detect"><summary><b>Detection</b> <span class="sub">· thresholds for lands, stars, climbing and weather</span><span class="changedn" id="chg-detect"></span></summary>
+    <details class="subtools" id="dt-detect"><summary><b>Detection</b> <span class="sub">· thresholds for lands, stars, climbing and weather, and saving to the card</span><span class="changedn" id="chg-detect"></span></summary>
       <div id="knobs-detect"></div>
     </details>
     <div class="actions" style="margin-top:12px">
@@ -412,9 +416,10 @@
     <div class="row"><div class="grow sub" id="lairFound" data-nolang>Not set yet.</div></div>
     <div class="row"><div class="grow">Local announcements<div class="sub">News from home while <span class="pname" data-nolang>Harald</span> is online, each at its own time:
       how warm it is on the hour ("It's 14°C (57°F) outside at the Lair."), a storm or change in the weather at a quarter past,
-      high pollen at half past (a sneeze; Europe only), high UV at a quarter to (sunglasses on), and sunrise and sunset as
-      they happen. Storms and sunrises bring joy, just like feeling them in person.</div>
-      <div class="sub" id="lairNow"></div></div>
+      high pollen at half past (a sneeze; Europe only), high UV at a quarter to (sunglasses on), sunrise and sunset as
+      they happen, and on dark evenings at ten to, whether the northern lights might be seen (from NOAA's space weather
+      forecast). Storms, sunrises and the lights bring joy, just like seeing them in person.</div>
+      <div class="sub" id="lairNow"></div><div class="sub" id="lairAurora"></div></div>
       <label class="sub"><input type="checkbox" id="lairAnnounce" onchange="lairAnnounceSet(this.checked)"> On</label></div>
     <div class="row" id="warnRow"><div class="grow">Official weather warnings<div class="sub" id="warnNote"></div>
       <div class="sub" id="warnActive"></div></div></div>
@@ -473,6 +478,7 @@
           <select id="say_lair_air_when" onchange="dotSet(this.id, this.value)">
             <option value="increased">Increased readings only</option><option value="all">All poor readings</option></select></span>
         <label class="sub"><input type="checkbox" id="say_lair_sun" onchange="sayTick(this)"> Sunrise/sunset</label>
+        <label class="sub"><input type="checkbox" id="say_lair_aurora" onchange="sayTick(this)"> Northern lights</label>
       </div></div>
     <div class="row wrap"><div class="grow full">Weather information: Phone sensors<div class="sub">From your phone's own
       barometer and light sensor (Level 3). Phones have no thermometer, pollen or UV sensor, so these are the two there are.</div></div>
@@ -570,6 +576,7 @@
       <span class="sub" id="cqNext"></span></p>
     <p style="margin:0"><b id="cLands">0</b> <span id="cLandsW">lands</span> in <b id="cRealms">0</b> <span id="cRealmsW">realms</span> claimed
       <span class="sub">(squares of the map about 250 m and 1 km across)</span></p>
+    <div class="actions" style="margin-top:10px"><a href="/stars" target="_blank"><button class="primary">Open the Star Chart</button></a></div>
     <details style="margin-top:8px"><summary>Star chart: <span id="cStars">0</span> satellites seen</summary>
       <p class="sub">Satellites need GPSd Forwarder, GPS2IP or a USB GPS receiver; SensorServer doesn't pass them on.</p>
       <div id="starChart" data-nolang></div></details>
@@ -598,6 +605,24 @@
       <a href="/map" target="_blank"><button class="primary">Open the map</button></a>
       <button class="danger" onclick="forgetMap()">Forget my map</button>
     </div>
+  </section>
+
+  <section data-arrange="radio">
+    <h2>Radio stick <b class="devnote">(In Development, Untested)</b></h2>
+    <p class="sub">With an RTL-SDR radio stick plugged into the Pi, <span class="pname" data-nolang>Harald</span> hears the planes
+      overhead and the little radios around homes and streets: weather stations, tyre sensors, doorbells. It only ever
+      listens. See <i>Features In Development</i> in the README to set it up.</p>
+    <div class="row"><div class="grow">Listen for<div class="sub" id="rdStatus">Not started yet.</div></div></div>
+    <div class="row" style="border:0">
+      <select id="rdMode" aria-label="What the radio stick listens for" onchange="radioSet(this.value)">
+        <option value="both">Planes and little radios, taking turns</option><option value="planes">Planes only</option>
+        <option value="sensors">Little radios only</option><option value="off">Off</option></select></div>
+    <p style="margin:12px 0 4px"><b>Sky Dragons</b> <b class="devnote">(In Development, Untested)</b>: <span id="skyLine"></span></p>
+    <div class="sub" id="skyNow" data-nolang></div>
+    <div class="actions" style="margin-top:8px"><a href="/sky" target="_blank"><button class="primary">Open Sky Dragons</button></a></div>
+    <p style="margin:14px 0 4px"><b>Radio Whispers</b> <b class="devnote">(In Development, Untested)</b>: <span id="whLine"></span></p>
+    <div class="sub" id="whRecent" data-nolang></div>
+    <div class="actions" style="margin-top:8px"><a href="/whispers" target="_blank"><button class="primary">Open Radio Whispers</button></a></div>
   </section>
 
   <section data-arrange="wigle">
@@ -774,6 +799,7 @@ async function refresh() {
     $('cLands').textContent = v.lands.toLocaleString(); $('cRealms').textContent = v.realms.toLocaleString();
     $('cLandsW').textContent = v.lands === 1 ? 'land' : 'lands'; $('cRealmsW').textContent = v.realms === 1 ? 'realm' : 'realms';
     $('cStars').textContent = v.stars;
+    if (v.journal) $('jnLine').innerHTML = scoreLine(v.journal, 'Gadget Journal points');
     $('cqScore').textContent = (v.conquest || 0).toLocaleString(); $('cqTitle').textContent = v.conquest_title || '';
     $('cqNext').textContent = v.conquest_next ? `(${(v.conquest_next_at - v.conquest).toLocaleString()} to ${v.conquest_next})` : '';
     $('netNow').textContent = v.network || 'Not connected';
@@ -788,7 +814,8 @@ async function refresh() {
     } else $('aWeather').textContent = '';
     awakeBase = v.awake; awakeAt = Date.now();
     $('vitals').textContent = `CPU ${Math.round(v.cpu)}% · Memory ${Math.round(v.mem)}% · ` +
-      `${Math.round(v.temp)}°C (${Math.round(v.temp * 9 / 5 + 32)}°F)`;
+      `${Math.round(v.temp)}°C (${Math.round(v.temp * 9 / 5 + 32)}°F)` +
+      ('card_saved' in v ? ` · Saved to the card ${v.card_saved < 60 ? 'just now' : Math.floor(v.card_saved / 60) + ' min ago'}` : '');
     $('meta').textContent = `Face: ${v.mood} · ${v.nearby} devices in range · GPS ${v.gps} · ` +
       `${v.total_meals} snacks and ${v.total_treats} treats all-time`;
     $('wPending').textContent = v.wigle_pending;
@@ -869,6 +896,7 @@ async function refresh() {
     : '<p class="empty">None nearby yet. New realms are looked up while the dragon is on your hotspot.</p>';
   loadWifiPos();
   loadHomeZone();
+  loadRadio();
   loadLair();
   loadGarden();
 
@@ -1187,6 +1215,7 @@ async function loadDot() {
   if (!keep($('dotQTo'))) $('dotQTo').value = d.quiet_to.padStart(5, '0');
 }
 const SAY_KEYS = ['say_lair_temp', 'say_lair_storm', 'say_lair_warnings', 'say_lair_air', 'say_lair_pollen', 'say_lair_uv', 'say_lair_sun',
+                  'say_lair_aurora',
                   'say_phone_storm', 'say_phone_sun'];
 function sayTick(box) {
   const when = $(box.id + '_when');
@@ -1197,6 +1226,31 @@ async function dotSet(key, value) {
   const r = await cmd(`DOTSET ${key} ${value}`);
   if (r[0] !== 'OK') toast((r[0] || PET + ' is not answering').replace(/^ERR /, ''));
   loadDot();
+}
+function scoreLine(s, what) {
+  return `<b>${s.points.toLocaleString()}</b> ${what} · <b data-nolang>${esc(s.title)}</b>` +
+    (s.next ? ` <span class="sub">(${(s.next_at - s.points).toLocaleString()} to ${esc(s.next)})</span>` : '');
+}
+async function loadRadio() {
+  const d = {};
+  (await cmd('RADIO')).forEach(l => { const i = l.indexOf('='); if (i > 0) d[l.slice(0, i)] = l.slice(i + 1); });
+  if (!('mode' in d)) return;
+  if (document.activeElement !== $('rdMode')) $('rdMode').value = d.mode;
+  $('rdStatus').textContent = d.status + '.';
+  let sky = {}, wh = {}, now = [], recent = [];
+  try { sky = JSON.parse(d.sky); wh = JSON.parse(d.whispers); now = JSON.parse(d.planes_now); recent = JSON.parse(d.whispers_recent); } catch (e) {}
+  if ('points' in sky) $('skyLine').innerHTML = scoreLine(sky, 'points');
+  if ('points' in wh) $('whLine').innerHTML = scoreLine(wh, 'points');
+  const alt = ft => ft == null ? '' : `${Math.round(ft * 0.3048).toLocaleString()} m (${ft.toLocaleString()} ft)`;
+  $('skyNow').innerHTML = now.length ? 'Overhead now:<br>' + now.map(p => [p.callsign || 'a plane', p.kind, alt(p.alt_ft),
+    p.km != null ? p.km + ' km away' : ''].filter(x => x).map(esc).join(' · ')).join('<br>') : '';
+  $('whRecent').innerHTML = recent.length ? 'Heard lately: ' + recent.slice(0, 4).map(r =>
+    `${esc(r.model)} (${esc(r.kind.toLowerCase())}, ${r.ago < 60 ? 'just now' : Math.floor(r.ago / 60) + ' min ago'})`).join('; ') : '';
+}
+async function radioSet(mode) {
+  const r = await cmd('RADIOSET ' + mode);
+  if (r[0] !== 'OK') toast((r[0] || PET + ' is not answering').replace(/^ERR /, ''));
+  loadRadio();
 }
 async function loadHomeZone() {
   const d = {};
@@ -1366,6 +1420,16 @@ async function loadLair() {
   $('lairAnnounce').disabled = d.complete !== '1';
   $('lairNow').textContent = d.announce === '1' ? (d.now || 'First check within a minute or two (needs the internet).')
     + (d.temp_said ? ` · Last said: ${d.temp_said}` : '') : '';
+  if ('aurora_camera' in d) {
+    const lights = d.aurora_south === '1' ? 'Southern' : 'Northern', dir = d.aurora_south === '1' ? 'south' : 'north';
+    const need = [d.aurora_camera && `a phone camera from Kp ${d.aurora_camera}`,
+                  d.aurora_horizon && `low in the ${dir} by eye from Kp ${d.aurora_horizon}`,
+                  d.aurora_overhead && `overhead from Kp ${d.aurora_overhead}`].filter(x => x);
+    $('lairAurora').textContent = need.length ? `${lights} lights here: ${need.join(', ')}.` +
+      (d.aurora_kp ? ` Kp at ${d.aurora_at}: ${d.aurora_kp} (${d.aurora_kind === 'observed' ? 'measured' : d.aurora_kind || 'forecast'}).`
+                   : d.announce === '1' ? ' Checked at ten to the hour once it\'s dark.' : '')
+      : `${lights} lights: too far from the magnetic pole to see them here, even in the biggest storms.`;
+  } else $('lairAurora').textContent = '';
   const src = d.warn_source;
   $('warnRegionRow').hidden = src !== 'uk';
   if (src === 'uk' && !keep($('warnRegion'))) $('warnRegion').value = d.warn_region;

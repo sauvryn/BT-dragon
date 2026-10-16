@@ -183,6 +183,14 @@ async def web_server(app):
         cal_page = f.read()
     with open(os.path.join(HERE, "art.html"), encoding="utf-8") as f:
         art_page = f.read()
+    with open(os.path.join(HERE, "collection.html"), encoding="utf-8") as f:
+        coll_page = f.read()
+
+    def collection(data):
+        """The Star Chart or the Gadget Journal: one page, its data written into it."""
+        from html import escape
+        return (coll_page.replace("__TITLE__", escape(data["title"]))
+                .replace("__DATA__", json.dumps(data).replace("</", "<\\/")))
     # The page draws runes from Harald's own stroke font, so it doesn't depend on the
     # phone having a font with the Runic Unicode block.
     page = page.replace("/*RUNEFONT*/", json.dumps({"strokes": RUNES, "letters": _LETTERS, "digraphs": _DIGRAPHS}))
@@ -276,6 +284,14 @@ async def web_server(app):
                     err = "not JSON"
                 out = _response("200 OK" if not err else "400 Bad Request",
                                 json.dumps({"ok": not err, "error": err or ""}), "application/json")
+            elif path == "/stars":
+                out = _response("200 OK", collection(app.star_chart_data()), "text/html; charset=utf-8")
+            elif path == "/sky":
+                out = _response("200 OK", collection(app.sky_data()), "text/html; charset=utf-8")
+            elif path == "/whispers":
+                out = _response("200 OK", collection(app.whispers_data()), "text/html; charset=utf-8")
+            elif path == "/journal":
+                out = _response("200 OK", collection(app.journal_data()), "text/html; charset=utf-8")
             elif path == "/shopping":
                 out = _response("200 OK", shop_page.replace("__NAME__", app.pet.name), "text/html; charset=utf-8")
             elif path == "/calendar":
@@ -364,6 +380,7 @@ async def web_server(app):
                                 [f'Content-Disposition: attachment; filename="{path.rsplit("/", 1)[1]}"'])
             elif path == "/api/backup":
                 from . import backup
+                app.store.flush()                    # the backup reads the card: everything onto it first
                 data = await asyncio.to_thread(backup.make, app.data_dir, app.cfg.get("_path"), app.pet.name)
                 out = _response("200 OK", data, "application/gzip",
                                 [f'Content-Disposition: attachment; filename="{backup.filename()}"'])

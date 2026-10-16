@@ -16,7 +16,8 @@ With **Local announcements** on, he checks the weather at the Lair while he's on
 Meteo again, sent only those rounded coordinates). Each kind of news has its own minute past
 the hour, so they never pile up together: how warm it is on the hour, a storm or change in
 the weather at a quarter past, high pollen at half past, and high UV at a quarter to. Sunrise
-and sunset are announced as they happen. High pollen and high UV show every hour they're high
+and sunset are announced as they happen, and on dark evenings, at ten to the hour, the chance
+of seeing the northern (or southern) lights from the Lair (see aurora.py). High pollen and high UV show every hour they're high
 ("is higher" when they've gone up since the hour before); whether he also says them out loud
 every hour, or only when they've gone up, is up to you in the den.
 
@@ -33,6 +34,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
+from . import aurora
 from . import countries, tuning
 from . import weather_warnings as ww
 
@@ -288,9 +290,10 @@ SUN_WINDOW_S = 30 * 60      # sunrise or sunset is announced if he notices withi
 
 
 class Lair:
-    def __init__(self, store, get=_get, fetch=ww._fetch):
+    def __init__(self, store, get=_get, fetch=ww._fetch, fetch_kp=aurora.fetch):
         self.store = store
         self.get = get
+        self.fetch_kp = fetch_kp    # NOAA's Kp file (aurora.py)
         self.fetch = fetch          # plain text from the weather services' warning feeds
         self.s = store.get("lair") or {}
         self.last = None            # the latest reading: {"temp", "pressure", "past", "ahead", "ts"}
@@ -385,7 +388,34 @@ class Lair:
             kinds.append("warnings")      # every 15 minutes: 5, 20, 35 and 50 past
         if self.cond and self.sun_due(now):
             kinds.append("sun")
+        if lt.tm_min >= 50 and done.get("aurora") != hour and aurora.dark(self.s["lat"], self.s["lon"], now):
+            kinds.append("aurora")        # only after dark: nobody sees the lights by day
         return kinds
+
+    def aurora_needs(self):
+        """{camera, horizon, overhead: the Kp each needs here (None: never)}, and south?"""
+        if not self.complete:
+            return None, False
+        m = aurora.geomagnetic_lat(self.s["lat"], self.s["lon"])
+        return ({"camera": aurora.needed_kp(m, aurora.CAMERA_MARGIN), "horizon": aurora.needed_kp(m, aurora.EYE_MARGIN),
+                 "overhead": aurora.needed_kp(m)}, m < 0)
+
+    def _aurora_event(self, rows, now):
+        kp, kind = aurora.kp_now(rows, now)
+        if kp is None:
+            return []
+        m = aurora.geomagnetic_lat(self.s["lat"], self.s["lon"])
+        level = aurora.chance(kp, m)
+        self.s["aurora_last"] = {"kp": kp, "kind": kind, "ts": now, "level": level or ""}
+        night = time.strftime("%Y-%m-%d", time.localtime(now - 12 * 3600))   # an evening and the night after it
+        said = self.s.get("aurora_said") or {}
+        if said.get("night") != night:
+            said = {"night": night, "level": ""}
+        if not level or (said["level"] and aurora.LEVELS.index(level) <= aurora.LEVELS.index(said["level"])):
+            self.s["aurora_said"] = said
+            return []                     # nothing, or no better than already said tonight
+        self.s["aurora_said"] = {"night": night, "level": level}
+        return [("aurora", level, kp, m < 0, kind)]
 
     def sun_events(self):
         """[(kind, epoch seconds)] for today's and tomorrow's sunrise and sunset at the Lair."""
@@ -420,6 +450,13 @@ class Lair:
             air = None
             if "pollen" in kinds:
                 air = await asyncio.to_thread(fetch_air, self.s["lat"], self.s["lon"], self.get)
+            kp_rows = None
+            if "aurora" in kinds:
+                try:
+                    kp_rows = aurora.parse(await asyncio.to_thread(self.fetch_kp))
+                except Exception as e:
+                    log.info("aurora check failed: %s", e)
+                    kinds = [k for k in kinds if k != "aurora"]      # try again in an hour
             warns = None
             if "warnings" in kinds:
                 w = self.s["warn"]
@@ -458,6 +495,9 @@ class Lair:
             if k == "sun":
                 continue
             done[k] = hour
+            if k == "aurora":
+                out += self._aurora_event(kp_rows or [], now)
+                continue
             if k == "temp":
                 every = max(1, int(tuning.get("lair_temp_every_h")))
                 if cur.get("temperature_2m") is not None and time.localtime(now).tm_hour % every == 0:
