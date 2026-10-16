@@ -74,7 +74,7 @@ time.sleep(3)
 for path in ("/journal", "/stars"):
     html = urllib.request.urlopen(f"http://127.0.0.1:{port}{path}").read().decode()
     assert "__DATA__" not in html and "const DATA = {" in html
-    assert html.count("</script>") == 2, path                       # lang.js's and the page's own, no more
+    assert html.count("</script>") == 3, path                       # lang.js's, auth.js's and the page's own
 with open("bt_dragon/den.html", encoding="utf-8") as f:
     den = f.read()
 assert 'href="/journal"' in den and 'href="/stars"' in den

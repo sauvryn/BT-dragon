@@ -18,6 +18,8 @@ from bt_dragon.app import Dragon
 ok, bad = server.host_ok, (lambda h: not server.host_ok(h))
 assert ok("192.168.1.20:8080") and ok("172.20.10.2") and ok("[fe80::1]:8080") and ok("bt-dragon:8080")
 assert ok("bt-dragon.local:8080") and ok("harald.lan") and ok("pi.home.arpa") and ok(None)
+assert ok("bt-dragon.tail1234.ts.net:8080") and ok("100.101.102.103:8080") and ok("[fd7a:115c:a1e0::1]:8080")
+assert not server.host_ok("bt-dragon.ts.net.evil.example") and not server.host_ok("evilts.net")
 assert bad("evil.example:8080") and bad("192.168.1.20.nip.io") and bad("rebind.attacker.com")
 assert server.origin_ok(None, "1.2.3.4:8080") and server.origin_ok("http://1.2.3.4:8080", "1.2.3.4:8080")
 assert not server.origin_ok("https://evil.example", "1.2.3.4:8080") and not server.origin_ok("null", "1.2.3.4:8080")

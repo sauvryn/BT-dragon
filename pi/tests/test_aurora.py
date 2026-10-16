@@ -10,9 +10,9 @@ from bt_dragon.app import Dragon
 # the magnet model: its centre ~590 km towards the western Pacific; North America
 # magnetically further north than Europe
 assert 570 < 6371.2 * sum(c * c for c in A.OFFSET) ** 0.5 < 610
-lon_ = A.geomagnetic_lat(53.5, -2.2)                       # Manchester
+lon_ = A.geomagnetic_lat(51.5, -0.13)                      # London
 tor = A.geomagnetic_lat(43.7, -79.4)                       # Toronto
-assert 51 < lon_ < 54 and 47 < tor < 51 and A.geomagnetic_lat(-42.9, 147.3) < -50
+assert 49 < lon_ < 51.5 and 47 < tor < 51 and A.geomagnetic_lat(-42.9, 147.3) < -50
 assert abs(A.geomagnetic_lat(0.0, 0.0)) < 15
 # NOAA's table, and what each place needs
 assert A.edge(0) == 66.5 and A.edge(9) == 48.1 and abs(A.edge(5.5) - 55.25) < 0.01

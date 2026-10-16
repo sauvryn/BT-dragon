@@ -137,10 +137,28 @@ elif cmd == "shell":
 '''.replace("PYTHON", sys.executable).replace("ROOTDIR", ROOT)
 open(os.path.join(BIN, "adb"), "w").write(FAKE_ADB)
 os.makedirs(os.path.join(ROOT, "bin"))
-for tool in ("tinyplay", "tinymix", "wpa_cli"):    # the Dot's tools, pretending
+for tool in ("tinyplay", "tinymix", "wpa_cli", "iptables", "ip6tables"):    # the Dot's tools, pretending
     p = os.path.join(ROOT, "bin", tool)
-    open(p, "w").write(f"#!/bin/sh\necho {tool} \"$@\" >> {ROOT}/log\n")
+    # (a firewall check, -C, finds no such rule yet)
+    open(p, "w").write(f"#!/bin/sh\necho {tool} \"$@\" >> {ROOT}/log\n[ \"$1\" = -C ] && exit 1\nexit 0\n")
     os.chmod(p, 0o755)
+# the Dot's interfaces, as a 2nd-generation Dot shows them: its setup network on p2p0
+IFCONFIG = os.path.join(ROOT, "bin", "ifconfig")
+open(IFCONFIG, "w").write("""#!/bin/sh
+cat <<'X'
+wlan0     Link encap:Ethernet  HWaddr 00:fc:8b:00:00:01
+          inet addr:10.154.85.84  Bcast:10.154.85.255  Mask:255.255.255.0
+          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+
+p2p0      Link encap:Ethernet  HWaddr 02:fc:8b:00:00:01
+          inet addr:10.201.126.241  Bcast:0.0.0.0  Mask:255.255.255.240
+          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+
+lo        Link encap:Local Loopback
+          inet addr:127.0.0.1  Mask:255.0.0.0
+X
+""")
+os.chmod(IFCONFIG, 0o755)
 os.chmod(os.path.join(BIN, "adb"), 0o755)
 os.environ["PATH"] = BIN + os.pathsep + os.environ["PATH"]
 
@@ -197,6 +215,14 @@ async def main():
     log = open(os.path.join(ROOT, "log")).read()
     assert "stop ledcontroller" in log and "stop mixer" in log and "stop puffin" in log and "stop ahe" in log
     assert "tinymix Ext_Speaker_Amp_Switch Off" in log
+    # its open setup network is locked (nothing gets in on p2p0) and closed, never the hotspot's
+    assert "iptables -I INPUT -i p2p0 -j DROP" in log and "ip6tables -I INPUT -i p2p0 -j DROP" in log, log
+    assert "p2p_group_remove p2p0" in log and "-i wlan0 -j DROP" not in log
+    os.rename(IFCONFIG, IFCONFIG + ".off")                 # no setup network up: nothing to do
+    open(IFCONFIG, "w").write("#!/bin/sh\necho 'wlan0     Link encap:Ethernet'\necho '          inet addr:10.154.85.84'\n")
+    os.chmod(IFCONFIG, 0o755)
+    assert await d.lock_setup_network() == ""
+    os.replace(IFCONFIG + ".off", IFCONFIG)
     assert os.path.exists(os.path.join(ROOT, "data", "harald", "anim", "mood_happy.txt"))
     # the player is running: it draws his mood
     await d.base("mood_happy")
@@ -397,7 +423,7 @@ async def main():
     d.s["serial"] = "SOMEONEELSE"                             # the device there isn't ours
     r = await d.rescue()
     log = open(os.path.join(ROOT, "log")).read()
-    assert "isn't your Dot" in d.state and "enable_network" not in log, d.state
+    assert "different Echo" in d.state and "enable_network" not in log, d.state
     assert joined[:2] == ["profile:Amazon-XY7", "bt-dragon-dot-rescue"] and joined[-1] == "bt-dragon-home", joined
     assert not d.rescue_wanted(aps)                           # cooling down after a try
     d.s["serial"] = "G090TEST"
@@ -419,6 +445,68 @@ async def main():
     d._missing_since = time.time() - 120
     assert d.rescue_wanted(aps) and not d._doubt
     assert not d.rescue_wanted([])                            # not on the air: nothing to rescue
+
+    # nothing answering on its setup network (adbd stuck) isn't a stranger's Echo: it says so,
+    # and waits longer each time (3, 6, 12, then 30 minutes), instead of hopping away every 3
+    from bt_dragon import dot as dotmod
+    real_adb = d._adb
+
+    async def deaf_adb(*a, timeout=20, target=True):
+        return 1, "error: device offline"
+    d._adb = deaf_adb
+    waits = []
+    for _ in range(5):
+        d._last_rescue_try = 0
+        await d.rescue()
+        waits.append(d._rescue_wait)
+        assert "didn't answer" in d.state and "different Echo" not in d.state, d.state
+    assert waits == [360, 720, 1440, 1800, 1800], waits
+    d._last_rescue_try = time.time() - 400
+    assert not d.rescue_wanted(aps)                           # (still waiting: 30 minutes now)
+    d._adb = real_adb
+    # its network gone mid-join (the Dot restarting): once more in 30 seconds, then as usual
+    async def no_join(name, timeout=45):
+        joined.append(name)
+        return (False, "802.1X supplicant took too long") if name == "bt-dragon-dot-rescue" else (True, "ok")
+    wifimod.connect_profile = no_join
+    d._last_rescue_try = 0
+    await d.rescue()
+    assert d._rescue_wait == dotmod.RESCUE_RETRY_S, d._rescue_wait
+    d._last_rescue_try = time.time() - 40
+    assert d.rescue_wanted(aps)
+    await d.rescue()
+    assert d._rescue_wait == dotmod.RESCUE_WAIT_S
+    wifimod.connect_profile = fake_connect
+    d._last_rescue_try = 0
+    await d.rescue()
+    assert d.state.startswith("rescued") and d._rescue_wait == dotmod.RESCUE_WAIT_S, d.state
+
+    # half-connected: its ears still answer over the hotspot, so it's here and only adb is
+    # stuck: no rescue hops, and the ears are asked to restart adbd (a few times, spaced out)
+    d.mark_lost("test")
+    d._missing_since = time.time() - 120
+    d._last_rescue_try = 0
+    fixes = []
+
+    async def fix_adb():
+        fixes.append(1)
+        return {"ok": True, "stopped": 1}
+    real_fix, d.dot_ears.fix_adb = d.dot_ears.fix_adb, fix_adb
+    d.dot_ears.connected = True
+    assert not d.rescue_wanted(aps)
+    t = time.time()
+    await d._half_connected(t)
+    assert fixes == [1] and d.state.startswith("half-connected"), d.state
+    await d._half_connected(t + 60)                            # too soon for another
+    assert fixes == [1]
+    await d._half_connected(t + 200)
+    await d._half_connected(t + 400)
+    await d._half_connected(t + 600)                           # three is enough: unplug it
+    assert len(fixes) == 3 and "unplugging" in d.state, d.state
+    d.mark_lost("again")                                       # a new loss: three more tries
+    await d._half_connected(time.time())
+    assert len(fixes) == 4
+    d.dot_ears.connected, d.dot_ears.fix_adb = False, real_fix
     d.connected = was
 
     # going away: the player stops and the ring goes dark

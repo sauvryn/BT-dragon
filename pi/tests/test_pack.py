@@ -22,6 +22,7 @@ try:
     assert tuning.get("pack_cap") == 50 and app.pet.pack == 50
 
     # spare food: to the garden, and said on his screen (not over the treat's own message)
+    run("TUNE growth_pct 0")                    # (growing up has its own test: test_growth)
     app.pet.xp = 900
     app.garden.unlock_now(app.pet.level())
     app.pet.hunger, app.pet.pack = 99.0, tuning.get("pack_cap")

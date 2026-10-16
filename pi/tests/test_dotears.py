@@ -499,6 +499,47 @@ async def main():
 
 asyncio.run(main())
 
+# ---- mending the debug link: the Dot's half stops adbd (Fire OS starts a fresh one)
+import importlib.util
+spec = importlib.util.spec_from_file_location("ears_dot", SERVER)
+ears_dot = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(ears_dot)
+fake = os.path.join(tmp, "adbd")
+os.symlink(subprocess.check_output(["sh", "-c", "command -v sleep"]).decode().strip(), fake)
+p = subprocess.Popen([fake, "60"])
+other = subprocess.Popen(["sleep", "60"])
+time.sleep(0.3)
+n, err = ears_dot.restart_adbd()
+assert n >= 1 and not err, (n, err)
+assert p.wait(5) == -9 and other.poll() is None              # adbd stopped; nothing else
+other.kill()
+
+# ---- the Pi's half keeps listening while only the debug link is lost
+class App:
+    pass
+
+
+a = App()
+a.stop = asyncio.Event()
+a.napping = False
+d2 = App()
+d2.app, d2.connected, d2._lost_at, d2.s = a, True, None, {"enabled": True}
+e2 = dotears.DotEars.__new__(dotears.DotEars)
+e2.dot, e2.ip, e2.via_adb = d2, "", False
+assert e2.keep_going()
+d2.connected, d2._lost_at = False, time.time() - 60
+assert not e2.keep_going()                                   # (never knew its address)
+e2.ip = "10.0.0.5"
+assert e2.keep_going()
+d2._lost_at = time.time() - dotears.LOST_KEEP_S - 1
+assert not e2.keep_going()                                   # long gone: let them go
+d2._lost_at = time.time()
+e2.via_adb = True
+assert not e2.keep_going()                                   # (that way needs adb itself)
+e2.via_adb, a.napping = False, True
+assert not e2.keep_going()
+print("dotears ok")
+
 # the same second listen when the Pi does the hearing (no Debian on the Dot)
 sys.path.insert(0, os.path.join(tmp, "fakevosk"))
 os.environ["GRAMMAR_LOG"] = os.path.join(tmp, "grammar-pi")
