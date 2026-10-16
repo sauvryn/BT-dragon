@@ -54,7 +54,7 @@ app.store.ap_seen(ap("AndroidAP1234", "aa:00:00:00:00:05"), time.time())
 app.store.ap_observe("aa:00:00:00:00:05", time.time(), -50, fix)
 pend = {r["ssid"] for r in app.store.pending_obs()}
 assert pend == {"Home Router"}, pend
-# the defaults, from the Manchester trip's numbers
+# the defaults, from a day in a big city
 assert (tuning.get("joy_empty_min"), tuning.get("snack_joy"), tuning.get("treat_joy"), tuning.get("feast_joy"),
         tuning.get("pack_cap"), tuning.get("treat_xp_open"), tuning.get("treat_xp_enterprise")) == (600, 0.02, 0.5, 5, 50, 4, 5)
 print("mobile wi-fi ok")

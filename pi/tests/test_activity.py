@@ -42,7 +42,7 @@ def tram(m, t, lat, laps=4):
     for _ in range(laps):
         for sp in profile:
             lat += sp / 111320
-            m.feed({"lat": lat, "lon": -2.24, "ts": t, "speed": sp, "acc": 5})
+            m.feed({"lat": lat, "lon": -0.13, "ts": t, "speed": sp, "acc": 5})
             t += 1
     return t, lat
 
@@ -53,40 +53,40 @@ def own(d):
 
 old = Motion()                                                  # (speed alone, the old way:)
 old._update_riding = lambda now, sp: None
-t, lat = tram(old, 0.0, 53.48)
+t, lat = tram(old, 0.0, 51.51)
 assert own(old.take(t + 60)) > 100                              # lots of "walking" on a tram
 m = Motion()
-t, lat = tram(m, 0.0, 53.48)
+t, lat = tram(m, 0.0, 51.51)
 got = m.take(t + 60)
 assert own(got) == 0 and got["vehicle"] > 1300, got             # now: all of it the ride
 assert m.riding
 # getting off, no step counter: 90 s at walking pace, then it's a walk again
 for i in range(120):
-    lat += 1.3 / 111320; m.feed({"lat": lat, "lon": -2.24, "ts": t + i, "speed": 1.3, "acc": 5})
+    lat += 1.3 / 111320; m.feed({"lat": lat, "lon": -0.13, "ts": t + i, "speed": 1.3, "acc": 5})
 assert not m.riding and m.mode == "walking"
 walk = m.take(t + 200)
 assert 30 < walk.get("walking", 0) < 70, walk                   # the last half minute or so
 # with a step counter: off the tram the moment the steps start
 steps = {"on": False}
 m = Motion(feet=lambda: steps["on"])
-t, lat = tram(m, 0.0, 53.48, laps=2)
+t, lat = tram(m, 0.0, 51.51, laps=2)
 m.take()
 steps["on"] = True
 for i in range(30):
-    lat += 1.3 / 111320; m.feed({"lat": lat, "lon": -2.24, "ts": t + i, "speed": 1.3, "acc": 5})
+    lat += 1.3 / 111320; m.feed({"lat": lat, "lon": -0.13, "ts": t + i, "speed": 1.3, "acc": 5})
 assert not m.riding and m.mode == "walking" and m.take(t + 100).get("walking", 0) > 30
 # ...and walking speed without any steps (a bus in a queue, never fast) isn't a walk
 steps["on"] = False
 m = Motion(feet=lambda: steps["on"])
 for i in range(60):
-    lat += 1.3 / 111320; m.feed({"lat": lat, "lon": -2.24, "ts": 5000 + i, "speed": 1.3, "acc": 5})
+    lat += 1.3 / 111320; m.feed({"lat": lat, "lon": -0.13, "ts": 5000 + i, "speed": 1.3, "acc": 5})
 got = m.take(6000)
 assert m.mode == "vehicle" and own(got) == 0 and got["vehicle"] > 50, got
 # a bike ride (fast, but never 9 m/s for long) stays a bike ride
 m = Motion()
 for i in range(120):
     sp = 6.0 + (3.5 if i % 30 == 0 else 0)                      # a quick burst now and then
-    lat += sp / 111320; m.feed({"lat": lat, "lon": -2.24, "ts": 9000 + i, "speed": sp, "acc": 5})
+    lat += sp / 111320; m.feed({"lat": lat, "lon": -0.13, "ts": 9000 + i, "speed": sp, "acc": 5})
 assert not m.riding and m.mode == "cycling" and m.take(9500).get("cycling", 0) > 700
 
 # the step counter's evidence: steps in the last 45 s

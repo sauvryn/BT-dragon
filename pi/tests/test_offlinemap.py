@@ -84,8 +84,8 @@ def build_pmtiles(tiles, per_leaf=4):
     return head + rootd + meta + leaves + data
 
 
-# lands around a point in Manchester's latitude (the map data itself is made up)
-LAT, LON = 53.48, -2.24
+# lands around a point in London (the map data itself is made up)
+LAT, LON = 51.51, -0.13
 bounds = [[LAT, LON, LAT + 0.002, LON + 0.003]]
 need = om.tiles_for(bounds)
 assert all(om.MIN_Z <= z <= om.MAX_Z for z, _, _ in need)
