@@ -10,6 +10,46 @@ Optional GPS integration unlocks the ability to "conquer" squares on a real-worl
 
 ![Harald's screen](docs/screen.png)
 
+## Latest Updates as of October 16, 2026 at 11:58 AM BST
+
+**Added**
+
+- **Northern lights alerts (untested):** Harald tells you when the aurora might be visible from the Lair on dark evenings.
+- **The Gadget Journal:** every type of gadget as a collection, with rarities, cards, points and titles.
+- **The Star Chart:** navigation satellite constellations as a collection, with each one's rarity worked out for where the Lair is.
+- **Growing up (untested):** Harald's belly, joy and pack hold a little more at each level. An option in Developer Tools lets the Butterfly Garden's needs grow too.
+- **Sharing with the garden (untested change):** when Harald's belly is full, snacks and feasts go straight to the Butterfly Garden.
+- **Gentler on the memory card:** changes are saved together every 10 minutes, and the system log is kept in memory.
+- **Features In Development and Future Development Options:** two new sections at the end of this README.
+- **In development:** a password for the Den, and reaching the Den from anywhere with Tailscale.
+
+**Fixed**
+
+- **Echo Dot recovery:**
+  - Clearer messages when a rescue doesn't work.
+  - Fewer pointless rescue attempts.
+  - The Dot's ears keep working while its debug link is stuck, and try to repair it.
+  - The Dot's open setup network is now locked and closed once Harald is back in.
+- **The Den's layout:** menus that were too squeezed or too wide were tidied, and the home zone setting moved to the WiGLE section.
+
+## Previous Updates on October 15, 2026
+
+**Added**
+
+- **British, American or Canadian English** for Harald's screen and the Den.
+- **Color Blindness Mode** for the Den and all its pages.
+- **Sleep screens** for naps and sleep, replaceable with your own pictures.
+- **Conquest points and titles** for everything claimed out in the world.
+- **The Butterfly Garden's Collection and Habitats pages,** with collected insects scoring points.
+- **Privacy:** a home zone where wardriving sightings are never recorded, a 90-day limit on sightings, and a dragon ID that changes every day.
+
+**Fixed**
+
+- **Security:** other websites can no longer reach the Den or the control link, the map's code is pinned, and the system log no longer records what was said, where Harald has been, or other people's device addresses.
+- **Developer Tools:** changes now take effect at once.
+- **Typed questions:** answered through the phone when the Dot is away, and nothing piles up for an absent Dot.
+- **Fixes from testing:** a nap's catch-up time, \*YAWN\* being read out as "asterisk", the "safe to unplug" picture being drawn over, and poor air quality at the Lair not being announced.
+
 > **Prototype release.** Everything here is being tested on the author's own hardware, but it hasn't been tried on many setups yet. Expect rough edges, and please open an issue when you find one.
 >
 > **Placeholder art.** Harald's current pixel art is an AI-generated placeholder, made only so the prototype could be designed and tuned. It will be replaced with the author's own original, hand-drawn artwork before the first release. The Den also allows an individual user to easily upload their own artwork or artwork they have permission to use. AI-generated placeholder art is also currently used throughout the insect collection for the prototype testing phase. The insect art is purposely general and makes no effort to replicate individual species; it consists of a simple mock-up with the word "TEMP" in large letters across it. It is the author's intention to replace all of the insect art with human art that reflects each individual species, though this process will likely take some time.
@@ -25,8 +65,6 @@ Optional GPS integration unlocks the ability to "conquer" squares on a real-worl
 > **If you're uncomfortable using AI-assisted code for any reason, please don't use this program.** That is your choice, it is perfectly reasonable, and this disclaimer is here so you can make it before downloading (if you're reading this on GitHub) or installing anything. That being said, please respect that the project author has been completely open and honest about the contents of this disclaimer and the fact of its inclusion, especially in a world where more and more individuals are attempting to pass off partially or completely AI-generated work as their own, either through direct deceit or by omission of fact.
 >
 >If you're still interested in learning about Harald after all that, let's move on...
-
-
 
 ---
 
@@ -94,7 +132,7 @@ A Raspberry Pi Zero 2 W on your home Wi-Fi, with no screen, no phone and nothing
 
 **The forecast.** How hard the field is being shaken is the **Kp index**, from 0 (calm) to 9 (an extreme storm), measured by magnetometers around the world for each 3-hour stretch. On dark evenings, at ten to the hour, Harald downloads NOAA's Space Weather Prediction Center's public Kp file (the past week, measured, and the next three days, forecast). Nothing about you or the Lair is sent: it's the same file anyone can open.
 
-**Where you are counts magnetically.** Picture the Earth's field as a bar magnet inside it. The magnet is tilted, with its north end pointing up through northern Canada, and it sits about 590 km off the Earth's centre, towards the western Pacific. Harald works both out from the International Geomagnetic Reference Field (the model of the field geophysicists agree on every five years), and measures the Lair's latitude from that magnet instead of the Earth's axis. It's why the lights reach so much further south in North America: Toronto, at 43.7°N, is about as far from the magnetic pole as Manchester, at 53.5°N, is. NOAA's table says how far from the magnetic pole the oval's edge reaches at each Kp; aurora is high up, so you can see it low over the horizon from about 4° of latitude further away (roughly 450 km), and a phone camera on a long exposure picks up a fainter glow from about 2° further still.
+**Where you are counts magnetically.** Picture the Earth's field as a bar magnet inside it. The magnet is tilted, with its north end pointing up through northern Canada, and it sits about 590 km off the Earth's centre, towards the western Pacific. Harald works both out from the International Geomagnetic Reference Field (the model of the field geophysicists agree on every five years), and measures the Lair's latitude from that magnet instead of the Earth's axis. It's why the lights reach so much further south in North America: Toronto, at 43.7°N, is about as far from the magnetic pole as London, at 51.5°N, is. NOAA's table says how far from the magnetic pole the oval's edge reaches at each Kp; aurora is high up, so you can see it low over the horizon from about 4° of latitude further away (roughly 450 km), and a phone camera on a long exposure picks up a fainter glow from about 2° further still.
 
 So the Lair section of the Den shows, for the Lair, the Kp needed for each (for London: a phone camera from about Kp 5, low in the north by eye from about 6, overhead from about 8), and the latest Kp when he's checked. On a dark evening when the forecast for now or the next three hours reaches one of them, he says so: **"A phone camera might catch the northern lights…"**, **"…might be seen low in the northern sky…"**, or **"…could be overhead at the Lair tonight! Go outside and look up."** Once a night, and again only if the chance gets better. Below the equator, they're the southern lights, and he says to look south. These are rules of thumb, good to a degree or two: the forecast is for 3-hour stretches while the lights come and go in minutes, and clouds and street lights hide everything. The joy is **Northern lights possible at the Lair** in **Developer Tools**.
   
@@ -261,9 +299,11 @@ Harald has separate meters, so he can be **hungry and happy** after a long walk 
 | **Moon** | The day of a full moon, or of a new or quarter moon (worked out on the Pi, no internet needed) | | +12 / +4 | +5 |
 | *Level 3:* **Climbing** | Stairs and hills while you're out walking, running or cycling, measured by your phone's barometer | | +2 per 10 m | +1 per 10 m |
 | *Level 3:* **Sunshine** | "Wow! It's sunny out today!": your phone's light sensor reads 30,000 lux or more for 30 seconds (at most once every 3 hours) | | +3 | |
-| **Butterfly Garden** | From level 5: an egg hatching or a larva pupating; an adult emerging (fed by food that fits in neither his belly nor his pack) | | +3 / +10 | +10 for an adult |
+| **Butterfly Garden** | From level 5: an egg hatching or a larva pupating; an adult emerging (fed by snacks and feasts when his belly is full, and treats and berries when his pack is full too) | | +3 / +10 | +10 for an adult |
 
 Every one of these numbers can be changed while he runs, from **Developer Tools** in the Den. Living somewhere rural with few devices around? Make his belly last longer or make each catch more filling.
+
+**Growing up (untested).** A level 1 dragon is a hatchling: easy to feed and to cheer up, like a real baby. With each level his appetite grows: his belly and his joy hold **5%** more than at level 1 (so 20% more at level 5, 45% more at level 10), up to **twice** level 1's. The food and joy in the table above stay the same, so each snack, treat or cheer fills a smaller share of a bigger dragon, and a full belly still lasts as long (it empties in proportion). His meters still show percentages; the Den adds what his belly holds now (*"holds 120 food"*), and the level-up says so too: **"LEVEL UP! HARALD IS NOW LEVEL 5 · BIGGER APPETITE"**. A bigger dragon carries more, so his **pack** grows by the same amount (60 food at level 5). Nothing jumps when he levels up: his meters keep the same percentage, they just hold more. The **Butterfly Garden**'s needs stay the same at every level, so as he grows, less spare food reaches it and insects take a little longer: more earned. To have the garden's needs grow with his appetite instead, set **Growing up: the Butterfly Garden's needs grow too** to 1 in **Developer Tools → Food** (for larvae from then on). **Growing up: bigger appetite each level** (5%) and **Growing up: at most** (200% of level 1) are there too; set the first to 0 for the same appetite at every level.
 
 **Levels:** level = 1 + √(XP ÷ 50), so level 2 at 50 XP, 3 at 200, 5 at 800 and 10 at 4,050.
 
@@ -283,7 +323,7 @@ Like Pwnagotchis, dragons make friends. Each BT Dragon sends a small Bluetooth b
 
 Once Harald reaches **level 5**, a **Butterfly Garden** opens in the Den. It comes from **Bookworm**, the project author's own (unfinished) reading tracker project, where each book you read raises an insect. Here, instead of pages, the larvae grow on Harald's **spare food**.
 
-- **Spare food:** treats and berries go into his BELLY first, then his PACK. Anything that fits in neither used to go to waste; now it goes to the garden, shared evenly between the larvae growing there. So the garden only grows while his belly **and** his pack are both full: the Den's garden section shows both, and how much spare food the garden has had today. His screen says so too, at most every 30 seconds (*FED 2.5 FOOD TO THE BUTTERFLY GARDEN*). Snacks and feasts fill his belly but are never spare, so they don't feed the garden. So a well-fed dragon on a busy walk feeds the garden, and three larvae at once each grow at a third of the speed of one.
+- **Spare food (untested change):** what doesn't fit in his belly goes to the garden, shared evenly between the larvae growing there, in two ways. **Snacks and feasts** don't keep, so when his belly is full he shares them with the garden straight away. **Treats and berries** keep, so they go into his PACK first, and only reach the garden once the PACK is full too. The Den's garden section shows his belly and pack, and how much spare food the garden has had today. His screen says so too, at most every 5 minutes (*FED 12 FOOD TO THE BUTTERFLY GARDEN*). So a well-fed dragon feeds the garden whenever there are gadgets about, and three larvae at once each grow at a third of the speed of one.
 - **Spots:** one at first, and one more for each level he gains after the garden opens, up to three. The first spot always holds an **egg** (a new one as soon as its adult is collected). Any other spot stays **empty** until you press **Put an egg here** in the Den, both when it first opens and after its adult is collected, so you can raise just one or two at a time if you'd rather (spare food is only shared between spots with an egg or a larva in them). An egg that hasn't hatched can be taken away again (**Leave this spot empty**). The first food that reaches an egg hatches it, and only then is its species chosen.
 - **Which species:** Bookworm's own rules. Its rarity is rolled (**Common** 60%, **Uncommon** 30%, **Rare** 10%), and a rarer one needs more food to raise (40, 80 or 120 food). Then it's one you haven't raised yet, with species that are in season this month three times as likely. Every egg starts out as a butterfly; raising butterflies unlocks the other categories one at a time (moths after 2, then bees and wasps, beetles, flies, ants and other insects), as in Bookworm.
 - **Growing:** the progress bar is Bookworm's. Each species pupates (a chrysalis, for butterflies) at its own point, worked out from how many days it really spends as a larva and as a pupa, and the adult emerges at 100%. Each one is drawn with Bookworm's own art, crawling as it grows, then its pupa gently swaying (Bookworm's hand-drawn artwork where it has some, its placeholder drawings for the rest), and an empty spot shows its egg. Hatching and pupating give him a little joy; an adult emerging is a big joy (his ecstatic face), +10 XP and a line in his diary. Each spot in the Den shows the name, the life stage (Caterpillar, Chrysalis, Butterfly...), the rarity and its progress on the left, with its picture at half size on the right, and underneath, how it's doing and when it last ate (*"Satisfied · Last fed yesterday"*); **tap it** to open its field notes, with the picture full size at the top.
@@ -456,7 +496,7 @@ Your phone has a GPS, a step counter, a barometer and a light sensor. Shared wit
   - **Exclude home zone (extra privacy)** (untested), in the Den's **WiGLE** section (it only changes what can be uploaded), off to start with. Your sightings are a map of the streets you walk, and the place they all start and end is home. With this on, no sightings are recorded inside a circle around home, so none are uploaded either; networks there still count as treats. Switch it on at home with the GPS working. It starts at **500 m** (recommended); once it's on, you can pick 250 m, 500 m or 1 km and press **Set home to here**. Wi-Fi reaches about 50 to 100 meters from a house (up to 200 m in the open), so the circle has to be bigger than that to hide the networks heard from your doorstep. An empty circle with home in its exact middle would give home away (this happened with fitness apps' privacy zones: find the hole, pin its center), so the middle is moved a random distance from home, up to half the circle's radius, in a random direction. Home is still at least half a radius from the edge, and nobody can tell which way it lies from the middle. Only the moved middle is kept; your home's own position is never stored, and setting it leaves no diary entry. Sightings inside it that haven't been uploaded yet are deleted when you switch it on; ones already on WiGLE stay there. **Set home to here** moves it (after a move of house) or changes its size.
 - **Weather and climbing.** Air pressure drops about 0.12 hPa for every meter you go up. A quick change over a minute or two is you climbing stairs or a hill; a slow change over hours is the weather. **Climbing only counts while you're on the move:** walking, running or cycling by the GPS, or at least 40 steps in the last 2 minutes by the phone's step counter. Sitting at home, the pressure can still jump by a metre's worth (a door or window, a draught, the weather, the phone being picked up), and that used to count; now it doesn't. A fall of about 3 hPa in 3 hours usually means wind and rain on the way. He only judges the weather while you've stayed in roughly the same place, so a hill can't fool him.
 - **Sunshine.** When your phone's light sensor reads 30,000 lux or more for 30 seconds (indoors is 100 to 500), he puts on his round sunglasses and cheers: **"Wow! It's sunny out today!"**
-- **Stars.** Your phone's GPS chip hears navigation satellites from GPS (USA), Galileo (EU), GLONASS (Russia), BeiDou (China), QZSS (Japan), NavIC (India) and others. Each one is a star he collects in the Den's **Star chart**, and his first of a new constellation is a big one. **Open the Star Chart (untested)**, under *Conquests*, shows them as a collection: a card for each of the seven systems (GPS, Galileo, GLONASS, BeiDou, SBAS, QZSS and NavIC), drawn as a little constellation of its own (BeiDou's is the Plough, which its name means), with who built and runs it, how many satellites it has and how high they fly, a *Did you know?*, the stars of it he's heard (the ones in view right now outlined) and sources. QZSS and NavIC are **Rare**: they only rise above the horizon over East Asia and Australia, and around India. **How satellite navigation works** at the top explains it all in six short parts: clocks in the sky, time as distance, why it takes four satellites, how a signal fainter than the background hiss is found at all, and why the satellites' clocks have to allow for Einstein. After that, a star cheers him up again whenever it *rises*: heard low over the horizon after an hour or more out of earshot (**"A STAR RISES! GALILEO 19"**). Satellites you simply lose indoors don't count when you step back outside, because they come back at whatever height they happen to be. This needs **GPSd Forwarder** (set up below) or a [USB GPS receiver](#optional-a-usb-gps-receiver-untested): SensorServer doesn't pass satellite details on.
+- **Stars.** Your phone's GPS chip hears navigation satellites from GPS (USA), Galileo (EU), GLONASS (Russia), BeiDou (China), QZSS (Japan), NavIC (India) and others. Each one is a star he collects in the Den's **Star chart**, and his first of a new constellation is a big one. **Open the Star Chart (untested)**, under *Conquests*, shows them as a collection: a card for each of the seven systems (GPS, Galileo, GLONASS, BeiDou, SBAS, QZSS and NavIC), drawn as a little constellation of its own (BeiDou's is the Plough, which its name means), with who built and runs it, how many satellites it has and how high they fly, a *Did you know?*, the stars of it he's heard (the ones in view right now outlined) and sources. **Rarities for your own sky (untested).** How common each system is depends on where you are, so the rarities are worked out for the Lair. GPS, Galileo, GLONASS and BeiDou circle the whole Earth about 20,000 km up, so they're **Common** everywhere. The others sit about 36,000 km up, where an orbit takes exactly a day, so they stay over one part of the world: some hang still over the equator (SBAS's correction satellites, and some of QZSS's and NavIC's), and some swing north and south each day in a tall figure of eight (QZSS over Japan and Australia, NavIC over the Indian Ocean). From the satellites' published positions, Harald works out how high each one appears above the Lair's horizon through a whole day: **Common** if at least two are always at least 15° up, **Uncommon** if one gets at least 10° above the horizon at least some of the time, and **Rare** if none ever does (you'd have to travel to hear one). So QZSS is Common in Sydney or Tokyo and Rare in London; NavIC is Common in Delhi, Uncommon in London (one of its satellites is always low in the south-east) and Rare in Los Angeles. Each card says why under **In your sky** (*"Rare at the Lair: its satellites only ever peep 5° over your horizon"*). Without a Lair set, it shows the rarities for Europe and North America. Not every phone or GPS receiver listens for every system, so a system in your sky may still go unheard. **How satellite navigation works** at the top explains it all in six short parts: clocks in the sky, time as distance, why it takes four satellites, how a signal fainter than the background hiss is found at all, and why the satellites' clocks have to allow for Einstein. After that, a star cheers him up again whenever it *rises*: heard low over the horizon after an hour or more out of earshot (**"A STAR RISES! GALILEO 19"**). Satellites you simply lose indoors don't count when you step back outside, because they come back at whatever height they happen to be. This needs **GPSd Forwarder** (set up below) or a [USB GPS receiver](#optional-a-usb-gps-receiver-untested): SensorServer doesn't pass satellite details on.
 - **A better tracker warning.** With GPS, an unknown tracker only raises the alarm once it has stayed with you while you've moved 250 m.
 
 Every distance, time and reward here is adjustable in **Developer Tools**. Each feature can be switched off under `[sky]` in the settings file (`lands`, `landmarks`, `greens`, `stars`, `barometer`, `moon`).
@@ -582,7 +622,29 @@ Harald finds the Dot on his network by himself within a minute, and from then on
 
 An Echo that was never set up in the Alexa app comes back from every restart (a power cut, unplugging it) in **setup mode**: a spinning orange ring, its saved networks switched off, and an **open** network of its own (named like `Amazon-XY7`). Anyone nearby can join that network and reach `adb`, which has no password.
 
-Harald is designed to be able to fix this himself. Look up your Dot's setup network name in your phone's Wi-Fi list while the ring is orange, and enter it in the Den under *Voice and light ring → Setup-mode rescue*. From then on, when the Dot has been missing for a minute and he can see its setup network, he hops onto it for a moment, checks the device there has your Dot's serial number (otherwise he leaves it alone), switches your saved network back on, and hops home. The Den can't reach him for up to a minute while he does this. By hand: plug the Dot into a computer by USB and run `dot-reconnect.bat` (or `dot-reconnect.command`) from `tools/echo-dot`.
+Harald is designed to be able to fix this himself. Look up your Dot's setup network name in your phone's Wi-Fi list while the ring is orange, and enter it in the Den under *Voice and light ring → Setup-mode rescue*. From then on, when the Dot has been missing for a minute and he can see its setup network, he hops onto it for a moment, checks the device there has your Dot's serial number (otherwise he leaves it alone), switches your saved network back on, and hops home. The Den can't reach him for up to a minute while he does this. He tries every 3 minutes. If the Dot's network vanishes while he's joining it (the Dot restarting, say), he tries again 30 seconds later. If nothing answers on the Dot's network, he waits longer each time (6, 12, then 30 minutes) instead of hopping away every 3 minutes for nothing.
+
+**Locking the setup network (tested on a 2nd-generation Echo Dot: the setup network closed within seconds).** Switching the saved networks back on doesn't always close the setup network: on a 2nd-generation Dot it can stay on the air (on a second Wi-Fi interface, `p2p0`) while the Dot is back on your hotspot, still open, with `adb` answering on it. Anyone in range could then get into the Dot, and from it onto your network. So each time Harald sets the Dot up, he:
+
+- **locks it**, with a rule in the Dot's firewall that drops everything arriving on that interface;
+- **closes it**, by asking the Dot's Wi-Fi program (`wpa_supplicant`) to take it down.
+
+If it shows up again while the Dot is answering, he does both again, at most every 10 minutes. Firewall rules are forgotten when the Dot restarts, so the next rescue still gets in. To check, over SSH on the Pi: `adb -s 192.168.43.20:5555 shell 'iptables -L INPUT -n -v | grep p2p0'` (with your Dot's address from `adb devices` in place of 192.168.43.20) shows the rule, and the setup network should disappear from your phone's Wi-Fi list. By hand: plug the Dot into a computer by USB and run `dot-reconnect.bat` (or `dot-reconnect.command`) from `tools/echo-dot`.
+
+### When the Dot stops answering
+
+*Untested on a real Dot: the automatic tests pass, but the automatic repair (restarting adbd) hasn't happened on real hardware yet.*
+
+Harald reaches the Dot two ways: the **debug link** (`adb`), for the speaker, the light ring and a health check every 20 seconds, and (with the Dot's own Debian) the **ears' own line**, which brings over what the Dot heard. Sometimes the program at the Dot's end of the debug link, `adbd`, gets stuck while the rest of the Dot carries on. On the Pi, `adb devices` then shows the Dot as `offline`.
+
+When that happens:
+
+- After two failed health checks, Harald counts the Dot as lost. With **phone as backup** on, his voice moves to your phone.
+- If the ears still answer, the Den's Dot status says **half-connected**. The Dot is clearly still on your hotspot, so he doesn't hop onto its setup network looking for it. The wake word and questions keep working, and answers come through your phone.
+- He asks the ears to restart `adbd`. The ears run as root on the Dot, so they can stop it, and Fire OS starts a fresh one by itself a second later. He also restarts the Pi's own end (`adb kill-server`), then reconnects and sets the Dot up again. He tries up to 3 times, 3 minutes apart.
+- If that doesn't work, the Den suggests unplugging the Dot for 10 seconds. It comes back in setup mode, and the rescue above takes it from there.
+
+To look into it yourself over SSH: `journalctl -u bt-dragon -b | grep -iE "lost the Dot|Dot's ears|rescue|half-connected"`.
 
 ### What he does to the Dot
 
@@ -828,6 +890,52 @@ Nothing that could follow a plane, a car or a home. A plane's address is fixed t
 |---|---|
 | `RADIO` | The radio stick: `mode=`, `status=`, `listening=`, `found=`, then `sky=`, `whispers=` (points and titles, as JSON), `planes_now=`, `whispers_recent=`, `installed=`, then `END` |
 | `RADIOSET both` / `planes` / `sensors` / `off` | What the radio stick listens for |
+
+### Reaching the Den from anywhere, with Tailscale
+
+*Untested: Harald accepts Tailscale's addresses, but the setup below hasn't been tried yet.*
+
+Normally the Den only works on Harald's own network. With **[Tailscale](https://tailscale.com)**, you can reach it from anywhere: for example, leaving him at home, adding to the shopping list from the shop, while someone at home adds to it too. Tailscale makes a small private network between your own devices over the internet, encrypted from one device to the other (with WireGuard), and it works through phone hotspots without changing any router settings. It's free for personal use. (Raspberry Pi Connect, the Raspberry Pi's own remote access, gives you a terminal on the Pi, not its web pages, so it can't open the Den.)
+
+**First, he needs the internet where he is.** At home that means a Wi-Fi network he can join while your phone (and its hotspot) is out with you: a second phone's hotspot added under `[[backup_wifi]]` (anyone at home on that hotspot can then use the Den directly, even without Tailscale), or a small 4G router or pocket Wi-Fi that stays plugged in.
+
+**Setting it up:**
+
+1. Over SSH on the Pi: `curl -fsSL https://tailscale.com/install.sh | sh`, then `sudo tailscale up`. It prints a link: open it on your phone and sign in (or make a Tailscale account).
+2. Install the Tailscale app on your phone and sign in to the same account.
+3. To let someone else in (your partner, say), either sign in to the same account on their phone, or **share** just the Pi with their own Tailscale account from Tailscale's admin page (Machines → the Pi → Share). Sharing gives them the Pi and nothing else of yours.
+4. On the admin page, **turn off key expiry** for the Pi. Otherwise it drops off your Tailscale network after 180 days until someone signs it in again.
+5. Open the Den at the Pi's Tailscale address, shown in the app (`http://100.x.y.z:8080`), or by name (`http://bt-dragon:8080`, or the full `http://bt-dragon.tail1234.ts.net:8080`).
+
+**Keep it private:**
+
+- **Never switch on Tailscale Funnel for the Pi.** Funnel puts a device on the public internet, for anyone. Even with the [Den password](#a-password-for-the-den) on, the Den isn't built to face the whole internet.
+- Anyone you give access to sees and can change everything in the Den, not just the shopping list: your diary, the map of where you've been, your calendar, the settings, and they can download a backup. Only share it with people you'd hand your phone to.
+- Harald's protection against web pages (see [What's visible on your network](#whats-visible-on-your-network)) still applies. It accepts Tailscale's names (ending in `.ts.net`): only Tailscale decides where those point, and only within your own Tailscale network.
+- What Tailscale's servers see: your devices' names and addresses, to introduce them to each other. Not what they say: the Den's pages travel encrypted between your devices, and when a direct link isn't possible, through Tailscale's relays still encrypted.
+- On a Pi Zero 2 W, Tailscale uses a little memory (tens of megabytes) and next to no data while idle.
+- For a second lock, switch on the [Den password](#a-password-for-the-den) too.
+
+### A password for the Den
+
+*Untested on the Pi: the automatic tests pass, but it hasn't been tried on real phones yet. Tick the failsafe (below) while trying it out.*
+
+Den → **Care and Accessibility** → **Den password**. Type a password twice (8 characters or more) and press **Set password**, then tick **Require the password**. From then on, every page of the Den asks for it first. Each phone or computer logs in once and stays logged in for 30 days; **Log out on this device** ends that early.
+
+**How it works:**
+
+- The password itself is never kept. It's stretched into a key with PBKDF2 (SHA-256, a random "salt", 200,000 rounds), and only the key is kept; logging in repeats the stretch and compares. The stretch takes a moment on purpose: harmless for one login, painfully slow for anyone trying millions of guesses on a copied database.
+- Wrong guesses are slowed down: after 5 in 10 minutes, logins wait a minute, then two, four and so on (up to an hour). The right password resets that.
+- Logging in gives the browser a long random ticket in a cookie. The cookie is *HttpOnly* (scripts on the page can't read it) and *SameSite=Strict* (other websites can't make your browser send it). Harald keeps only a fingerprint of each ticket, so a copy of his database can't be used to log in. Setting a new password logs everyone out.
+- The control link (port 5151) asks for it too: send `AUTH yourpassword` first. Connections from the Pi itself (over SSH) don't need it.
+- **The phone voice** can't log in, so its script carries a ticket of its own, which only lets it ask what to say. The Den's "Set up the phone voice" command includes the ticket. **Download the script again after setting or changing the password**; an old one says so and stops.
+- Logins travel over your own network, or encrypted inside Tailscale. Without Tailscale, the password crosses your Wi-Fi unencrypted (the Den has no HTTPS), the same as everything else in the Den.
+
+**If you're ever locked out:**
+
+1. **The failsafe (for testing):** tick **Failsafe for testing** and the password switches itself off 5 minutes after it's switched on (the diary notes it). Leave it ticked until you know logging in works on all your devices.
+2. **The boot partition:** put an empty file named `forget-den-password` on the card's boot partition (the one Windows can open). On the next start, the password is switched off and the file deleted. The password stays set, so ticking **Require the password** again brings it back.
+3. **Over SSH on the Pi:** `echo "DENAUTHSET off" | nc -q1 localhost 5151`
 
 ---
 
