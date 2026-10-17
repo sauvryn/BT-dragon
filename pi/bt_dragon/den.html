@@ -87,6 +87,23 @@
   details[open] > summary.foldhead h2::before { content: "▾ "; }
   summary.foldhead .sub { display: block; margin-top: 2px; }
   details[open] > summary.foldhead { margin-bottom: 8px; }
+  /* the library's books: skinny rows, like the garden's larvae */
+  .lbk { display: flex; gap: 10px; align-items: center; padding: 6px 0; border-top: 1px solid var(--line); }
+  .lbk:first-child { border-top: 0; }
+  .lbk .lcov { flex: none; width: 30px; height: 44px; border-radius: 3px; object-fit: cover; background: var(--stone); }
+  .lbk .lcov svg { display: block; width: 30px; height: 44px; }
+  .lbk .lmeta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .lbk .lmeta b { font-size: 14.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lbk .lbar { height: 5px; border-radius: 3px; background: var(--stone); overflow: hidden; }
+  .lbk .lbar i { display: block; height: 100%; background: var(--moss); }
+  /* every section below his meters folds away: tap its heading (remembered on this phone or computer) */
+  /* (the same arrow as the sections that fold by themselves: ▾ before the heading when open, ▸ when folded) */
+  #arrange > section > h2.foldable { cursor: pointer; }
+  #arrange > section > h2.foldable::before { content: "▾ "; }
+  #arrange > section.folded > h2.foldable::before { content: "▸ "; }
+  #arrange > section > h2.foldable:focus-visible { outline: 2px solid var(--rune); outline-offset: 3px; border-radius: 4px; }
+  #arrange > section.folded > h2.foldable { margin-bottom: 0; }
+  #arrange > section.folded > :not(h2):not(.arrange-bar) { display: none !important; }
   .arrange-bar { display: none; align-items: center; justify-content: space-between; gap: 8px;
                  margin: -4px 0 10px; padding: 6px 8px; border: 1px dashed var(--rune); border-radius: 6px; }
   body.arranging .arrange-bar { display: flex; }
@@ -207,6 +224,12 @@
 
   <section data-arrange="friends">
     <h2>Dragon friends</h2>
+    <div class="row" style="border:0; padding-top:0"><div class="grow">Friend beacon
+      <div class="sub">A small Bluetooth beacon with <span class="pname" data-nolang>Harald</span>'s name, level, mood and
+        an ID that changes every day, so other dragons can meet <span class="pname" data-nolang>Harald</span>. Off, other
+        dragons can't find <span class="pname" data-nolang>Harald</span>, but <span class="pname" data-nolang>Harald</span>
+        still meets the ones that broadcast.</div></div>
+      <label class="sub"><input type="checkbox" id="beaconOn" checked onchange="cmd('BEACON ' + (this.checked ? 'on' : 'off'), true)"> On</label></div>
     <div id="friends" data-nolang></div>
   </section>
 
@@ -351,6 +374,11 @@
     <details class="subtools" id="dt-points"><summary><b>Conquest points</b> <span class="sub">· what each claim is worth</span><span class="changedn" id="chg-points"></span></summary>
       <div id="knobs-points"></div>
     </details>
+    <details class="subtools" id="dt-library"><summary><b>Library</b> <span class="sub">· room for e-books on the Pi</span><span class="changedn" id="chg-library"></span></summary>
+      <p class="sub" id="shelfDev" style="margin:6px 0"></p>
+      <p class="sub" id="shelfDevWarn" hidden style="border:1px solid var(--blood); border-radius:8px; padding:8px 10px; color:var(--ink)"></p>
+      <div id="knobs-library"></div>
+    </details>
     <details class="subtools" id="dt-detect"><summary><b>Detection</b> <span class="sub">· thresholds for lands, stars, climbing and weather, and saving to the card</span><span class="changedn" id="chg-detect"></span></summary>
       <div id="knobs-detect"></div>
     </details>
@@ -400,6 +428,17 @@
       <div class="actions" style="margin-top:10px"><a id="gdCollLink" href="/garden" target="_blank"><button class="primary">See Collection</button></a></div>
     </div>
     </details>
+  </section>
+
+  <section data-arrange="library">
+    <h2><span class="pname" data-nolang>Harald</span>'s Hoard: Literary Treasures</h2>
+    <p class="sub" id="libNote" style="margin:0 0 8px; border-left:3px solid var(--rune); padding-left:10px">Knowledge feeds your
+      brain and can also help you feed your dragon! Recording reading progress earns Joy and finishing books earns packs
+      of rations. Short books = 10, Medium = 20, Long = 30.</p>
+    <p style="margin:0 0 6px"><b id="libScore">0</b> library points · <b id="libTitle"></b> <span class="sub" id="libNext"></span></p>
+    <div id="libBooks"></div>
+    <p class="sub" id="libMore" style="margin:6px 0 0"></p>
+    <div class="actions" style="margin-top:10px"><a href="/library" target="_blank"><button class="primary">Open the Library</button></a></div>
   </section>
 
   <section data-arrange="lists">
@@ -657,6 +696,16 @@
     <div class="actions" style="margin-top:10px"><a href="/stars" target="_blank"><button class="primary">Open the Star Chart</button></a></div>
   </section>
 
+  <section data-arrange="achievements">
+    <h2>Achievements</h2>
+    <div class="row" style="border:0; align-items:center">
+      <span id="achStone" style="flex:none; width:40px; height:48px"></span>
+      <div class="grow"><div id="achLatest">No runestones yet: they come from collecting, so go and find some gadgets!</div>
+        <div class="sub" id="achWhen"></div></div></div>
+    <p class="sub" id="achCount" style="margin:4px 0 0"></p>
+    <div class="actions" style="margin-top:10px"><a href="/achievements" target="_blank"><button class="primary">Open Achievements</button></a></div>
+  </section>
+
   <section data-arrange="radio">
     <h2>Radio stick <b class="devnote">(In Development, Untested)</b></h2>
     <p class="sub">With an RTL-SDR radio stick plugged into the Pi, <span class="pname" data-nolang>Harald</span> hears the planes
@@ -769,6 +818,25 @@ document.addEventListener('DOMContentLoaded', () => {
     sec.prepend(bar);
   });
   applyOrder();
+  // folding: every section in the arrangeable part of the den, now and in future, folds by its heading
+  arrangeables().forEach(sec => {
+    const h = sec.querySelector(':scope > h2'), key = 'den-fold-' + sec.dataset.arrange;
+    if (!h) return;
+    h.classList.add('foldable');
+    h.setAttribute('role', 'button'); h.tabIndex = 0;
+    const set = shut => { sec.classList.toggle('folded', shut); h.setAttribute('aria-expanded', String(!shut)); };
+    let shut = false;
+    try { shut = localStorage.getItem(key) === 'shut'; } catch (e) {}
+    set(shut);
+    const flip = e => {
+      if (e.target.closest('a, button, input, select, label')) return;   // (a link or control inside the heading)
+      const now = !sec.classList.contains('folded');
+      set(now);
+      try { localStorage.setItem(key, now ? 'shut' : 'open'); } catch (e2) {}
+    };
+    h.addEventListener('click', flip);
+    h.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); flip(e); } });
+  });
 });
 const PAGE_ID = "__PAGEID__";
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -792,6 +860,18 @@ function runeSvg(text) {  // carved strokes on a 5x9 grid, like the e-ink banner
   }));
   return `<svg viewBox="0 0 ${w} 10" height="34" aria-label="${esc(text)}" fill="currentColor" stroke="currentColor"
     stroke-width="0.9" stroke-linecap="square" stroke-linejoin="miter" fill-opacity="1">${paths}</svg>`;
+}
+// a runestone (see achievements.html): a standing stone in its metal's colour, its category's rune cut into it
+const ACH_TIERS = ['copper', 'bronze', 'silver', 'gold', 'platinum'];
+const ACH_COL = {copper: '#e08a5a', bronze: '#c49a5c', silver: '#c9ced4', gold: '#f0c24a', platinum: '#a9e2f2'};
+function runestone(rune, tier, label) {
+  const lines = FONT.strokes[rune] || [], s = 2.9, ox = 20 - 2 * s, oy = 13, col = ACH_COL[tier] || 'var(--dim)';
+  const carve = lines.map(l => l.length === 1 ? `<circle cx="${ox + l[0][0] * s}" cy="${oy + l[0][1] * s}" r="1.6"/>`
+    : `<polyline fill="none" points="${l.map(([x, y]) => `${ox + x * s},${oy + y * s}`).join(' ')}"/>`).join('');
+  return `<svg viewBox="0 0 40 48" width="40" height="48" role="img" aria-label="${esc(label)}">
+    <path d="M20 2.5 C31 2.5 36 12.5 35.5 25 C35 37.5 29 46 20 46 C10.5 46 4.5 37.5 4.5 25 C4.5 12 9.5 2.5 20 2.5 Z" fill="${col}" stroke="${col}" stroke-width="1.5"/>
+    <path d="M9.5 33 Q8 16 17 7.5" fill="none" stroke="#fff" stroke-opacity=".22" stroke-width="1.5"/>
+    <g fill="#1d1c1a" stroke="#1d1c1a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${carve}</g></svg>`;
 }
 let tracking = null;
 let PET = 'Harald';  // the dragon's current name, filled in from the status
@@ -878,6 +958,34 @@ async function refresh() {
     $('nowFood').textContent = v.hunger; $('nowJoy').textContent = v.joy;
     $('packNow').textContent = v.pack; $('packCap').textContent = v.pack_cap;
     $('bellyHolds').textContent = v.belly_holds > 100 ? `· holds ${v.belly_holds} food (growing up: ${v.belly_holds - 100}% more than at level 1)` : ''; $('packBar').style.width = Math.min(100, v.pack * 100 / Math.max(1, v.pack_cap)) + '%'; $('nowPack').textContent = v.pack + ' food';
+    if ('beacon_on' in v && document.activeElement !== $('beaconOn')) $('beaconOn').checked = !!v.beacon_on;
+    if (v.library) {
+      const B = v.library, r = B.rations;
+      $('libNote').textContent = `Knowledge feeds your brain and can also help you feed your dragon! Recording reading progress earns Joy and finishing books earns packs of rations. Short books = ${r.short}, Medium = ${r.medium}, Long = ${r.long}.`;
+      $('libScore').textContent = Number(B.score).toLocaleString(); $('libTitle').textContent = B.title;
+      $('libNext').textContent = B.next_title ? `(${Number(B.next_title[0] - B.score).toLocaleString()} to ${B.next_title[1]})` : '';
+      const book = `<svg viewBox="0 0 46 68" aria-hidden="true"><rect x="4" y="3" width="38" height="62" rx="3" fill="#3a352e" stroke="#6b5a3a"/><rect x="4" y="3" width="7" height="62" rx="2" fill="#4a4136"/><path d="M28 22 L21 34 L28 46" fill="none" stroke="#d9a441" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+      const html = B.reading.map(b => `<div class="lbk">${b.cover ? `<img class="lcov" src="/api/library/cover/${b.cover}.jpg" alt="" loading="lazy" onerror="this.outerHTML='<span class=&quot;lcov&quot;></span>'">` : `<span class="lcov">${book}</span>`}
+        <div class="lmeta"><b data-nolang>${esc(b.title)}</b>
+          <span class="lbar" aria-hidden="true"><i style="width:${b.pct}%"></i></span>
+          <span class="sub">${(Math.floor(b.pct * 10) / 10)}% · ${b.mode === 'pages' ? `page ${b.progress} of ${b.pages}` : `${b.pages} pages`} · ${b.length_name}</span></div></div>`).join('');
+      if ($('libBooks').dataset.h !== html) { $('libBooks').innerHTML = html || `<p class="sub" style="margin:0">No books on the go. Open the Library to start one.</p>`; $('libBooks').dataset.h = html; }
+      $('libMore').textContent = [B.frozen.length ? `${B.frozen.length} frozen` : '', B.wtr_count ? `${B.wtr_count} to read` : '', B.done_count ? `${B.done_count} finished` : '',
+                                  B.shelf_count ? `${B.shelf_count} e-book${B.shelf_count === 1 ? '' : 's'} on the shelf` : ''].filter(Boolean).join(' · ');
+      const MB = n => n < 1048576 ? `${Math.max(n ? 1 : 0, Math.round(n / 1024))} KB` : `${(n / 1048576).toLocaleString(undefined, {maximumFractionDigits: n < 10485760 ? 1 : 0})} MB`;
+      $('shelfDev').textContent = `E-books on the shelf now: ${MB(B.shelf_used)} of ${MB(B.shelf_cap)}.`;
+      $('shelfDevWarn').hidden = !B.shelf_over;
+      $('shelfDevWarn').textContent = `The e-books already take ${MB(B.shelf_used)}, more than this limit. Nothing has been deleted, but no more can be added: please remove some from the shelf (Open the Library → E-book shelf → Remove), or raise the limit.`;
+    }
+    if (v.achievements) {
+      const A = v.achievements, L = A.latest;
+      $('achCount').textContent = A.earned ? `${A.earned} of ${A.total} achievements with a runestone · ${A.platinum} Platinum` : `${A.total} achievements to earn`;
+      if (L) {
+        $('achStone').innerHTML = runestone(L.rune, L.tier, `${L.tier_name} runestone`);
+        $('achLatest').innerHTML = `Latest: <b>${esc(L.name)}</b> · <b style="color:${ACH_COL[L.tier]}">${L.tier_name}</b>`;
+        $('achWhen').textContent = `${L.section}${L.dev ? ' (in development)' : ''} · ${Number(L.need).toLocaleString()} ${L.unit} · ${new Date(L.when * 1000).toLocaleDateString(undefined, {day: 'numeric', month: 'short', year: 'numeric'})}`;
+      }
+    }
     if ('rations' in v) {
       $('rations').textContent = v.rations; $('nowRations').textContent = v.rations + (v.ration_part ? ` (+${Math.round(v.ration_part * 100)}% of the next)` : '');
       $('rationPart').textContent = v.ration_part ? ` (+${Math.round(v.ration_part * 100)}% of the next)` : '';
@@ -1178,7 +1286,7 @@ async function trackTick() {
 // ---------------------------------------------------------------- developer tools
 async function loadKnobs() {
   const lines = await cmd('TUNE');
-  const bySection = {food: '', joy: '', xp: '', points: '', detect: ''};
+  const bySection = {food: '', joy: '', xp: '', points: '', detect: '', library: ''};
   for (const l of lines) {
     const [key, section, label, value, dflt, unit, help] = split(l);
     if (!(section in bySection)) continue;
@@ -1191,7 +1299,7 @@ async function loadKnobs() {
       <button title="Back to default" onclick="setKnob('${key}', 'default')">↺</button></div>`;
   }
   for (const s in bySection) $('knobs-' + s).innerHTML = bySection[s];
-  const changedN = {food: 0, joy: 0, xp: 0, points: 0, detect: 0};
+  const changedN = {food: 0, joy: 0, xp: 0, points: 0, detect: 0, library: 0};
   lines.forEach(l => { const [key, section, , value, dflt] = split(l);
     if (section in changedN && +value !== +dflt) changedN[section]++; });
   for (const s in changedN) $('chg-' + s).textContent = changedN[s] ? `${changedN[s]} changed` : '';

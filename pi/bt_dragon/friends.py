@@ -176,8 +176,10 @@ class Beacon:
         """The same dragon, level and name, only another mood (byte 8: see encode())."""
         return a is not None and b is not None and len(a) == len(b) and a[:8] == b[:8] and a[9:] == b[9:]
 
-    def __init__(self, payload_fn, quiet=None, bus_fn=None):
+    def __init__(self, payload_fn, quiet=None, bus_fn=None, enabled_fn=None):
         self.payload_fn = payload_fn
+        self.enabled_fn = enabled_fn or (lambda: True)   # the Den's "Friend beacon" tick box
+        self.kick = asyncio.Event()                        # (set when it's ticked or unticked: look again now)
         self.quiet = quiet          # the scanner's quiet(): see ble.BleakScanner
         self.bus_fn = bus_fn        # (the tests pass a stand-in for BlueZ)
         self.failures = 0
@@ -194,6 +196,18 @@ class Beacon:
                 bus, mgr = await connect()
                 registered, path, since = None, None, 0.0
                 while not stop.is_set():
+                    if not self.enabled_fn():          # switched off in the Den: off the air, and wait
+                        if path is not None:
+                            async with (self.quiet() if self.quiet else contextlib.nullcontext()):
+                                try:
+                                    await mgr.call_unregister_advertisement(path)
+                                except Exception:
+                                    pass
+                                bus.unexport(path)
+                            path, registered = None, None
+                            log.info("friend beacon off (switched off in the den)")
+                        await self._pause(stop, 60)
+                        continue
                     data = self.payload_fn()
                     if self._same_but_mood(data, registered) and time.monotonic() - since < self.MOOD_EVERY_S:
                         data = registered       # (only the mood changed, and only just: later)
@@ -222,10 +236,7 @@ class Beacon:
                         registered, since = data, time.monotonic()
                         self.failures = 0
                         log.info("friend beacon on (%d bytes)", len(data))
-                    try:
-                        await asyncio.wait_for(stop.wait(), 60)   # (a rename shows within a minute)
-                    except asyncio.TimeoutError:
-                        pass
+                    await self._pause(stop, 60)        # (a rename shows within a minute)
                 if path is not None:
                     try:
                         await mgr.call_unregister_advertisement(path)
@@ -245,6 +256,16 @@ class Beacon:
             finally:
                 if bus:
                     bus.disconnect()
+
+    async def _pause(self, stop, seconds):
+        """Waits `seconds`, or until he's stopping or the tick box changes."""
+        self.kick.clear()
+        waits = [asyncio.ensure_future(stop.wait()), asyncio.ensure_future(self.kick.wait())]
+        try:
+            await asyncio.wait(waits, timeout=seconds, return_when=asyncio.FIRST_COMPLETED)
+        finally:
+            for w in waits:
+                w.cancel()
 
     @staticmethod
     def _bluez():

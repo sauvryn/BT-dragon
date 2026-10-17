@@ -1,0 +1,1110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Library</title>
+<style>
+  :root { --stone: #1d1c1a; --stone2: #282623; --stone3: #312e2a; --line: #3d3a35; --ink: #ece6da; --dim: #a69f92;
+          --rune: #d9a441; --moss: #7fa36b; --blood: #e8735c; --ice: #8fc7e8; }
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; background: var(--stone); color: var(--ink);
+               font: 16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 0 16px 48px; }
+  header { padding: 14px 0 10px; border-bottom: 3px double var(--line); }
+  h1 { margin: 0; font-size: 13px; letter-spacing: 2px; text-transform: uppercase; color: var(--rune); }
+  h2 { font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--rune); margin: 26px 0 8px;
+       font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  h2 .count { margin-left: auto; color: var(--dim); letter-spacing: 0; text-transform: none; font-weight: 400; font-size: 13px; }
+  .sub { color: var(--dim); font-size: 13.5px; }
+  p { margin: 8px 0; }
+  a { color: var(--rune); }
+  .note { background: var(--stone2); border-left: 3px solid var(--rune); border-radius: 6px; padding: 8px 12px; margin: 12px 0 0; }
+  button { background: transparent; color: var(--ink); border: 1px solid var(--rune); border-radius: 6px;
+           padding: 7px 12px; font: inherit; font-size: 14.5px; cursor: pointer; }
+  button.primary { background: var(--rune); color: #1d1c1a; font-weight: 600; }
+  button.danger { border-color: var(--blood); color: var(--blood); }
+  button.ghost { border-color: var(--line); }
+  button:disabled { color: var(--dim); border-color: var(--line); background: transparent; cursor: default; }
+  input, select { background: var(--stone); color: var(--ink); border: 1px solid var(--line); border-radius: 6px;
+                  padding: 7px 9px; font: inherit; font-size: 15px; min-width: 0; }
+  label { display: flex; flex-direction: column; gap: 3px; font-size: 13.5px; color: var(--dim); }
+  .card { background: var(--stone2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin-top: 8px; }
+  .row { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
+  .row > .grow { flex: 1; }
+  .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  /* a book */
+  .bk { display: flex; gap: 12px; align-items: flex-start; }
+  .cover { flex: none; width: 46px; height: 68px; border-radius: 4px; object-fit: cover; background: var(--stone3); }
+  .cover svg { display: block; width: 46px; height: 68px; }
+  .meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+  .meta b { overflow-wrap: anywhere; }
+  .bar { display: block; height: 6px; border-radius: 3px; background: var(--stone); overflow: hidden; margin-top: 3px; }
+  .bar i { display: block; height: 100%; background: var(--moss); }
+  .frozen .bar i { background: var(--ice); }
+  .chip { display: inline-block; font-size: 11.5px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase;
+          border: 1px solid currentColor; border-radius: 99px; padding: 0 7px; white-space: nowrap; color: var(--dim); }
+  .chip.ice { color: var(--ice); } .chip.ok { color: var(--moss); } .chip.gold { color: var(--rune); }
+  .foot { display: flex; justify-content: space-between; gap: 6px; flex-wrap: wrap; }
+  .mono { font-variant-numeric: tabular-nums; }
+  details.more summary { cursor: pointer; color: var(--dim); font-size: 13.5px; margin-top: 6px; }
+  .empty { color: var(--dim); font-size: 14px; }
+  /* search results */
+  .result { display: flex; gap: 10px; align-items: flex-start; width: 100%; text-align: left; background: var(--stone);
+            border: 1px solid var(--line); border-radius: 8px; padding: 8px; margin-top: 6px; color: var(--ink); }
+  .result.sel { border-color: var(--rune); }
+  .toggle { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .toggle button { border: 0; border-radius: 0; }
+  .toggle button[aria-pressed="true"] { background: var(--rune); color: #1d1c1a; font-weight: 600; }
+  .star { border: 0; padding: 2px 4px; font-size: 20px; line-height: 1; color: var(--rune); }
+  .sheet { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: flex; align-items: flex-end;
+           justify-content: center; z-index: 10; }
+  .sheet .box { background: var(--stone2); border: 1px solid var(--line); border-radius: 14px 14px 0 0; width: 100%;
+                max-width: 560px; max-height: 88vh; overflow-y: auto; padding: 16px 16px 22px; }
+  @media (min-width: 700px) { .sheet { align-items: center; } .sheet .box { border-radius: 14px; } }
+  .sheet h3 { margin: 0 0 6px; font-size: 18px; }
+  .big { font-size: 26px; font-weight: 700; color: var(--rune); }
+  #toast { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); background: var(--stone3); color: var(--ink);
+           border: 1px solid var(--rune); border-radius: 8px; padding: 8px 14px; max-width: 90vw; z-index: 20; display: none; }
+  ol.titles { list-style: none; padding: 0; margin: 0; }
+  ol.titles li { display: flex; justify-content: space-between; gap: 8px; padding: 6px 0; border-top: 1px solid var(--line); }
+  ol.titles li.got b { color: var(--rune); }
+  .warn { border: 1px dashed var(--line); border-radius: 8px; padding: 6px 10px; margin: 10px 0 0; }
+  .over { border: 1px solid var(--blood); border-radius: 8px; padding: 8px 10px; }
+  .eline { margin: 6px 0 0; }
+  /* the e-reader (Bookworm's) */
+  body.rd-open { overflow: hidden; }
+  .reader { position: fixed; inset: 0; z-index: 40; background: var(--stone); color: var(--ink); display: flex; flex-direction: column;
+            padding-bottom: env(safe-area-inset-bottom, 0px); }
+  .rd-top, .rd-bot { display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-bottom: 1px solid var(--line);
+                     max-width: 760px; width: 100%; margin: 0 auto; }
+  .rd-bot { border-bottom: 0; border-top: 1px solid var(--line); }
+  .rd-top button, .rd-bot button { padding: 6px 12px; }
+  .rd-title { flex: 1; min-width: 0; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rd-where { flex: 1; text-align: center; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--dim); font-size: 13.5px; }
+  .rd-stage { flex: 1; min-height: 0; position: relative; max-width: 760px; width: 100%; margin: 0 auto; padding: 36px 24px 20px; }
+  label.rd-mark { position: absolute; top: 6px; right: 24px; flex-direction: row; align-items: center; gap: 6px; white-space: nowrap;
+                  font-size: 13px; font-weight: 700; color: var(--dim); cursor: pointer; z-index: 1; padding: 2px 8px; border-radius: 999px; }
+  .rd-mark input, .toc-chk { width: 20px; height: 20px; accent-color: var(--rune); margin: 0; cursor: pointer; }
+  .rd-mark:has(input:checked) { color: var(--rune); }
+  .rd-mark.ticked { animation: rdtick .9s ease-out; }
+  @keyframes rdtick { 0% { transform: scale(1); } 30% { transform: scale(1.15); background: rgba(217,164,65,.18); } 100% { transform: scale(1); } }
+  .toc-row { display: grid; grid-template-columns: minmax(0, 1fr) 28px; gap: 8px; align-items: center; }
+  .toc-row button { text-align: left; border-color: var(--line); }
+  .toc-chk-gap { width: 20px; }
+  .rd-flow { height: 100%; overflow: hidden; column-fill: auto; font-family: Georgia, "Times New Roman", serif; line-height: 1.55;
+             overflow-wrap: break-word; hyphens: auto; }
+  .rd-flow p { margin: 0 0 .75em; }
+  .rd-flow h1, .rd-flow h2, .rd-flow h3, .rd-flow h4 { font-family: inherit; line-height: 1.25; margin: .4em 0 .7em; break-after: avoid;
+             color: var(--ink); letter-spacing: 0; text-transform: none; display: block; }
+  .rd-flow h1 { font-size: 1.5em; } .rd-flow h2 { font-size: 1.3em; } .rd-flow h3 { font-size: 1.12em; }
+  .rd-flow img, .rd-flow svg { max-width: 100%; max-height: calc(var(--rd-h, 600px) - 8px); height: auto; display: block; margin: 0 auto .75em; break-inside: avoid; }
+  .rd-flow a { color: var(--rune); }
+  .rd-flow table { max-width: 100%; border-collapse: collapse; }
+  .rd-flow blockquote { margin: 0 0 .75em 1.2em; }
+  .rd-flow pre { white-space: pre-wrap; }
+  .rd-toc-panel { position: absolute; inset: 0; background: var(--stone); overflow: auto; padding: 16px 24px; display: flex; flex-direction: column; gap: 8px; }
+  @media (prefers-reduced-motion: reduce) { .rd-mark.ticked { animation: none; } }
+</style>
+<script src="/lang.js"></script>
+<script src="/auth.js"></script>
+<link rel="stylesheet" href="/theme.css">
+</head>
+<body>
+<main>
+  <header>
+    <h1 id="title" data-nolang>The Library</h1>
+    <div class="sub"><b id="score" class="mono">0</b> library points · <b id="ttl"></b> <span id="nextTtl"></span>
+      · <button class="ghost" style="padding:1px 8px; font-size:13px" onclick="openTitles()">Titles</button></div>
+    <p class="note" id="wordhord">Your dragon's wordhord! "Wordhord" is Old English for a store of words and knowledge.
+      In Beowulf, the Old English poem that ends with a dragon guarding its hoard, the hero answers a coastguard by
+      "unlocking the word-hoard" (wordhord onleac).</p>
+    <p class="note" id="note"></p>
+    <p class="sub" id="napNote" hidden></p>
+    <p class="sub warn" id="openWarn" hidden>The Den password is off, so anyone on this network could download the e-books on
+      the shelf. You can set one in the Den, under Care and Accessibility.</p>
+  </header>
+
+  <h2>Currently reading <span class="count" id="curCount"></span></h2>
+  <div id="cur"></div>
+
+  <h2>Add a book</h2>
+  <div class="card">
+    <form id="searchForm" class="row" autocomplete="off">
+      <label class="grow">Title, author or ISBN <input id="q" type="search" placeholder="e.g. The Hobbit"></label>
+      <button type="submit" id="searchBtn">Search</button>
+    </form>
+    <p class="sub" id="searchNote">Books are looked up on Open Library. Page counts differ between editions, so check yours.</p>
+    <div id="results" aria-live="polite"></div>
+  </div>
+  <form id="bookForm" class="card" autocomplete="off">
+    <label>Title <input id="fTitle" type="text" required></label>
+    <div class="row" style="margin-top:6px">
+      <label class="grow">Author <input id="fAuthor" type="text"></label>
+    </div>
+    <div class="row" style="margin-top:6px">
+      <label class="grow">ISBN <input id="fIsbn" type="text" inputmode="numeric"></label>
+      <label style="width:110px">Pages <input id="fPages" type="number" min="1" step="1" required></label>
+    </div>
+    <p class="sub" id="lenHint"></p>
+    <div class="row" style="align-items:center"><span class="sub">Track by</span>
+      <span class="toggle"><button type="button" id="mPages" aria-pressed="true">Page number</button><button type="button" id="mPct" aria-pressed="false">Percentage</button></span></div>
+    <div class="actions"><button class="primary" type="submit">Start reading</button>
+      <button type="button" id="addWtr">Add to Want To Read</button></div>
+  </form>
+
+  <h2>Want To Read <span class="count" id="wtrCount"></span></h2>
+  <div id="wtr"></div>
+
+  <h2>E-book shelf <span class="count" id="shelfCount"></span></h2>
+  <p class="sub" style="margin-top:0">DRM-free EPUBs, kept on the Pi and read here. <b>EPUBs aren't included in backups</b>,
+    so keep copies of them somewhere else too.</p>
+  <p class="over" id="overWarn" hidden></p>
+  <div id="shelf"></div>
+  <div class="actions"><button id="epubAdd">Add EPUBs</button></div>
+  <input type="file" id="epubFile" accept=".epub,application/epub+zip" multiple hidden>
+  <p class="sub" id="shelfUse"></p>
+  <details class="more card" id="howRead"><summary>How the e-reader works</summary>
+    <p>The reader opens DRM-free EPUBs: many shops lock their e-books to their own apps, but books from places like
+      Project Gutenberg and Standard Ebooks, and many independent publishers, are DRM-free. Tap or swipe at the sides
+      to turn pages; A− and A+ change the text size; the list button opens the contents.</p>
+    <p><b>Pages.</b> The reader splits each book into pages of about 250 words, so its page count won't match a printed
+      copy. A book started from the shelf uses these pages.</p>
+    <p><b>Automatic tracking.</b> While you read, the reader notes which pages you actually spend time on. A page counts
+      once it has been on screen long enough to read it: about 10 to 20 seconds for a screenful of text, depending on
+      how much fits on your screen. Flicking past pages doesn't count, and neither does time when the page is in the
+      background. Each page only counts once, however often you reread it. The contents, cover, copyright page, index,
+      glossary, notes, bibliography and similar parts aren't counted.</p>
+    <p>Nothing is logged by itself. When you close the reader, you'll see how many new pages you read, and can log them
+      (they bring your dragon joy, like any reading) or log your reading yourself instead. If you've read nearly all of
+      a book (90% or more), including its last page, logging finishes it.</p>
+    <p><b>Marking pages and chapters as read.</b> Already read some of a book somewhere else? Open the contents and tick
+      the chapters you've read, or tick <b>Marked as read</b> at the top of a page. With automatic tracking on, that box
+      ticks itself the moment a page has been on screen long enough. Pages you mark yourself only count once the whole
+      book is further on in the reader than the book's progress here. Pages that have counted never count twice, and
+      unticking never takes progress away.</p>
+    <p>With automatic tracking off, the reader still remembers your place and you can still mark pages as read, but it
+      doesn't count pages for you or show a summary. This setting is kept on each phone or computer.</p>
+    <div class="actions"><span class="toggle"><button type="button" id="autoOn">Automatic tracking on</button><button type="button" id="autoOff">Off</button></span></div>
+  </details>
+
+  <h2>Frozen <span class="count" id="frzCount"></span></h2>
+  <p class="sub" style="margin-top:0">A frozen book is paused, to come back to. It doesn't count towards the 5 on the go.</p>
+  <div id="frz"></div>
+
+  <h2>Completed Books <span class="count" id="doneCount"></span></h2>
+  <div id="done"></div>
+  <p class="sub" style="margin-top:14px">Book data and covers from <a href="https://openlibrary.org" target="_blank" rel="noopener">Open Library</a>.
+    The library, its points and titles come from Bookworm.</p>
+</main>
+<div id="toast"></div>
+<div class="sheet" id="sheet" hidden><div class="box" id="sheetBox"></div></div>
+<!-- the e-reader (Bookworm's) -->
+<div class="reader" id="reader" hidden role="dialog" aria-modal="true" aria-labelledby="rd-title">
+  <div class="rd-top">
+    <button type="button" class="ghost" id="rd-close">Close</button>
+    <span class="rd-title" id="rd-title" data-nolang></span>
+    <button type="button" class="ghost" id="rd-toc" aria-label="Contents" title="Contents"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg></button>
+    <button type="button" class="ghost" id="rd-smaller" aria-label="Smaller text">A−</button>
+    <button type="button" class="ghost" id="rd-bigger" aria-label="Larger text">A+</button>
+  </div>
+  <div class="rd-stage"><label class="rd-mark" id="rd-mark-wrap" hidden><input type="checkbox" id="rd-mark"> Marked as read</label><div class="rd-flow" id="rd-flow" data-nolang></div>
+    <div class="rd-toc-panel" id="rd-toc-panel" hidden><h3>Contents</h3><div id="rd-toc-list" data-nolang></div></div></div>
+  <div class="rd-bot">
+    <button type="button" id="rd-prev" aria-label="Previous page">‹</button>
+    <span class="mono rd-where" id="rd-where" aria-live="polite"></span>
+    <button type="button" class="ghost" id="rd-back" hidden>Back</button>
+    <button type="button" id="rd-next" aria-label="Next page">›</button>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num = n => Number(n).toLocaleString();
+const day = t => { const d = typeof t === 'number' ? new Date(t * 1000) : new Date(t); return d.toLocaleDateString(undefined, {day: 'numeric', month: 'short', year: 'numeric'}); };
+const fmtPct = p => (Math.floor(p * 10) / 10).toFixed(p % 1 ? 1 : 0) + '%';
+let L = null, mode = 'pages', picked = null, results = [];
+function toast(t) { const e = $('toast'); e.textContent = t; e.style.display = 'block'; clearTimeout(toast.t); toast.t = setTimeout(() => e.style.display = 'none', 3800); }
+
+// a book with no cover: a little closed book, its spine marked with ᚲ-like strokes
+const PLACEHOLDER = `<svg viewBox="0 0 46 68" aria-hidden="true"><rect x="4" y="3" width="38" height="62" rx="3" fill="#3a352e" stroke="#6b5a3a"/>
+  <rect x="4" y="3" width="7" height="62" rx="2" fill="#4a4136"/><path d="M28 22 L21 34 L28 46" fill="none" stroke="#d9a441" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const cover = (b, peek) => b.cover
+  ? `<img class="cover" src="/api/library/cover/${b.cover}.jpg${peek ? '?peek=1' : ''}" alt="" loading="lazy" onerror="this.outerHTML='<span class=&quot;cover&quot;>'+PLACEHOLDER+'</span>'">`
+  : `<span class="cover">${PLACEHOLDER}</span>`;
+const lenOf = pages => pages >= 800 ? 'long' : pages >= 450 ? 'medium' : 'short';
+const LEN = {short: 'Short', medium: 'Medium', long: 'Long'};
+
+async function api(body) {
+  try {
+    const r = await fetch('/api/library', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body)});
+    const j = await r.json();
+    if (!j.ok && j.error) toast(j.error);
+    return j;
+  } catch (e) { toast(`${L ? L.name : 'Harald'} is not answering`); return {ok: false}; }
+}
+async function load() {
+  try { L = await (await fetch('/api/library')).json(); } catch (e) { return; }
+  render();
+}
+
+function bookCard(b) {
+  const isP = b.mode === 'pages', frozen = b.status === 'frozen';
+  const where = isP ? `Page ${num(b.progress)} of ${num(b.pages)}` : `${fmtPct(b.progress)} · ${num(b.pages)} pages`;
+  const today = b.loggedAt && new Date(b.loggedAt * 1000).toDateString() === new Date().toDateString();
+  return `<div class="card${frozen ? ' frozen' : ''}" id="bk-${b.id}"><div class="bk">${cover(b)}
+    <div class="meta"><b>${esc(b.title)}</b><span class="sub">${esc(b.author || 'Unknown author')}</span>
+      <span class="bar" aria-hidden="true"><i style="width:${b.pct}%"></i></span>
+      <span class="foot"><span class="sub mono">${fmtPct(b.pct)} · ${where}</span>
+        <span>${frozen ? '<span class="chip ice">Frozen</span> ' : today ? '<span class="chip ok">Read today</span> ' : ''}<span class="chip">${b.length_name} · ${b.rations} rations</span></span></span>
+      ${frozen ? '' : `<form class="row" style="margin-top:6px" data-log="${b.id}" autocomplete="off">
+        <label class="grow">${isP ? "I'm now on page" : "I'm now at percent"}
+          <input type="number" min="${b.progress}" max="${isP ? b.pages : 100}" step="${isP ? 1 : 0.1}" placeholder="${b.progress}" inputmode="decimal"></label>
+        <button class="primary" type="submit">Log</button></form>`}
+      ${epubLine(b)}
+      <details class="more"><summary>More</summary><div class="actions">
+        <button type="button" data-edit="${b.id}">Edit book</button>
+        <button type="button" data-${frozen ? 'unfreeze' : 'freeze'}="${b.id}">${frozen ? 'Unfreeze book' : 'Freeze book'}</button>
+        <button type="button" class="danger" data-abandon="${b.id}">Abandon book</button></div>
+        <p class="sub">Started ${day(b.started)}${b.isbn ? ` · ISBN ${esc(b.isbn)}` : ''}</p></details>
+    </div></div></div>`;
+}
+
+function render() {
+  const name = L.name;
+  document.title = `${name}'s Hoard: Literary Treasures`;
+  $('title').textContent = `${name}'s Hoard: Literary Treasures`;
+  const r = L.rations;
+  $('note').textContent = `Knowledge feeds your brain and can also help you feed your dragon! Recording reading progress earns Joy and finishing books earns packs of rations. Short books = ${r.short}, Medium = ${r.medium}, Long = ${r.long}.`;
+  $('napNote').hidden = !L.napping; $('napNote').textContent = `${name} is napping: wake ${name} in the Den to log reading or change the library.`;
+  $('score').textContent = num(L.score); $('ttl').textContent = L.title;
+  $('nextTtl').textContent = L.next_title ? `(${num(L.next_title[0] - L.score)} to ${L.next_title[1]})` : '';
+  renderShelf();
+  $('curCount').textContent = `${L.reading.length} of ${L.max}`;
+  $('cur').innerHTML = L.reading.length ? L.reading.map(bookCard).join('')
+    : `<p class="empty">No books on the go. Find the book you're reading below and start it.</p>`;
+  $('frzCount').textContent = `${L.frozen.length} of ${L.max_frozen}`;
+  $('frz').innerHTML = L.frozen.length ? L.frozen.map(bookCard).join('') : `<p class="empty">No frozen books.</p>`;
+  $('wtrCount').textContent = L.wtr.length;
+  $('wtr').innerHTML = L.wtr.length ? L.wtr.map((w, i) => `<div class="card"><div class="bk">${cover(w)}<div class="meta">
+      <b>${esc(w.title)}</b><span class="sub">${esc(w.author || 'Unknown author')} · <span class="mono">${num(w.pages)} pp</span> · ${LEN[lenOf(w.pages)]}</span>
+      <div class="actions"><button class="primary" data-wstart="${w.id}">Start reading</button>
+        <button class="ghost" data-up="${w.id}" ${i === 0 ? 'disabled' : ''} aria-label="Move ${esc(w.title)} up">▲</button>
+        <button class="ghost" data-down="${w.id}" ${i === L.wtr.length - 1 ? 'disabled' : ''} aria-label="Move ${esc(w.title)} down">▼</button>
+        <button class="ghost" data-wdel="${w.id}">Remove</button></div></div></div></div>`).join('')
+    : `<p class="empty">Nothing here yet. Find a book above and choose "Add to Want To Read".</p>`;
+  const favs = new Set(L.favs);
+  $('doneCount').textContent = L.done.length;
+  $('done').innerHTML = L.done.length ? L.done.map(d => `<div class="card"><div class="bk">${cover(d)}<div class="meta">
+      <b>${esc(d.title)}</b><span class="sub">${esc(d.author || 'Unknown author')} · <span class="mono">${num(d.pages)} pp</span></span>
+      <span class="sub">${d.started && day(d.started) !== day(d.date) ? day(d.started) + ' to ' : 'Read '}${day(d.date)}</span>
+      <span class="foot"><span><span class="chip">${LEN[d.length]}</span> <span class="chip gold">+${d.points}</span> <span class="chip ok">+${d.rations} rations</span></span>
+        <button class="star" data-fav="${d.id}" aria-pressed="${favs.has(d.id)}" aria-label="Favourite" title="Favourite">${favs.has(d.id) ? '★' : '☆'}</button></span>
+    </div></div></div>`).join('')
+    : `<p class="empty">Books you finish appear here, with what each one earned.</p>`;
+  wire();
+  lenHint();
+}
+
+function wire() {
+  document.querySelectorAll('[data-log]').forEach(f => f.onsubmit = async e => {
+    e.preventDefault();
+    const v = f.querySelector('input').value;
+    if (v === '') return toast('Enter how far you are');
+    const j = await api({action: 'log', id: f.dataset.log, value: v});
+    if (!j.ok) return;
+    if (j.finished) celebrate(j.finished);
+    else toast(`+${Math.round(j.pages)} page${Math.round(j.pages) === 1 ? '' : 's'}${j.joy ? ` · +${j.joy} joy for ${L.name}` : ''}`);
+    load();
+  });
+  const on = (sel, fn) => document.querySelectorAll(`[data-${sel}]`).forEach(b => b.onclick = () => fn(b.dataset[sel.replace(/-(.)/g, (m, c) => c.toUpperCase())], b));
+  on('freeze', async id => { if ((await api({action: 'freeze', id})).ok) { toast('Frozen. It waits on the shelf for you.'); load(); } });
+  on('unfreeze', async id => { if ((await api({action: 'unfreeze', id})).ok) { toast('Back on the go.'); load(); } });
+  on('abandon', id => { const b = [...L.reading, ...L.frozen].find(x => x.id === id);
+    ask(`Abandon ${esc(b.title)}?`, `It comes off your shelf and earns nothing. (You can always start it again later.)`, 'Abandon book', 'danger',
+        async () => { if ((await api({action: 'abandon', id})).ok) { toast('Abandoned.'); load(); } }); });
+  on('edit', id => editBook([...L.reading, ...L.frozen].find(x => x.id === id)));
+  on('wstart', id => {     // as in Bookworm: choose how to track it first
+    const w = L.wtr.find(x => x.id === id);
+    if (L.reading.length >= L.max) return toast(`You're reading ${L.max} books. Finish, freeze or abandon one first.`);
+    sheet(`<h3>Start ${esc(w.title)}</h3><p class="sub">${num(w.pages)} pages · ${LEN[lenOf(w.pages)]}. How would you like to track it?
+        (You can switch later, with Edit book.)</p>
+      <div class="actions"><button class="primary" id="wsPages">By page number</button><button class="primary" id="wsPct">By percentage</button>
+        <button id="wsNo">Cancel</button></div>`);
+    $('wsNo').onclick = closeSheet;
+    $('wsPages').onclick = () => { closeSheet(); startBook(w, w.id, 'pages'); };
+    $('wsPct').onclick = () => { closeSheet(); startBook(w, w.id, 'percent'); };
+  });
+  on('wdel', async id => { if ((await api({action: 'wtr_remove', id})).ok) load(); });
+  on('up', async id => { if ((await api({action: 'wtr_move', id, dir: 'up'})).ok) load(); });
+  on('down', async id => { if ((await api({action: 'wtr_move', id, dir: 'down'})).ok) load(); });
+  on('fav', async (id, b) => { const j = await api({action: 'fav', id}); if (j.ok) load(); });
+  on('read', id => openReader(id));
+  on('startlib', id => startFromLib(id));
+  on('rm', async (id, el) => {     // Remove takes two taps
+    if (!el.dataset.armed) { el.dataset.armed = '1'; el.textContent = 'Tap again to remove'; el.classList.add('danger'); return; }
+    if ((await api({action: 'epub_remove', id})).ok) { toast('Removed from the shelf, and deleted from the Pi.'); load(); }
+  });
+  on('linkpick', id => pickEpubFor(id));
+  on('efeed', async id => { const b = L.reading.find(x => x.id === id), m = await recordOf(b.libId); if (m) feedFromReader(b, m); });
+  on('eunlink', async id => { if ((await api({action: 'epub_unlink', id})).ok) { toast('Unlinked. The EPUB stays on the shelf.'); load(); } });
+}
+
+// ---- a little sheet for questions, editing and celebrations
+function sheet(html) { $('sheetBox').innerHTML = html; $('sheet').hidden = false; }
+function closeSheet() { $('sheet').hidden = true; }
+$('sheet').onclick = e => { if (e.target === $('sheet')) closeSheet(); };
+function ask(h, text, yes, cls, fn) {
+  sheet(`<h3>${h}</h3><p>${text}</p><div class="actions"><button id="askNo">Cancel</button><button class="${cls || 'primary'}" id="askYes">${yes}</button></div>`);
+  $('askNo').onclick = closeSheet; $('askYes').onclick = () => { closeSheet(); fn(); };
+}
+function celebrate(d) {
+  sheet(`<h3>Book finished!</h3><p><b>${esc(d.title)}</b></p>
+    <p class="big">+${d.rations} rations</p>
+    <p>${L.name} can't eat them alone: give one from the Den (<b>Give Ration</b>) whenever the pack needs filling.
+      +${d.points} library points.</p>
+    <div class="actions"><button class="primary" onclick="closeSheet()">Back to the library</button></div>`);
+}
+function openTitles() {
+  sheet(`<h3>Library titles</h3><p class="sub">Points for each book finished, as in Bookworm: Short ${L.points.short}, Medium ${L.points.medium}, Long ${L.points.long}.</p>
+    <ol class="titles">${L.titles.map(t => `<li class="${L.score >= t.n ? 'got' : ''}"><b>${esc(t.name)}</b><span class="sub mono">${t.n ? num(t.n) : 'to start'}${t.at ? ' · ' + day(t.at) : ''}</span></li>`).join('')}</ol>
+    <div class="actions"><button onclick="closeSheet()">Close</button></div>`);
+}
+function editBook(b) {
+  let em = b.mode;
+  sheet(`<h3>Edit book</h3><p class="sub">To fix a typo or a different edition's page count. Changes don't count as reading (no joy).</p>
+    <label>Title <input id="eTitle" value="${esc(b.title)}"></label>
+    <label style="margin-top:6px">Author <input id="eAuthor" value="${esc(b.author || '')}"></label>
+    <div class="row" style="margin-top:6px"><label style="width:110px">Pages <input id="ePages" type="number" min="1" value="${b.pages}"></label>
+      <label class="grow"><span id="eProgL"></span> <input id="eProg" type="number" min="0" value="${b.progress}"></label></div>
+    <div class="row" style="align-items:center; margin-top:8px"><span class="sub">Track by</span>
+      <span class="toggle"><button type="button" id="ePg">Page number</button><button type="button" id="ePc">Percentage</button></span></div>
+    <div class="actions"><button id="eNo">Cancel</button><button class="primary" id="eYes">Save</button></div>`);
+  const setEm = (m, convert) => {
+    if (convert && m !== em) {   // converted, always rounding up (as in Bookworm)
+      const p = +$('ePages').value || b.pages, v = parseFloat($('eProg').value);
+      if (!isNaN(v)) $('eProg').value = m === 'percent' ? Math.min(100, Math.ceil(v / p * 1000) / 10) : Math.min(p, Math.ceil(v * p / 100));
+    }
+    em = m; $('ePg').setAttribute('aria-pressed', m === 'pages'); $('ePc').setAttribute('aria-pressed', m === 'percent');
+    $('eProgL').textContent = m === 'pages' ? 'Current page' : 'Current %'; $('eProg').step = m === 'pages' ? '1' : '0.1';
+  };
+  setEm(em); $('ePg').onclick = () => setEm('pages', true); $('ePc').onclick = () => setEm('percent', true);
+  $('eNo').onclick = closeSheet;
+  $('eYes').onclick = async () => {
+    const j = await api({action: 'edit', id: b.id, book: {title: $('eTitle').value, author: $('eAuthor').value,
+                         pages: $('ePages').value, progress: $('eProg').value, mode: em}});
+    if (!j.ok) return;
+    closeSheet(); if (j.finished) celebrate(j.finished); else toast('Book updated.'); load();
+  };
+}
+
+// ---- adding a book
+function setMode(m) { mode = m; $('mPages').setAttribute('aria-pressed', m === 'pages'); $('mPct').setAttribute('aria-pressed', m === 'percent'); }
+$('mPages').onclick = () => setMode('pages'); $('mPct').onclick = () => setMode('percent');
+function lenHint() {
+  const p = +$('fPages').value;
+  if (!(p > 0) || !L) { $('lenHint').textContent = 'Short books are under 450 pages, Medium 450 to 799, and Long 800 or more.'; return; }
+  const k = lenOf(p);
+  $('lenHint').textContent = `${num(p)} pages is a ${LEN[k]} book: finishing it earns ${L.rations[k]} rations and ${L.points[k]} library points.`;
+}
+$('fPages').addEventListener('input', lenHint);
+function formBook() {
+  const pages = Math.round(+$('fPages').value);
+  if (!$('fTitle').value.trim() || !(pages > 0)) { toast('Add a title and the number of pages to continue'); return null; }
+  return {title: $('fTitle').value.trim(), author: $('fAuthor').value.trim(), isbn: $('fIsbn').value.trim(), pages,
+          cover: picked && picked.cover && picked.title === $('fTitle').value.trim() ? picked.cover : null};
+}
+function clearForm() { ['fTitle', 'fAuthor', 'fIsbn', 'fPages', 'q'].forEach(i => $(i).value = ''); picked = null; results = []; $('results').innerHTML = ''; setMode('pages'); lenHint(); }
+// Re-reading is allowed: a book already in the library is only asked about (Bookworm's rule for "the same book")
+const nrm = s => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+const same = (a, b) => (a.isbn && b.isbn && nrm(a.isbn) === nrm(b.isbn)) ||
+  (nrm(a.title) === nrm(b.title) && (!nrm(a.author) || !nrm(b.author) || nrm(a.author) === nrm(b.author)));
+function where(b) {
+  if ([...L.reading, ...L.frozen].some(x => same(x, b))) return "It's on your shelf already.";
+  const d = L.done.find(x => same(x, b)); if (d) return `You finished it on ${day(d.date)}.`;
+  if (L.wtr.some(x => same(x, b))) return "It's on your Want To Read list.";
+  return null;
+}
+async function startBook(b, wtrId, wtrMode) {
+  if (L.reading.length >= L.max) return toast(`You're reading ${L.max} books. Finish, freeze or abandon one first, or add this one to your Want To Read list.`);
+  const go = async () => {
+    const j = await api({action: 'start', book: {...b, mode}});
+    if (!j.ok) return;
+    toast(`Started ${b.title}. Happy reading!`); if (!wtrId) clearForm(); load();
+  };
+  if (wtrId) { const j = await api({action: 'start', book: {...b, mode: wtrMode || 'pages', wtr: wtrId}}); if (j.ok) { toast(`Started ${b.title}.`); load(); } return; }
+  const w = where(b); if (w) ask('Read it again?', `${esc(w)} Are you reading it again?`, 'Start reading', 'primary', go); else go();
+}
+$('bookForm').onsubmit = e => { e.preventDefault(); const b = formBook(); if (b) startBook(b); };
+$('addWtr').onclick = async () => {
+  const b = formBook(); if (!b) return;
+  const j = await api({action: 'wtr_add', book: b});
+  if (j.ok) { toast(`${b.title} added to your Want To Read list.`); clearForm(); load(); }
+};
+// Book titles from Open Library are often lower-case: Bookworm's publisher-style title case
+const SMALL = new Set(['a','an','the','and','but','or','nor','for','so','yet','as','at','by','in','of','off','on','per','to','up','via','with','from','into','onto','upon','than']);
+function titleCase(t) {
+  const words = String(t || '').split(/(\s+)/), real = words.map((w, i) => i).filter(i => !/^\s*$/.test(words[i]));
+  const first = real[0], last = real[real.length - 1];
+  const cap = p => p.replace(/^([^\p{L}\p{N}]*)(\p{Ll})/u, (m, pre, ch) => pre + ch.toUpperCase());
+  const small = p => { const c = p.replace(/[^\p{L}']/gu, ''); return SMALL.has(c.toLowerCase()) && c !== c.toUpperCase(); };
+  let afterBreak = true;
+  return words.map((w, i) => {
+    if (/^\s*$/.test(w)) return w;
+    const force = i === first || i === last || afterBreak; afterBreak = /[:—–]$|^[—–]$/.test(w);
+    return w.split('-').map((p, j) => (!(j === 0 && force) && !(i === last) && small(p)) ? p.replace(/\p{L}+/u, x => x.toLowerCase()) : cap(p)).join('-');
+  }).join('');
+}
+function showResults() {
+  $('results').innerHTML = results.length ? results.map((b, i) => `<button type="button" class="result${picked === b ? ' sel' : ''}" data-i="${i}">
+      ${cover(b, true)}<span class="meta"><b>${esc(titleCase(b.title))}</b>
+        <span class="sub">${esc(b.author || 'Unknown author')}${b.year ? ` · ${esc(b.year)}` : ''}</span>
+        <span class="sub mono">${b.pages ? `${num(b.pages)} pp${b.edition ? '' : ' (typical)'}` : 'Page count unknown'}${b.editions > 1 ? ` · ${b.editions} editions` : ''}</span></span></button>`).join('')
+    : '';
+  $('results').querySelectorAll('.result').forEach(el => el.onclick = () => {
+    picked = results[+el.dataset.i];
+    $('fTitle').value = titleCase(picked.title); picked.title = $('fTitle').value;
+    $('fAuthor').value = picked.author || ''; $('fIsbn').value = picked.isbn || ''; $('fPages').value = picked.pages || '';
+    lenHint(); showResults();
+    if (!picked.pages) { $('fPages').focus(); toast("Open Library doesn't know this book's page count. Please type it in."); }
+    else $('bookForm').scrollIntoView({behavior: 'smooth', block: 'start'});
+  });
+}
+$('searchForm').onsubmit = async e => {
+  e.preventDefault();
+  const q = $('q').value.trim(); if (!q) return $('q').focus();
+  $('searchBtn').disabled = true; $('searchBtn').textContent = 'Searching…';
+  $('results').innerHTML = `<p class="empty">Searching Open Library…</p>`;
+  let j = {ok: false, results: []};
+  try { j = await (await fetch('/api/library/search?q=' + encodeURIComponent(q))).json(); } catch (err) {}
+  $('searchBtn').disabled = false; $('searchBtn').textContent = 'Search';
+  results = j.results || []; picked = null; showResults();
+  if (!j.ok) $('results').innerHTML = `<p class="empty">${esc(L.name)} couldn't reach Open Library (no internet?). You can type your book's details below.</p>`;
+  else if (!results.length) $('results').innerHTML = `<p class="empty">No books found. Try fewer words, or type the details below.</p>`;
+};
+// ======================================================================== the e-book shelf and reader
+// Bookworm's reader, brought over. EPUBs are kept on the Pi (Harald only stores them); everything
+// else happens here, in the browser: a small ZIP reader (the browser's own DecompressionStream),
+// then container.xml -> OPF (title, author, manifest, spine) -> nav/NCX contents and landmarks.
+// Only DRM-free books open: anything in META-INF/encryption.xml other than font obfuscation is refused.
+//
+// Pages: each section's text is split into "pieces" of about PIECE non-space characters (roughly 250
+// words), with an invisible marker where each piece starts. A piece is one reader page; a book's page
+// count is its main pieces: not the contents, cover, title and copyright pages, index, glossary, notes,
+// bibliography and so on (from EPUB 3 landmarks and epub:type, EPUB 2 guide entries, or file names),
+// and not spine items marked linear="no". So jumping to the index and back doesn't count.
+//
+// Tracking (while automatic tracking is on): the reader shows one section at a time in CSS columns, one
+// column per screen. Every second the reader is open and visible, the screen on show gets the time; once
+// a screen has been on show long enough to read (its share of the section at READ_CPS characters a second,
+// at least MIN_DWELL seconds, a fast skim) its pieces get credit, and a piece with full credit is read.
+// Flicking past pages, or leaving the page in the background, doesn't count, and rereading never counts
+// twice. Nothing is logged by itself: closing the reader shows a summary, with "Log these pages".
+const EPUB_AUTO_KEY = 'btdragon-epub-auto', EPUB_FONT_KEY = 'btdragon-epub-font';
+const epubAuto = () => { try { return localStorage.getItem(EPUB_AUTO_KEY) !== 'off'; } catch (e) { return true; } };
+const setEpubAuto = on => { try { localStorage.setItem(EPUB_AUTO_KEY, on ? 'on' : 'off'); } catch (e) {} };
+const readerFont = () => { try { return Math.min(28, Math.max(14, +localStorage.getItem(EPUB_FONT_KEY) || 18)); } catch (e) { return 18; } };
+const PIECE = 1250, READ_CPS = 80, MIN_DWELL = 3, PIECE_WORDS = PIECE / 4.7, FINISH_SHARE = 0.9;
+const XLINK = 'http://www.w3.org/1999/xlink';
+const EXCLUDE_TYPES = new Set(['cover','titlepage','title-page','halftitlepage','toc','landmarks','loi','lot','loa','lov','copyright-page',
+  'colophon','index','glossary','bibliography','endnotes','rearnotes','footnotes','notes','appendix','acknowledgments','acknowledgements',
+  'other-credits','contributors','imprint','imprimatur','errata','dedication','backmatter','page-list']);
+const FILE_EXCLUDE = /(^|\/)(cover|toc|contents|copyright|colophon|index|glossary|bibliography|endnotes|notes|footnotes|titlepage|title-?page|halftitle|acknowledge?ments|dedication)[-_]?\d*\.x?html?$/i;
+const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+const cap1 = w => w.charAt(0).toUpperCase() + w.slice(1);
+
+// --- ZIP
+async function unzip(buf) {
+  const dv = new DataView(buf), u8 = new Uint8Array(buf);
+  let e = -1;
+  for (let i = buf.byteLength - 22; i >= Math.max(0, buf.byteLength - 65557); i--) { if (dv.getUint32(i, true) === 0x06054b50) { e = i; break; } }
+  if (e < 0) throw new Error('notzip');
+  const n = dv.getUint16(e + 10, true), files = new Map(), dec = new TextDecoder();
+  let p = dv.getUint32(e + 16, true);
+  for (let k = 0; k < n; k++) {
+    if (dv.getUint32(p, true) !== 0x02014b50) throw new Error('notzip');
+    const nl = dv.getUint16(p + 28, true);
+    files.set(dec.decode(u8.subarray(p + 46, p + 46 + nl)), {enc: !!(dv.getUint16(p + 8, true) & 1), method: dv.getUint16(p + 10, true), csize: dv.getUint32(p + 20, true), off: dv.getUint32(p + 42, true)});
+    p += 46 + nl + dv.getUint16(p + 30, true) + dv.getUint16(p + 32, true);
+  }
+  const Z = {
+    has: name => files.has(name),
+    async bytes(name) {
+      const f = files.get(name); if (!f) return null;
+      if (f.enc) throw new Error('drm');
+      const start = f.off + 30 + dv.getUint16(f.off + 26, true) + dv.getUint16(f.off + 28, true), raw = u8.subarray(start, start + f.csize);
+      if (f.method === 0) return raw.slice();
+      if (f.method !== 8) throw new Error('method');
+      return new Uint8Array(await new Response(new Blob([raw]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer());
+    },
+    async text(name) { const b = await Z.bytes(name); return b ? new TextDecoder().decode(b) : null; }
+  };
+  return Z;
+}
+function resolvePath(base, href) {
+  const parts = base.split('/'); parts.pop();
+  for (const seg of href.split('/')) { if (seg === '' || seg === '.') continue; if (seg === '..') parts.pop(); else parts.push(seg); }
+  return parts.join('/');
+}
+const decodeHref = h => { try { return decodeURIComponent(h); } catch (e) { return h; } };
+function resolveHref(base, href) {
+  const i = href.indexOf('#'), path = i < 0 ? href : href.slice(0, i), frag = i < 0 ? '' : href.slice(i);
+  return (path ? resolvePath(base, decodeHref(path)) : base) + (frag ? '#' + decodeHref(frag.slice(1)) : '');
+}
+const xmlDoc = t => new DOMParser().parseFromString(t, 'application/xml');
+const byLocal = (root, name) => [...root.getElementsByTagNameNS('*', name)];
+function parseHTML(t) {
+  let d = new DOMParser().parseFromString(t, 'application/xhtml+xml');
+  if (d.getElementsByTagName('parsererror').length) d = new DOMParser().parseFromString(t, 'text/html');
+  return d;
+}
+const chapterBody = doc => doc.body || byLocal(doc, 'body')[0] || doc.documentElement;
+const epubType = el => (el && el.getAttribute && (el.getAttribute('epub:type') || '')) || '';
+// A book's own styles and scripts are dropped: the reader uses its own typography, and nothing in a book can run.
+function cleanBody(body) {
+  ['script','style','link','iframe','object','embed','form','input','button','select','textarea','audio','video','meta','base','noscript']
+    .forEach(t => byLocal(body, t).forEach(el => el.remove()));
+  [body, ...body.getElementsByTagName('*')].forEach(el => {
+    [...el.attributes].forEach(a => { const n = a.name.toLowerCase(); if (n.startsWith('on') || n === 'style' || n === 'class') el.removeAttribute(a.name); });
+  });
+}
+function textNodesOf(root) { const w = root.ownerDocument.createTreeWalker(root, 4), out = []; let n; while ((n = w.nextNode())) out.push(n); return out; }
+const nonWs = s => s.replace(/\s+/g, '').length;
+const countChars = body => textNodesOf(body).reduce((t, n) => t + nonWs(n.data), 0);
+async function openEpub(buf) {
+  const z = await unzip(buf);
+  const cont = await z.text('META-INF/container.xml'); if (!cont) throw new Error('notepub');
+  const rf = byLocal(xmlDoc(cont), 'rootfile')[0], opfPath = rf && rf.getAttribute('full-path');
+  const opfT = opfPath && await z.text(opfPath); if (!opfT) throw new Error('notepub');
+  if (z.has('META-INF/rights.xml')) throw new Error('drm');
+  if (z.has('META-INF/encryption.xml')) {
+    const enc = xmlDoc(await z.text('META-INF/encryption.xml'));
+    if (byLocal(enc, 'EncryptionMethod').some(m => !/idpf\.org\/2008\/embedding|ns\.adobe\.com\/pdf\/enc#RC/.test(m.getAttribute('Algorithm') || ''))) throw new Error('drm');
+  }
+  const opf = xmlDoc(opfT), meta = n => { const e = byLocal(opf, n)[0]; return e ? e.textContent.trim().replace(/\s+/g, ' ') : ''; };
+  const man = {};
+  byLocal(opf, 'item').forEach(it => { man[it.getAttribute('id')] = {href: resolvePath(opfPath, decodeHref(it.getAttribute('href') || '')), type: it.getAttribute('media-type') || '', props: (it.getAttribute('properties') || '').split(/\s+/)}; });
+  const spine = byLocal(opf, 'itemref').map(r => ({...man[r.getAttribute('idref')], linear: r.getAttribute('linear') !== 'no'}))
+    .filter(s => s.href && /html|xml/.test(s.type || 'html'));
+  const types = {}, addType = (h, t) => t.split(/\s+/).filter(Boolean).forEach(x => (types[h] = types[h] || []).push(x.toLowerCase()));
+  let toc = [], hasMarks = false;
+  const navItem = Object.values(man).find(m => m.props.includes('nav'));
+  if (navItem) {
+    const nt = await z.text(navItem.href);
+    if (nt) byLocal(parseHTML(nt), 'nav').forEach(nav => {
+      const t = epubType(nav), links = byLocal(nav, 'a').filter(a => a.getAttribute('href'));
+      if (/landmarks/.test(t)) { hasMarks = true; links.forEach(a => addType(resolveHref(navItem.href, a.getAttribute('href')).split('#')[0], epubType(a))); }
+      else if (/(^|\s)toc(\s|$)/.test(t)) toc = links.map(a => ({label: a.textContent.trim().replace(/\s+/g, ' '), href: resolveHref(navItem.href, a.getAttribute('href'))}));
+    });
+  }
+  byLocal(opf, 'reference').forEach(r => { if (r.getAttribute('href')) { hasMarks = true; addType(resolveHref(opfPath, r.getAttribute('href')).split('#')[0], r.getAttribute('type') || ''); } });
+  if (!toc.length) {   // EPUB 2 contents (NCX)
+    const sp = byLocal(opf, 'spine')[0], ncx = man[sp && sp.getAttribute('toc')] || Object.values(man).find(m => /dtbncx/.test(m.type));
+    const nt = ncx && await z.text(ncx.href);
+    if (nt) toc = byLocal(xmlDoc(nt), 'navPoint').map(np => { const t = byLocal(np, 'text')[0], c = byLocal(np, 'content')[0];
+      return {label: t ? t.textContent.trim().replace(/\s+/g, ' ') : '', href: c ? resolveHref(ncx.href, c.getAttribute('src') || '') : ''}; }).filter(x => x.href);
+  }
+  if (navItem) spine.forEach(s => { if (s.href === navItem.href) addType(s.href, 'toc'); });
+  return {z, title: meta('title') || 'Untitled', author: byLocal(opf, 'creator').map(e => e.textContent.trim()).filter(Boolean).join(', '), spine, types, toc, hasMarks};
+}
+// Reads every section once, when the book is added, to count its pieces and decide whether it's main text.
+async function indexEpub(buf) {
+  const E = await openEpub(buf), chapters = []; let start = 0;
+  for (const it of E.spine) {
+    const t = await E.z.text(it.href); if (t == null) continue;
+    const body = chapterBody(parseHTML(t)); cleanBody(body);
+    const chars = countChars(body), pics = byLocal(body, 'img').length + byLocal(body, 'image').length;
+    const n = chars ? Math.max(1, Math.round(chars / PIECE)) : (pics ? 1 : 0);
+    const ty = [...(E.types[it.href] || []), ...[body, ...[...body.children].slice(0, 2)].map(epubType).join(' ').toLowerCase().split(/\s+/).filter(Boolean)];
+    const main = n > 0 && chars > 0 && it.linear && !ty.some(x => EXCLUDE_TYPES.has(x)) && !(!E.hasMarks && FILE_EXCLUDE.test(it.href));
+    chapters.push({href: it.href, start, n, chars, main});
+    start += n;
+  }
+  const mainCount = chapters.reduce((t, c) => t + (c.main ? c.n : 0), 0);
+  if (!mainCount) throw new Error('empty');
+  return {title: E.title, author: E.author, chapters, toc: E.toc, mainCount, total: start};
+}
+
+// --- the shelf (kept on the Pi). LIB: the shelf's rows; a row linked to a book carries its whole record.
+let LIB = [];
+const RECORDS = {};
+async function recordOf(id) {
+  const row = LIB.find(x => x.id === id);
+  if (row && row.record) return row.record;
+  if (RECORDS[id]) return RECORDS[id];
+  try { return RECORDS[id] = await (await fetch(`/api/library/epub/${id}.json`)).json(); } catch (e) { return null; }
+}
+// The reader's record goes to the Pi. During a nap nothing can be written, so it waits on this device
+// (and goes as soon as the library page is next opened with the dragon awake).
+const PEND = 'btdragon-epub-pending-';
+async function libPut(m) {
+  const rec = {read: m.read, manual: m.manual || [], partial: m.partial || {}, pos: m.pos};
+  RECORDS[m.id] = m;
+  try {
+    const r = await fetch('/api/library', {method: 'POST', headers: {'Content-Type': 'application/json'},
+                                          body: JSON.stringify({action: 'epub_save', id: m.id, record: rec})});
+    const j = await r.json();
+    if (j.ok) { try { localStorage.removeItem(PEND + m.id); } catch (e) {} return; }
+  } catch (e) {}
+  try { localStorage.setItem(PEND + m.id, JSON.stringify(rec)); } catch (e) {}
+}
+async function sendPending() {
+  let keys = [];
+  try { keys = Object.keys(localStorage).filter(k => k.startsWith(PEND)); } catch (e) {}
+  for (const k of keys) {
+    let rec = null; try { rec = JSON.parse(localStorage.getItem(k)); } catch (e) {}
+    if (!rec) continue;
+    try {
+      const j = await (await fetch('/api/library', {method: 'POST', headers: {'Content-Type': 'application/json'},
+                                                    body: JSON.stringify({action: 'epub_save', id: k.slice(PEND.length), record: rec})})).json();
+      if (j.ok || /no such/.test(j.error || '')) localStorage.removeItem(k);
+    } catch (e) {}
+  }
+}
+const chapterOfK = (m, k) => m.chapters.find(c => k >= c.start && k < c.start + c.n);
+const isMainK = (m, k) => { const c = chapterOfK(m, k); return !!(c && c.main); };
+const countMain = m => m.read.filter(k => isMainK(m, k)).length;
+const lastMainK = m => { const c = [...m.chapters].reverse().find(c => c.main); return c ? c.start + c.n - 1 : -1; };
+const reachedEnd = m => m.read.includes(lastMainK(m)) && countMain(m) >= FINISH_SHARE * m.mainCount;
+const libPct = m => Math.floor(countMain(m) / m.mainCount * 100);
+const mb = n => n < 1048576 ? `${Math.max(n ? 1 : 0, Math.round(n / 1024))} KB` : `${(n / 1048576).toLocaleString(undefined, {maximumFractionDigits: n < 10485760 ? 1 : 0})} MB`;
+
+async function importEpubs(files) {
+  const list = [...files].filter(f => /\.epub$/i.test(f.name));
+  if (!list.length) return toast('No EPUB files were found there.');
+  toast(`Adding ${plural(list.length, 'book')} to the shelf...`);
+  let added = 0; const drm = [], bad = [], refused = [];
+  for (const f of list) {
+    if (f.size > L.epub_cap) { refused.push(`${f.name} is ${mb(f.size)}: the most for one book is ${mb(L.epub_cap)}.`); continue; }
+    let info;
+    try { info = await indexEpub(await f.arrayBuffer()); }
+    catch (e) { (e && e.message === 'drm' ? drm : bad).push(f.name); continue; }
+    const meta = new TextEncoder().encode(JSON.stringify({...info, file: f.name}));
+    try {
+      const r = await fetch('/api/library/epub', {method: 'POST', headers: {'X-Meta-Length': String(meta.length), 'Content-Type': 'application/octet-stream'},
+                                                  body: new Blob([meta, f])});
+      const j = await r.json();
+      if (j.ok) added++; else refused.push(j.error);
+    } catch (e) { refused.push(`${f.name} couldn't be sent to ${L.name}.`); }
+  }
+  await load();
+  toast([added ? `Added ${plural(added, 'book')} to the shelf.` : '',
+    drm.length ? `${drm.length === 1 ? '1 book is' : drm.length + ' books are'} DRM-protected and can't be opened: ${drm.join(', ')}.` : '',
+    bad.length ? `${bad.length === 1 ? '1 file' : bad.length + ' files'} couldn't be read as EPUB: ${bad.join(', ')}.` : '',
+    ...refused].filter(Boolean).join(' ') || 'Nothing was added.');
+}
+
+function shelfRow(m) {
+  const status = !m.file ? "This EPUB isn't on the Pi (backups don't include EPUBs): add the file again to carry on where you were."
+    : m.linked ? `Linked to ${esc(m.linked_title)}` : m.started ? `${m.pct}% read` : 'Not started';
+  return `<div class="card"><div class="meta"><b>${esc(m.title)}</b>
+    <span class="sub">${esc(m.author || 'Unknown author')} · <span class="mono">${num(m.mainCount)} pp</span> · ${mb(m.size || 0)}</span>
+    <span class="sub">${status}</span>
+    <div class="actions">${m.file ? `<button class="primary" data-read="${m.id}">Read</button>` : ''}
+      ${m.file && !m.linked ? `<button data-startlib="${m.id}">Start reading</button>` : ''}
+      <button class="ghost" data-rm="${m.id}">Remove</button></div></div></div>`;
+}
+function renderShelf() {
+  LIB = L.shelf || [];
+  $('shelfCount').textContent = LIB.length;
+  $('shelf').innerHTML = LIB.length ? LIB.map(shelfRow).join('')
+    : `<p class="empty">Add DRM-free EPUB e-books to read them here. ${esc(L.name)} can count the pages you read, ready to log.</p>`;
+  $('shelfUse').textContent = `${mb(L.shelf_used)} of ${mb(L.shelf_cap)} used · up to ${mb(L.epub_cap)} for one book (Developer Tools → Library).`;
+  $('overWarn').hidden = !L.shelf_over;
+  $('overWarn').textContent = `The e-books on the shelf take ${mb(L.shelf_used)}, more than the ${mb(L.shelf_cap)} allowed in Developer Tools. Nothing has been deleted, but no more can be added: please remove some EPUBs you've finished with (or raise the limit).`;
+  $('openWarn').hidden = !!L.locked || !LIB.length;
+  $('autoOn').setAttribute('aria-pressed', epubAuto()); $('autoOff').setAttribute('aria-pressed', !epubAuto());
+}
+function startFromLib(id) {
+  const m = LIB.find(x => x.id === id); if (!m) return;
+  if (m.linked) return toast(`It's already linked to ${m.linked_title}.`);
+  startBook({title: m.title, author: m.author || '', isbn: '', pages: m.mainCount, libId: m.id});
+}
+
+// --- logging pages from the reader (Bookworm's "feeding")
+// Pages are read in two ways: by the reader's timer (automatic tracking) or marked as read by hand (whole
+// chapters in Contents, or one screen with "Marked as read"); hand-marked pieces are listed in m.manual. Each
+// linked book keeps the pieces that have already counted (b.libFedK), and they never count again. Logging takes
+// the book to the higher of:
+//   - where it is now, plus the timer-read pages that haven't counted yet (so pages read here add on top of
+//     reading done elsewhere), and
+//   - the book's total % read in the reader (so hand-marked pages only count once the whole book is further on).
+// Progress never goes down.
+const fedSetOf = b => new Set(b.libFedK || []);
+const unitsMax = b => b.mode === 'pages' ? b.pages : 100;
+const toUnits = (b, m, n) => b.mode === 'pages' ? Math.round(n * b.pages / m.mainCount) : Math.round(n / m.mainCount * 1000) / 10;
+const unitPct = (b, v) => Math.floor(v / unitsMax(b) * 1000) / 10;
+function feedPlan(b, m) {
+  const fed = fedSetOf(b), manual = new Set(m.manual || []), mainRead = m.read.filter(k => isMainK(m, k));
+  const autoNew = mainRead.filter(k => !fed.has(k) && !manual.has(k)).length;
+  const v1 = b.progress + (autoNew ? Math.max(b.mode === 'pages' ? 1 : 0.1, toUnits(b, m, autoNew)) : 0);
+  const v2 = toUnits(b, m, mainRead.length);
+  let v = Math.min(unitsMax(b), Math.max(v1, v2));
+  if (reachedEnd(m)) v = unitsMax(b);
+  v = b.mode === 'pages' ? Math.round(v) : Math.round(v * 10) / 10;
+  return {v, gain: b.status === 'reading' && v > b.progress, autoNew, uncounted: mainRead.some(k => !fed.has(k)), bookPct: libPct(m),
+          bookAt: unitPct(b, b.progress), end: reachedEnd(m)};
+}
+const mainReadOf = m => m.read.filter(k => isMainK(m, k));
+async function markCounted(b, m) {
+  b.libFedK = [...new Set([...fedSetOf(b), ...mainReadOf(m)])];
+  await api({action: 'epub_counted', id: b.id, counted: mainReadOf(m)});
+}
+// Pages that can't add anything (the book's already further on) are recorded as counted straight away.
+function settleReader(b, m) { if (b.status !== 'reading') return; const P = feedPlan(b, m); if (!P.gain && P.uncounted) markCounted(b, m); }
+async function feedFromReader(b, m) {
+  const P = feedPlan(b, m);
+  b.libFedK = [...new Set([...fedSetOf(b), ...mainReadOf(m)])];
+  const j = await api({action: 'epub_feed', id: b.id, value: P.v, counted: mainReadOf(m)});
+  if (!j.ok) return;
+  if (j.finished) celebrate(j.finished);
+  else if (j.pages) toast(`+${Math.round(j.pages)} page${Math.round(j.pages) === 1 ? '' : 's'}${j.joy ? ` · +${j.joy} joy for ${L.name}` : ''}`);
+  else toast('Those pages are already counted.');
+  load();
+}
+function epubLine(b) {
+  const row = b.libId && LIB.find(x => x.id === b.libId), m = row && row.record;
+  if (!m) {
+    if (b.status !== 'reading' || !LIB.some(x => !x.linked && x.file)) return '';
+    return `<p class="sub eline">On your e-book shelf? <button class="ghost" style="padding:2px 10px" data-linkpick="${b.id}">Link an EPUB</button></p>`;
+  }
+  const auto = epubAuto(); if (auto) settleReader(b, m);
+  const P = feedPlan(b, m);
+  const what = !auto || b.status !== 'reading' ? '' : P.gain ? (P.end ? ' You reached the end in the reader, so logging finishes the book.'
+      : ` Logging the reader's pages takes it from ${P.bookAt}% to ${unitPct(b, P.v)}%.`)
+    : P.bookPct < P.bookAt ? ` It's at ${P.bookAt}%, so pages you mark as read start to count once the reader is further on.` : '';
+  return `<p class="sub eline">Linked to its EPUB: ${P.bookPct}% read in the reader.${what}</p>
+    <div class="actions">${row.file ? `<button data-read="${m.id}">Open in reader</button>` : ''}
+      ${auto && P.gain ? `<button class="primary" data-efeed="${b.id}">Log these pages</button>` : ''}
+      <button class="ghost" data-eunlink="${b.id}">Unlink</button></div>`;
+}
+function pickEpubFor(bid) {
+  const free = LIB.filter(x => !x.linked && x.file);
+  sheet(`<h3>Link an EPUB</h3><p class="sub">Pages already read in the reader only count once the book is further on there than here.</p>
+    ${free.map(m => `<button class="result" data-pick="${m.id}"><span class="meta"><b>${esc(m.title)}</b><span class="sub">${esc(m.author || 'Unknown author')} · ${num(m.mainCount)} pp · ${m.pct}% read</span></span></button>`).join('')}
+    <div class="actions"><button onclick="closeSheet()">Cancel</button></div>`);
+  document.querySelectorAll('[data-pick]').forEach(el => el.onclick = async () => {
+    closeSheet(); const j = await api({action: 'epub_link', id: bid, epub: el.dataset.pick});
+    if (j.ok) { toast('Linked. Open it in the reader from its book.'); load(); }
+  });
+}
+
+// --- the reading summary, when the reader closes. S: what changed this session (main pages only).
+const SETTINGS_NOTE = `<p class="sub">Automatic tracking can be switched off under <b>How the e-reader works</b>, on the shelf.</p>`;
+function readerSummary(m, S) {
+  if (!epubAuto()) return;
+  const row = LIB.find(x => x.id === m.id), b = row && row.linked && [...L.reading, ...L.frozen].find(x => x.id === row.linked);
+  const any = S.auto || S.manual || S.unmarked;
+  const parts = [S.auto ? `You read <b>${plural(S.auto, 'new page')}</b> this session (about ${Math.round(S.auto * PIECE_WORDS / 10) * 10} words).` : '',
+    S.manual ? `You marked ${plural(S.manual, 'page')} as read.` : '', S.unmarked ? `You unmarked ${plural(S.unmarked, 'page')}.` : ''].filter(Boolean).join(' ');
+  const done = '<div class="actions"><button class="primary" onclick="closeSheet()">OK</button></div>';
+  if (!b) {
+    if (!S.auto && !S.manual) return;
+    sheet(`<h3>Reading summary</h3><p>${parts} The book is ${libPct(m)}% read in the reader.</p>
+      <p>It isn't one of your books on the go yet. Start reading it, and the pages you've read will be ready to log.</p>${SETTINGS_NOTE}
+      <div class="actions"><button class="primary" id="sumStart">Start reading it</button><button class="ghost" onclick="closeSheet()">Not now</button></div>`);
+    $('sumStart').onclick = () => { closeSheet(); startFromLib(m.id); };
+    return;
+  }
+  b.libFedK = b.libFedK || [];
+  if (b.status === 'frozen') {
+    if (any) sheet(`<h3>Reading summary</h3><p>${parts}</p><p>${esc(b.title)} is frozen. Unfreeze it and you can log these pages from its card.</p>${SETTINGS_NOTE}${done}`);
+    return;
+  }
+  const P = feedPlan(b, m);
+  if (!P.gain) {
+    settleReader(b, m);
+    if (S.manual || S.unmarked) sheet(`<h3>Reading summary</h3><p>${parts} The book is ${P.bookPct}% read in the reader.</p>
+      <p>${esc(b.title)} is already at ${P.bookAt}%, so these pages don't add anything. Pages you mark as read start to count once the reader is further on than that.
+      Removing marks never takes progress away.</p>${done}`);
+    else if (!S.auto) toast('No new pages were counted this time.');
+    else toast('Those pages were already counted.');
+    return;
+  }
+  const lead = parts || `You have pages from the reader that haven't been logged yet.`;
+  sheet(`<h3>Reading summary</h3><p>${lead} The book is ${P.bookPct}% read in the reader.</p>
+    <p>${P.end ? `You've reached the end of the book, so logging finishes it.` : `Logging takes ${esc(b.title)} from ${P.bookAt}% to ${unitPct(b, P.v)}%${b.mode === 'pages' && b.pages !== m.mainCount ? ` (page ${P.v} of your ${b.pages}-page copy)` : ''}.`}
+      Reading brings ${esc(L.name)} joy.</p>${SETTINGS_NOTE}
+    <div class="actions"><button class="primary" id="sumLog">Log these pages</button><button id="sumHand">Log it myself instead</button>
+      <button class="ghost" onclick="closeSheet()">Not now</button></div>`);
+  $('sumLog').onclick = () => { closeSheet(); feedFromReader(b, m); };
+  $('sumHand').onclick = async () => { closeSheet(); await markCounted(b, m); await load();
+    const f = document.querySelector(`form[data-log="${b.id}"] input`); if (f) { f.focus(); f.scrollIntoView({block: 'center'}); }
+    toast("Type where you're up to, then press Log."); };
+}
+
+// --- the reader
+let RD = null;
+const MIME = {jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', svg: 'image/svg+xml', webp: 'image/webp'};
+async function openReader(id) {
+  if (RD) return;
+  const m = await recordOf(id); if (!m) return toast("That book couldn't be opened.");
+  let z;
+  toast('Opening…');
+  try { z = await unzip(await (await fetch(`/api/library/epub/${id}.epub`)).arrayBuffer()); }
+  catch (e) { return toast("That book couldn't be opened."); }
+  $('toast').style.display = 'none';
+  RD = {m, z, urls: new Map(), ch: 0, page: 0, pages: 1, spans: [], hist: [], sessionNew: 0, auto: epubAuto(), read: new Set(m.read), manual: new Set(m.manual || []),
+    start: new Set(m.read), partial: {...(m.partial || {})}, viewed: new Set(), credited: new Set(), screenT: {}, touched: new Set(), last: Date.now()};
+  $('rd-title').textContent = m.title; $('rd-toc-panel').hidden = true; $('rd-back').hidden = true;
+  $('reader').hidden = false; document.body.classList.add('rd-open');
+  const first = Math.max(0, m.chapters.findIndex(c => c.main));
+  const pos = m.pos || {ch: first, k: null};
+  await loadChapter(Math.min(pos.ch, m.chapters.length - 1), pos.k != null ? {k: pos.k, off: pos.off || 0} : {page: 0});
+  RD.timer = setInterval(rdTick, 1000);
+  $('rd-next').focus();
+}
+async function linkResources(body, base) {
+  const R = RD;
+  const url = async p => {
+    if (R.urls.has(p)) return R.urls.get(p);
+    const b = await R.z.bytes(p).catch(() => null); if (!b) return '';
+    const u = URL.createObjectURL(new Blob([b], {type: MIME[(p.split('.').pop() || '').toLowerCase()] || ''})); R.urls.set(p, u); return u;
+  };
+  for (const img of byLocal(body, 'img')) { const s = img.getAttribute('src') || ''; img.removeAttribute('srcset');
+    if (s && !/^data:/i.test(s)) img.setAttribute('src', /^[a-z]+:/i.test(s) ? '' : await url(resolvePath(base, decodeHref(s.split('#')[0])))); }
+  for (const im of byLocal(body, 'image')) { const s = im.getAttributeNS(XLINK, 'href') || im.getAttribute('href') || '';
+    if (s && !/^data:/i.test(s)) { const u = /^[a-z]+:/i.test(s) ? '' : await url(resolvePath(base, decodeHref(s))); im.setAttributeNS(XLINK, 'xlink:href', u); im.removeAttribute('href'); } }
+  for (const a of byLocal(body, 'a')) { const h = a.getAttribute('href'); if (!h) continue;
+    if (/^(https?|mailto):/i.test(h)) { a.setAttribute('target', '_blank'); a.setAttribute('rel', 'noopener noreferrer'); }
+    else if (/^[a-z]+:/i.test(h)) a.removeAttribute('href');
+    else { a.setAttribute('data-bw-href', resolveHref(base, h)); a.setAttribute('href', '#'); } }
+  [...body.getElementsByTagName('*')].forEach(el => { if (el.hasAttribute('id')) el.setAttribute('id', 'bwx-' + el.getAttribute('id')); });
+}
+// An invisible marker where each piece starts: at the word nearest to every PIECE-ish characters (the same
+// cleaning and counting as indexEpub, so the pieces always match what was counted when the book was added).
+function insertMarkers(body, ch) {
+  if (!ch.n) return;
+  const doc = body.ownerDocument, mk = k => { const s = doc.createElement('span'); s.setAttribute('class', 'bw-pm'); s.setAttribute('data-k', k); return s; };
+  const size = ch.chars / ch.n, targets = [...Array(ch.n)].map((_, j) => Math.round(j * size));
+  let cum = 0, j = 0;
+  for (const node of textNodesOf(body)) {
+    if (j >= targets.length) break;
+    const s = node.data, here = nonWs(s); if (!here) continue;
+    const local = [];
+    while (j < targets.length && targets[j] < cum + here) {
+      const need = targets[j] - cum; let idx = 0, cnt = 0;
+      for (; idx < s.length; idx++) { if (!/\s/.test(s[idx])) { if (cnt === need) break; cnt++; } }
+      while (idx > 0 && !/\s/.test(s[idx - 1])) idx--;
+      local.push({idx, k: ch.start + j}); j++;
+    }
+    for (let q = local.length - 1; q >= 0; q--) { const tail = node.splitText(local[q].idx); tail.parentNode.insertBefore(mk(local[q].k), tail); }
+    cum += here;
+  }
+  for (; j < targets.length; j++) body.insertBefore(mk(ch.start + j), body.firstChild);
+}
+async function loadChapter(i, target) {
+  const R = RD; if (!R) return;
+  rdFlush(); R.loading = true;
+  const ch = R.m.chapters[i], html = await R.z.text(ch.href).catch(() => '');
+  const body = chapterBody(parseHTML(html || "<html xmlns='http://www.w3.org/1999/xhtml'><body></body></html>"));
+  cleanBody(body); insertMarkers(body, ch); await linkResources(body, ch.href);
+  if (RD !== R) return;
+  const flow = $('rd-flow'); flow.innerHTML = '';
+  [...body.childNodes].forEach(n => flow.appendChild(document.importNode(n, true)));
+  R.ch = i;
+  await Promise.race([Promise.all([...flow.querySelectorAll('img')].map(im => im.complete ? 0 : new Promise(r => { im.onload = im.onerror = r; }))), new Promise(r => setTimeout(r, 1500))]);
+  if (RD !== R) return;
+  rdLayout(target); R.loading = false; R.last = Date.now();
+}
+// One column per screen: each column is the full width, so the n-th screen starts at n*(width+gap).
+function rdLayout(target) {
+  const R = RD, flow = $('rd-flow');
+  flow.style.fontSize = readerFont() + 'px';
+  flow.style.columnWidth = 'auto'; flow.scrollLeft = 0;
+  const W = flow.clientWidth, G = 48, step = W + G;
+  flow.style.setProperty('--rd-h', flow.clientHeight + 'px');
+  flow.style.columnWidth = W + 'px'; flow.style.columnGap = G + 'px';
+  R.step = step; R.pages = Math.max(1, Math.round((flow.scrollWidth + G) / step));
+  const fr = flow.getBoundingClientRect(), lh = parseFloat(getComputedStyle(flow).lineHeight) || readerFont() * 1.5;
+  const pageAt = el => { const r = el.getBoundingClientRect(); return Math.max(0, Math.min(R.pages - 1, Math.floor((r.left - fr.left + 2) / step))); };
+  const ms = [...flow.querySelectorAll('.bw-pm')].map(el => ({k: +el.dataset.k, page: pageAt(el), top: el.getBoundingClientRect().top - fr.top < lh * 0.8}));
+  R.spans = ms.map((x, i) => { const nx = ms[i + 1], last = nx ? (nx.top && nx.page > x.page ? nx.page - 1 : nx.page) : R.pages - 1; return {k: x.k, first: x.page, last: Math.max(x.page, last)}; });
+  R.viewed = new Set(); R.credited = new Set(); R.screenT = {};
+  let p = 0;
+  if (target) {
+    if (target.page === 'last') p = R.pages - 1;
+    else if (target.page != null) p = target.page;
+    else if (target.k != null) { const s = R.spans.find(s => s.k === target.k); if (s) p = Math.min(s.last, s.first + (target.off || 0)); }
+    else if (target.frag) { const el = document.getElementById('bwx-' + target.frag); if (el && flow.contains(el)) p = pageAt(el); }
+  }
+  rdSetPage(p);
+}
+function rdSetPage(p) {
+  const R = RD; rdFlush();
+  R.page = Math.max(0, Math.min(R.pages - 1, p)); $('rd-flow').scrollLeft = R.page * R.step;
+  R.last = Date.now(); rdWhere(); rdMarkBox(); rdSaveSoon();
+}
+// Where the reader is, kept across relayouts and visits: the first piece starting on this screen, or else the
+// piece carried over from before plus how many screens into it.
+function rdAnchor() {
+  const R = RD, on = R.spans.find(s => s.first === R.page);
+  if (on) return {k: on.k, off: 0};
+  const s = [...R.spans].reverse().find(s => s.first <= R.page && R.page <= s.last);
+  return s ? {k: s.k, off: R.page - s.first} : {page: R.page};
+}
+// A screen counts as read once it has been on show long enough to read its share of the section; its "Marked as
+// read" box then ticks itself. Each piece on it gets 1/(screens it covers) of credit, and is read with full credit.
+// Ticking the box by hand does the same, and pieces finished with any hand-ticked screen count as hand-marked.
+const rdScreenNeed = R => { const ch = R.m.chapters[R.ch]; return Math.max(MIN_DWELL, ch.chars / Math.max(1, R.pages) / READ_CPS); };
+const rdOnScreen = (R, p) => R.spans.filter(s => s.first <= p && p <= s.last);
+function rdViewScreen(p, byHand) {
+  const R = RD, ch = R.m.chapters[R.ch]; if (R.viewed.has(p)) return;
+  R.viewed.add(p);
+  rdOnScreen(R, p).forEach(s => {
+    if (byHand) R.touched.add(s.k);
+    if (R.read.has(s.k) || R.credited.has(s.k + ':' + p)) return;
+    R.credited.add(s.k + ':' + p);
+    const v = (R.partial[s.k] || 0) + 1 / (s.last - s.first + 1);
+    if (v >= 1 - 1e-6) { R.read.add(s.k); delete R.partial[s.k]; if (R.touched.has(s.k)) R.manual.add(s.k); else if (ch.main) R.sessionNew++; }
+    else R.partial[s.k] = v;
+  });
+  R.dirty = true;
+}
+// Unmarking takes the whole piece back (every screen it covers), so nothing is left half-counted.
+function rdUnmarkPieces(ks) {
+  const R = RD, K = new Set(ks);
+  K.forEach(k => { R.read.delete(k); R.manual.delete(k); R.touched.delete(k); delete R.partial[k]; });
+  R.spans.forEach(s => { if (!K.has(s.k)) return; for (let q = s.first; q <= s.last; q++) { R.viewed.delete(q); R.credited.delete(s.k + ':' + q); delete R.screenT[q]; } });
+  R.dirty = true;
+}
+function rdMarkPieces(ks) { const R = RD; ks.forEach(k => { R.read.add(k); R.manual.add(k); delete R.partial[k]; }); R.dirty = true; }
+// Gives the time since the last check to the screen on show (capped, so a sleeping device doesn't count).
+function rdFlush() {
+  const R = RD; if (!R) return;
+  const t = Date.now(), dt = Math.min(5, (t - R.last) / 1000); R.last = t;
+  if (!R.auto || R.loading || document.hidden || !$('rd-toc-panel').hidden || dt <= 0 || R.viewed.has(R.page)) return;
+  if (!rdOnScreen(R, R.page).length) return;
+  R.screenT[R.page] = (R.screenT[R.page] || 0) + dt;
+  if (R.screenT[R.page] >= rdScreenNeed(R) - 1e-6) { const was = rdBoxChecked(R, R.page); rdViewScreen(R.page, false); if (!was) R.justTicked = true; }
+}
+const rdCountsHere = R => R.m.chapters[R.ch].main && rdOnScreen(R, R.page).length > 0;
+const rdBoxChecked = (R, p) => { const on = rdOnScreen(R, p); return R.viewed.has(p) || (on.length > 0 && on.every(s => R.read.has(s.k))); };
+function rdMarkBox() {
+  const R = RD, box = $('rd-mark'), wrap = $('rd-mark-wrap');
+  wrap.hidden = !rdCountsHere(R);
+  box.checked = rdBoxChecked(R, R.page);
+  if (R.justTicked) { R.justTicked = false; wrap.classList.remove('ticked'); void wrap.offsetWidth; wrap.classList.add('ticked'); }
+}
+$('rd-mark').onchange = e => {
+  const R = RD; if (!R) return; rdFlush();
+  if (e.target.checked) rdViewScreen(R.page, true);
+  else { R.viewed.delete(R.page); rdUnmarkPieces(rdOnScreen(R, R.page).map(s => s.k)); }
+  R.last = Date.now(); rdTick();
+};
+function rdTick() { if (!RD) return; rdFlush(); if (RD.dirty) { RD.dirty = false; rdWhere(); rdMarkBox(); rdSaveSoon(); } }
+function rdPersist() {
+  const R = RD; if (!R) return;
+  const a = rdAnchor();
+  R.m.read = [...R.read].sort((a, b) => a - b); R.m.manual = [...R.manual].filter(k => R.read.has(k)).sort((a, b) => a - b);
+  R.m.partial = R.partial; R.m.pos = {ch: R.ch, k: a.k != null ? a.k : null, off: a.off || 0};
+  libPut(R.m);
+}
+let rdSaveT;
+function rdSaveSoon() { clearTimeout(rdSaveT); rdSaveT = setTimeout(rdPersist, 1500); }
+function rdWhere() {
+  const R = RD, ch = R.m.chapters[R.ch];
+  const t = [...R.m.toc].reverse().find(x => x.href.split('#')[0] === ch.href);
+  R.m.read = [...R.read];
+  $('rd-where').textContent = `${t && t.label ? t.label + ' · ' : ''}${R.page + 1} of ${R.pages} · ${libPct(R.m)}% read`;
+  $('rd-prev').disabled = R.ch === 0 && R.page === 0;
+  $('rd-next').disabled = R.ch === R.m.chapters.length - 1 && R.page === R.pages - 1;
+}
+async function rdNext() { const R = RD; if (!R || R.loading) return; if (R.page < R.pages - 1) rdSetPage(R.page + 1); else if (R.ch < R.m.chapters.length - 1) await loadChapter(R.ch + 1, {page: 0}); }
+async function rdPrev() { const R = RD; if (!R || R.loading) return; if (R.page > 0) rdSetPage(R.page - 1); else if (R.ch > 0) await loadChapter(R.ch - 1, {page: 'last'}); }
+async function rdGo(href, remember) {
+  const R = RD; if (!R || R.loading) return;
+  const [path, frag] = [href.split('#')[0], href.split('#').slice(1).join('#')];
+  const i = R.m.chapters.findIndex(c => c.href === path); if (i < 0) return;
+  if (remember) { R.hist.push({ch: R.ch, page: R.page}); $('rd-back').hidden = false; }
+  if (i === R.ch) { const el = frag && document.getElementById('bwx-' + frag); if (el) { const fr = $('rd-flow').getBoundingClientRect(); rdSetPage(R.page + Math.floor((el.getBoundingClientRect().left - fr.left + 2) / R.step)); } else rdSetPage(0); }
+  else await loadChapter(i, frag ? {frag} : {page: 0});
+}
+async function rdBack() {
+  const R = RD; if (!R || !R.hist.length) return;
+  const h = R.hist.pop(); $('rd-back').hidden = !R.hist.length;
+  if (h.ch === R.ch) rdSetPage(h.page); else await loadChapter(h.ch, {page: h.page});
+}
+async function closeReader() {
+  const R = RD; if (!R) return;
+  rdFlush(); clearInterval(R.timer); clearTimeout(rdSaveT); rdPersist();
+  R.urls.forEach(u => URL.revokeObjectURL(u));
+  RD = null; $('reader').hidden = true; $('rd-flow').innerHTML = ''; document.body.classList.remove('rd-open');
+  const main = k => isMainK(R.m, k), now = new Set(R.m.read);
+  const S = {auto: R.m.read.filter(k => main(k) && !R.start.has(k) && !R.manual.has(k)).length,
+             manual: R.m.read.filter(k => main(k) && !R.start.has(k) && R.manual.has(k)).length,
+             unmarked: [...R.start].filter(k => main(k) && !now.has(k)).length};
+  await load();
+  const row = LIB.find(x => x.id === R.m.id); if (row && row.record) row.record = R.m;
+  if (R.auto) readerSummary(R.m, S);
+}
+$('rd-close').onclick = closeReader;
+$('rd-next').onclick = rdNext; $('rd-prev').onclick = rdPrev; $('rd-back').onclick = rdBack;
+// Contents: each entry covers its section up to the next entry's, so books split into many files still work.
+// Entries covering main text get a tick box: ticked when every page in them is read, half-ticked when some are.
+function rdTocItems(R) {
+  const items = R.m.toc.length ? R.m.toc : R.m.chapters.map((c, i) => ({label: `Section ${i + 1}`, href: c.href}));
+  const at = items.map(t => R.m.chapters.findIndex(c => c.href === t.href.split('#')[0]));
+  const starts = [...new Set(at.filter(i => i >= 0))].sort((a, b) => a - b);
+  return items.map((t, i) => {
+    const s0 = at[i]; if (s0 < 0) return {...t, ks: []};
+    const next = starts.find(x => x > s0), end = next == null ? R.m.chapters.length : next, ks = [];
+    for (let c = s0; c < end; c++) { const ch = R.m.chapters[c]; if (ch.main) for (let k = ch.start; k < ch.start + ch.n; k++) ks.push(k); }
+    return {...t, ks};
+  });
+}
+function rdRenderToc() {
+  const R = RD, items = rdTocItems(R);
+  $('rd-toc-list').innerHTML = items.map((t, i) => {
+    const n = t.ks.filter(k => R.read.has(k)).length;
+    return `<div class="toc-row"><button type="button" data-t="${i}">${esc(t.label || 'Untitled')}</button>`
+      + (t.ks.length ? `<input type="checkbox" class="toc-chk" data-c="${i}" ${n === t.ks.length ? 'checked' : ''} data-part="${n > 0 && n < t.ks.length ? 1 : ''}" aria-label="${esc(t.label || 'This section')} read">` : `<span class="toc-chk-gap" aria-hidden="true"></span>`) + `</div>`;
+  }).join('');
+  $('rd-toc-list').querySelectorAll('.toc-chk').forEach(el => { el.indeterminate = !!el.dataset.part;
+    el.onchange = () => { const ks = items[+el.dataset.c].ks;
+      if (el.checked) rdMarkPieces(ks); else rdUnmarkPieces(ks);
+      rdWhere(); rdMarkBox(); rdSaveSoon(); rdRenderToc(); }; });
+  $('rd-toc-list').querySelectorAll('[data-t]').forEach(el => el.onclick = () => { $('rd-toc-panel').hidden = true; R.last = Date.now(); rdGo(items[+el.dataset.t].href, true); });
+}
+$('rd-toc').onclick = () => {
+  const R = RD; if (!R) return; const P = $('rd-toc-panel');
+  if (!P.hidden) { P.hidden = true; R.last = Date.now(); rdMarkBox(); return; }
+  rdFlush(); rdRenderToc(); P.hidden = false; $('rd-mark-wrap').hidden = true;
+};
+const rdFont = d => { const R = RD; if (!R || R.loading) return; const a = rdAnchor();
+  try { localStorage.setItem(EPUB_FONT_KEY, String(Math.min(28, Math.max(14, readerFont() + d)))); } catch (e) {}
+  rdFlush(); rdLayout(a); };
+$('rd-smaller').onclick = () => rdFont(-2); $('rd-bigger').onclick = () => rdFont(2);
+$('rd-flow').addEventListener('click', e => {
+  const a = e.target.closest('a');
+  if (a) { if (a.dataset.bwHref) { e.preventDefault(); rdGo(a.dataset.bwHref, true); } return; }
+  const r = $('rd-flow').getBoundingClientRect(), x = (e.clientX - r.left) / r.width;
+  if (x < 0.3) rdPrev(); else if (x > 0.7) rdNext();
+});
+let rdTouch = null;
+$('rd-flow').addEventListener('touchstart', e => { rdTouch = e.touches[0].clientX; }, {passive: true});
+$('rd-flow').addEventListener('touchend', e => { if (rdTouch == null) return; const dx = e.changedTouches[0].clientX - rdTouch; rdTouch = null; if (Math.abs(dx) > 50) (dx < 0 ? rdNext : rdPrev)(); }, {passive: true});
+document.addEventListener('keydown', e => {
+  if (!RD || $('reader').hidden) return;
+  if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); rdNext(); }
+  else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); rdPrev(); }
+  else if (e.key === 'Escape') { e.preventDefault(); if (!$('rd-toc-panel').hidden) $('rd-toc').click(); else closeReader(); }
+});
+document.addEventListener('visibilitychange', () => { if (!RD) return; if (document.hidden) { rdFlush(); rdPersist(); } else RD.last = Date.now(); });
+let rdResizeT;
+window.addEventListener('resize', () => { if (!RD) return; clearTimeout(rdResizeT); rdResizeT = setTimeout(() => { const R = RD; if (!R || R.loading) return; rdLayout(rdAnchor()); }, 200); });
+window.addEventListener('pagehide', () => { if (RD) { rdFlush(); rdPersist(); } });
+if (navigator.webdriver) window.RD_DEBUG = () => RD && {sessionNew: RD.sessionNew, read: [...RD.read], manual: [...RD.manual], ch: RD.ch, page: RD.page, pages: RD.pages, viewed: [...RD.viewed]};   // (for automated tests)
+$('epubAdd').onclick = () => $('epubFile').click();
+$('epubFile').onchange = e => { importEpubs(e.target.files); e.target.value = ''; };
+$('autoOn').onclick = () => { setEpubAuto(true); renderShelf(); toast('Automatic tracking is on, on this phone or computer.'); };
+$('autoOff').onclick = () => { setEpubAuto(false); renderShelf(); toast('Automatic tracking is off, on this phone or computer.'); };
+
+sendPending().then(load);
+setInterval(() => { if ($('sheet').hidden && !document.activeElement.closest('form')) load(); }, 30000);
+</script>
+</body>
+</html>

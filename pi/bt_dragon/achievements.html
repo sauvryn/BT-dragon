@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Achievements</title>
+<style>
+  :root { --stone: #1d1c1a; --stone2: #282623; --stone3: #312e2a; --line: #3d3a35; --ink: #ece6da; --dim: #a69f92;
+          --rune: #d9a441; --moss: #7fa36b;
+          /* the five metals: each readable as text on the page's dark stone */
+          --t-copper: #e08a5a; --t-bronze: #c49a5c; --t-silver: #c9ced4; --t-gold: #f0c24a; --t-platinum: #a9e2f2; }
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; background: var(--stone); color: var(--ink);
+               font: 16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 0 16px 48px; }
+  header { padding: 14px 0 10px; border-bottom: 3px double var(--line); }
+  h1 { margin: 0; font-size: 13px; letter-spacing: 2px; text-transform: uppercase; color: var(--rune); }
+  .sub { color: var(--dim); font-size: 13.5px; }
+  p { margin: 8px 0; }
+  details.explain { margin: 14px 0 0; background: var(--stone2); border: 1px solid var(--line); border-radius: 10px;
+                    padding: 10px 14px; }
+  details.explain summary { cursor: pointer; color: var(--rune); font-weight: 600; }
+  details.explain p { margin: 6px 0; font-size: 14.5px; }
+  .runelist { list-style: none; padding: 0; margin: 6px 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 4px 12px; font-size: 14px; }
+  .runelist svg { width: 16px; height: 20px; vertical-align: middle; margin-right: 6px; }
+  .tierkey { display: flex; flex-wrap: wrap; gap: 10px; margin: 8px 0 2px; }
+  .tierkey span { display: inline-flex; align-items: center; gap: 4px; font-size: 13.5px; }
+  .tierkey svg { width: 22px; height: 26px; }
+  /* a category */
+  section.cat { margin-top: 26px; }
+  .cathead { display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--line); padding-bottom: 6px; }
+  .cathead svg { flex: none; width: 34px; height: 40px; }
+  .cathead h2 { margin: 0; font-size: 13px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--rune); font-weight: 600; }
+  .cathead .count { margin-left: auto; white-space: nowrap; }
+  .devnote { color: var(--rune); font-size: 12px; font-weight: 700; }
+  .locked { border: 1px dashed var(--line); border-radius: 8px; padding: 6px 10px; margin: 8px 0 0; }
+  h3 { font-size: 13px; color: var(--dim); font-weight: 600; margin: 14px 0 4px; }
+  details.grp { margin-top: 10px; }
+  details.grp summary { cursor: pointer; color: var(--ink); font-weight: 600; font-size: 14px; padding: 4px 0; }
+  details.grp summary .sub { font-weight: 400; }
+  /* an achievement */
+  .ach { display: flex; gap: 12px; align-items: flex-start; background: var(--stone2); border: 1px solid var(--line);
+         border-radius: 10px; padding: 10px 12px; margin-top: 8px; }
+  .ach.done { border-color: var(--t-platinum); }
+  .ach .stone { flex: none; width: 40px; height: 48px; }
+  .ach .meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+  .ach b.name { font-size: 15px; overflow-wrap: anywhere; }
+  .bar { display: block; height: 6px; border-radius: 3px; background: var(--stone); overflow: hidden; margin-top: 3px; }
+  .bar i { display: block; height: 100%; background: var(--moss); }
+  .foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; align-items: center; }
+  .pips { display: inline-flex; gap: 4px; }
+  .pip { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid var(--line); }
+  .tier { font-weight: 700; }
+  .t-copper { color: var(--t-copper); } .t-bronze { color: var(--t-bronze); } .t-silver { color: var(--t-silver); }
+  .t-gold { color: var(--t-gold); } .t-platinum { color: var(--t-platinum); }
+  .pip.on.t-copper { background: var(--t-copper); border-color: var(--t-copper); }
+  .pip.on.t-bronze { background: var(--t-bronze); border-color: var(--t-bronze); }
+  .pip.on.t-silver { background: var(--t-silver); border-color: var(--t-silver); }
+  .pip.on.t-gold { background: var(--t-gold); border-color: var(--t-gold); }
+  .pip.on.t-platinum { background: var(--t-platinum); border-color: var(--t-platinum); }
+  .mono { font-variant-numeric: tabular-nums; }
+</style>
+<script src="/lang.js"></script>
+<script src="/auth.js"></script>
+<link rel="stylesheet" href="/theme.css">
+</head>
+<body>
+<main>
+  <header>
+    <h1 id="title" data-nolang></h1>
+    <div class="sub" id="subtitle"></div>
+  </header>
+  <details class="explain">
+    <summary>How achievements work</summary>
+    <p>Achievements are milestones for how many of each thing <span class="pname" data-nolang></span> has collected.
+      They count things, not points: points are for titles.</p>
+    <p>Each one is earned in five stages, as in Bookworm: Copper, Bronze, Silver, Gold, then Platinum. Each stage is
+      a runestone in its metal's colour, carved with the rune of its category: ᚷ (G, the Gebo rune) for Gadgets,
+      ᛊ (S, the Sowilo rune) for Stars, and so on. No two categories share a rune, so where a first letter is already
+      taken, the next fitting word gives it: N (Nature) for green spaces, P (Places) for famous places, A (Aircraft)
+      for Sky Dragons.</p>
+    <p>The runes are the Elder Futhark, the oldest runic alphabet, carved in wood, metal and stone from about the
+      2nd to the 8th century. It's named after its first six letters, F U Th A R K, as "alphabet" is named after
+      alpha and beta. Each rune was also a word that began with its sound. Those names weren't written down until
+      centuries later, in medieval rune poems, so what we call them today is reconstructed from the later languages:</p>
+    <ul class="runelist" id="runelist"></ul>
+    <p>For a whole collection with a known size (every type in the Gadget Journal, say), the stages are spread evenly
+      over it, so Platinum always means all of it. For open-ended counts (lands claimed, networks found), they're
+      fixed milestones.</p>
+    <div class="tierkey" id="tierkey"></div>
+  </details>
+  <div id="cats"></div>
+</main>
+<script>
+const DATA = __DATA__;
+const FONT = __RUNEFONT__;
+const TIERS = ['copper', 'bronze', 'silver', 'gold', 'platinum'];
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num = n => Number(n).toLocaleString();
+const day = t => new Date(t * 1000).toLocaleDateString(undefined, {day: 'numeric', month: 'short', year: 'numeric'});
+
+// A runestone: a standing stone in the metal's colour, the rune cut into it (Harald's own 5x9 stroke font).
+// Not earned yet: just its outline, dashed, with the rune scratched in faintly.
+function stone(rune, tier, label) {
+  const lines = FONT.strokes[rune] || [], s = 2.9, ox = 20 - 2 * s, oy = 13;
+  const carve = lines.map(l => l.length === 1
+    ? `<circle cx="${ox + l[0][0] * s}" cy="${oy + l[0][1] * s}" r="1.6"/>`
+    : `<polyline points="${l.map(([x, y]) => `${ox + x * s},${oy + y * s}`).join(' ')}"/>`).join('');
+  const body = 'M20 2.5 C31 2.5 36 12.5 35.5 25 C35 37.5 29 46 20 46 C10.5 46 4.5 37.5 4.5 25 C4.5 12 9.5 2.5 20 2.5 Z';
+  const head = tier === 'head', got = !head && tier !== null && tier !== undefined && tier >= 0;
+  const col = got ? `var(--t-${TIERS[tier]})` : head ? 'var(--rune)' : 'var(--dim)';
+  return `<svg viewBox="0 0 40 48" role="img" aria-label="${esc(label)}">
+    <path d="${body}" fill="${got ? col : 'none'}" stroke="${col}" stroke-width="1.5" ${got || head ? '' : 'stroke-dasharray="3 2.5"'}/>
+    ${got ? `<path d="M9.5 33 Q8 16 17 7.5" fill="none" stroke="#fff" stroke-opacity=".22" stroke-width="1.5"/>` : ''}
+    <g fill="${got ? '#1d1c1a' : col}" stroke="${got ? '#1d1c1a' : col}" stroke-width="${got || head ? 2.4 : 1.4}"
+       stroke-linecap="round" stroke-linejoin="round" fill-opacity="1">${carve.replace(/<polyline/g, '<polyline fill="none"')}</g></svg>`;
+}
+
+function card(a, rune) {
+  const goal = a.goal || 1, n = Math.min(a.n, goal), p = Math.round(n / goal * 100);
+  const nx = a.steps.find(([, at]) => a.n < at);
+  const pips = a.steps.map(([m, at]) => `<span class="pip t-${TIERS[m]}${a.n >= at ? ' on' : ''}" title="${DATA.tiers[m]} at ${num(at)}"></span>`).join('');
+  const got = a.m >= 0, when = got && a.dates[TIERS[a.m]] ? ` · ${day(a.dates[TIERS[a.m]])}` : '';
+  const label = got ? `${DATA.tiers[a.m]} runestone` : 'No runestone yet';
+  return `<div class="ach${a.m === 4 ? ' done' : ''}">
+    <span class="stone">${stone(rune, a.m, label)}</span>
+    <span class="meta"><b class="name">${esc(a.name)}</b>
+      <span class="sub">${esc(a.desc)}${a.note ? ' ' + esc(a.note) : ''}</span>
+      <span class="bar" aria-hidden="true"><i style="width:${p}%"></i></span>
+      <span class="foot"><span class="sub mono">${num(a.n)}${a.whole ? ' of ' + num(goal) : ''} ${esc(a.unit)}${nx ? ` · next: ${DATA.tiers[nx[0]]} at ${num(nx[1])}` : ' · complete!'}</span>
+        <span class="pips" aria-hidden="true">${pips}</span></span>
+      <span class="sub">${got ? `<span class="tier t-${TIERS[a.m]}">${DATA.tiers[a.m]}</span>${when}` : 'No runestone yet'}</span>
+    </span></div>`;
+}
+
+function render() {
+  document.querySelectorAll('.pname').forEach(e => e.textContent = DATA.name);
+  $('title').textContent = `${DATA.name}'s Achievements`;
+  document.title = `${DATA.name}'s Achievements`;
+  const s = DATA.summary;
+  $('subtitle').textContent = `${s.earned} of ${s.total} with a runestone · ${s.platinum} Platinum`;
+  $('runelist').innerHTML = (DATA.runes || []).map(([r, n, m]) => `<li>${stone(r, 'head', n)}<b>${esc(n)}</b>: ${esc(m)}</li>`).join('');
+  $('tierkey').innerHTML = DATA.tiers.map((t, i) => `<span>${stone('ᛟ', i, t)}<span class="t-${TIERS[i]} tier">${t}</span></span>`).join('');
+  $('cats').innerHTML = DATA.sections.map(sec => {
+    const groups = [];
+    sec.items.forEach(a => { let g = groups.find(x => x.name === a.group); if (!g) groups.push(g = {name: a.group, items: []}); g.items.push(a); });
+    const many = sec.items.length > 12;
+    const body = groups.map((g, gi) => {
+      const cards = g.items.map(a => card(a, sec.rune)).join('');
+      if (!g.name) return cards;
+      const plat = g.items.filter(a => a.m === 4).length;
+      return many ? `<details class="grp"${gi === 0 ? ' open' : ''}><summary>${esc(g.name)} <span class="sub">· ${plat} of ${g.items.length} Platinum</span></summary>${cards}</details>`
+                  : `<h3>${esc(g.name)}</h3>${cards}`;
+    }).join('');
+    return `<section class="cat" id="cat-${sec.key}">
+      <div class="cathead">${stone(sec.rune, 'head', sec.word)}<div><h2>${esc(sec.title)}</h2>
+        <div class="sub">${esc(sec.word)} · ${esc(sec.line)}${sec.dev ? ' <b class="devnote">(In Development, Untested)</b>' : ''}</div></div>
+        <span class="sub count mono">${sec.platinum} of ${sec.items.length} Platinum</span></div>
+      ${sec.locked ? `<p class="sub locked">${esc(sec.locked)}</p>` : ''}
+      ${body}</section>`;
+  }).join('');
+  if (location.hash) { const el = document.querySelector(location.hash); if (el) el.scrollIntoView(); }
+}
+render();
+</script>
+</body>
+</html>

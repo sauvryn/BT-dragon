@@ -92,6 +92,24 @@ def full_name(sp):
     return sp["name"]
 
 
+def bare(name):
+    """A species name without its own "The" ("The Footballer" is a hoverfly), for putting "a" or
+    "the" in front of it: "a Footballer larva", not "a The Footballer larva"."""
+    return name[4:] if name.lower().startswith("the ") else name
+
+
+def a_(name):
+    """ "a Peacock", "an Elephant Hawk-moth", "a Footballer" (and "a European ...", "a Uni...":
+    an "eu" or "u" that sounds like "you" takes "a")."""
+    n = bare(name)
+    you = n.lower().startswith(("eu", "uni", "use", "usu", "ura"))
+    return ("an " if n[:1].lower() in "aeiou" and not you else "a ") + n
+
+
+def the_(name):
+    return "the " + bare(name)
+
+
 def habitat_name(c, k):
     return data()["countries"][c].get("habitats", {}).get(k, k)
 

@@ -47,7 +47,17 @@ KNOBS = [
      "much times 'Lands: rewards while riding' (under Detection). Fractions add up: 0.1 = one for every 10 lands."),
     ("ration_max", "food", "Rations: most that can be stored", 0, "rations",
      "0 = no limit: they can be stockpiled for lean times."),
+    ("library_rations_short", "food", "Library: rations for finishing a Short book", 10, "rations",
+     "A book under 450 pages (Bookworm's lengths). Each ration fills the PACK when you give it."),
+    ("library_rations_medium", "food", "Library: rations for finishing a Medium book", 20, "rations", "450 to 799 pages."),
+    ("library_rations_long", "food", "Library: rations for finishing a Long book", 30, "rations", "800 pages or more."),
     ("land_food", "food", "New land claimed", 3, "food", "A square of the map about 250 m across."),
+    # ---------------------------------------------------------------- the library's e-books
+    ("library_epub_max_mb", "library", "E-books: largest single EPUB", 50, "MB",
+     "An EPUB bigger than this can't be added to the shelf."),
+    ("library_shelf_max_mb", "library", "E-books: most space for all of them", 2048, "MB",
+     "All the EPUBs on the Pi together. Lower it below what's already there and nothing is deleted: the Library and "
+     "Developer Tools show a warning, and new EPUBs can't be added until some are removed."),
     ("garden_food_common", "food", "Butterfly Garden: food to raise a Common one", 40, "food",
      "Snacks and feasts that don't fit in the BELLY, and treats and berries that fit in neither the BELLY nor the "
      "PACK, reach the garden, shared between the larvae there."),
@@ -66,6 +76,11 @@ KNOBS = [
      "How long JOY takes to drop from 100 to 0 with nothing happening."),
     ("joy_off_drain", "joy", "JOY drain while switched off", 100, "%",
      "How fast JOY drops while your dragon is off, compared with awake. 25 = a quarter as fast."),
+    ("library_joy_page", "joy", "Library: joy for each page read", 0.5, "joy",
+     "Logging your reading progress in the library. By percentage, a book's pages are shared out: 10% of a 300-page "
+     "book is 30 pages."),
+    ("library_joy_max", "joy", "Library: most joy from one log", 25, "joy",
+     "So catching up on a week's reading in one go doesn't fill the meter by itself."),
     ("snack_joy", "joy", "Snack", 0.02, "joy",
      "Tiny on purpose: a hundred snacks an hour is normal at home (phones change their Bluetooth address often)."),
     ("feast_joy", "joy", "Feast", 5, "joy", ""),
@@ -263,6 +278,10 @@ def set_value(key, value):
         return "at least 100 (the same as level 1)"
     if key == "garden_grows" and v not in (0, 1):
         return "0 or 1"
+    if key == "library_epub_max_mb" and v < 1:
+        return "at least 1 MB"
+    if key == "library_shelf_max_mb" and v < 10:
+        return "at least 10 MB"
     if key == "card_save_min" and v < 1:
         return "at least 1 minute"
     if key == "lair_temp_every_h" and (v < 1 or v != int(v)):

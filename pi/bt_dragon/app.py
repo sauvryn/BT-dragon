@@ -39,7 +39,7 @@ from .diary import DiaryFiles
 from .dot import DotLink
 from . import moon as moonmod
 from . import tuning
-from .pet import _n, berry_value, hunger_word, joy_word, xp_for
+from .pet import _fit, _n, berry_value, hunger_word, joy_word, xp_for
 from . import friends as friendsmod
 from .homezone import HomeZone, SIZES as HOME_SIZES
 from .aurora import words as aurora_words
@@ -167,6 +167,7 @@ class Dragon:
         self.radio = RadioStick(self.store, self.on_radio,
                                 region=lambda: self._lair_code() or (getattr(self, "os_country", "") or ""))
         self._obs_pruned = 0.0
+        self._ach_at, self._ach = 0.0, None          # achievements: last counted, and the list
         self._clock_ok = (False, 0.0)
         self.upload_lock = asyncio.Lock()
         self.started = time.time()
@@ -185,6 +186,11 @@ class Dragon:
         self.garden = Garden(self.store)
         self.garden.growth = lambda: self.pet.growth()          # (only if its knob is on)
         self.garden.on_event = self._garden_event
+        # the library (Bookworm's book tracker): his hoard of literary treasures
+        from .library import Library
+        self.library = Library(self.store, self.data_dir)
+        self.library.on_event = self._library_event
+        self._lib_news = []
         # which English (British, American, Canadian) his screen and the Den are in, and the
         # garden's starting country: from the Pi's own country (set in Raspberry Pi Imager)
         self.os_country = None if simulate else langmod.os_country()
@@ -346,6 +352,89 @@ class Dragon:
         self.garden.feed(food, self.pet.level(), self._lair_code(), belly_low=self.pet.hunger < 30)
         self._garden_fed += food           # said on his screen a moment later (see _garden_tick)
 
+    # ================================================================ the library
+    def _library_event(self, kind, info):
+        """Queued until the page's action is done (so its own diary line comes first)."""
+        self._lib_news.append((kind, info))
+
+    def _library_news(self):
+        news, self._lib_news = self._lib_news, []
+        for kind, info in news:
+            self._library_said(kind, info)
+
+    def _library_said(self, kind, info):
+        """A book finished (its rations are earned), or a new library title."""
+        if kind == "finish":
+            n = info["rations"]
+            self.pet.earn_ration(n)
+            self.pet.save()
+            self.event("library", f"Finished {info['title']} ({info['length']}, {info['pages']} pages): "
+                                  f"+{n} ration{'s' if n != 1 else ''}, +{info['points']} library points.")
+            self.pet.say(_fit([f"A BOOK FINISHED! +{n} RATIONS", f"BOOK FINISHED! +{n} RATIONS", "A BOOK FINISHED!"]),
+                         "ecstatic", 40)
+        elif kind == "title":
+            self.event("library", f"New library title: {info['name']}")
+
+    def library_action(self, d):
+        """The Library page's changes (POST /api/library). Returns a dict for the page."""
+        lib, act = self.library, str(d.get("action") or "")
+        if self.napping:
+            return {"ok": False, "error": f"{self.pet.name} is napping: wake {self.pet.name} first"}
+        acts = {"start": lambda: lib.start(d.get("book") or {}),
+                "log": lambda: lib.log_progress(d.get("id"), d.get("value")),
+                "edit": lambda: lib.edit(d.get("id"), d.get("book") or {}),
+                "freeze": lambda: lib.freeze(d.get("id"), True), "unfreeze": lambda: lib.freeze(d.get("id"), False),
+                "abandon": lambda: lib.abandon(d.get("id")),
+                "wtr_add": lambda: lib.wtr_add(d.get("book") or {}), "wtr_remove": lambda: lib.wtr_remove(d.get("id")),
+                "wtr_move": lambda: lib.wtr_move(d.get("id"), -1 if d.get("dir") == "up" else 1),
+                "fav": lambda: lib.favourite(d.get("id")),
+                "epub_save": lambda: lib.epub_save(d.get("id"), d.get("record") or {}),
+                "epub_remove": lambda: lib.epub_remove(d.get("id")),
+                "epub_link": lambda: lib.epub_link(d.get("id"), d.get("epub")),
+                "epub_unlink": lambda: lib.epub_unlink(d.get("id")),
+                "epub_counted": lambda: lib.epub_counted(d.get("id"), d.get("counted"))}
+        if act == "epub_feed":
+            # pages from the reader: they're marked as counted, then logged like "I'm now on page N"
+            err, _ = lib.epub_counted(d.get("id"), d.get("counted"))
+            if err:
+                return {"ok": False, "error": err}
+            b = lib.book(d.get("id"))
+            try:
+                ahead = float(d.get("value")) > b["progress"]
+            except (TypeError, ValueError):
+                ahead = False
+            if not ahead:
+                return {"ok": True, "joy": 0, "pages": 0, "finished": None}
+            act = "log"
+        if act == "epub_remove" and lib.shelf_item(d.get("id")):
+            self.event("library", f"Removed {lib.shelf_item(d.get('id'))['title']} from the e-book shelf.")
+        if act not in acts:
+            return {"ok": False, "error": "unknown action"}
+        err, res = acts[act]()
+        if err:
+            return {"ok": False, "error": err}
+        out = {"ok": True}
+        if act == "log":
+            out.update(res)
+            pages, joy = int(round(res["pages"])), res["joy"]
+            title = (res["finished"] or lib.book(d.get("id")) or {}).get("title", "a book")
+            if joy > 0:
+                if res["finished"]:
+                    self.pet.cheer(joy, 0)            # (the finish has its own message)
+                else:
+                    self.pet.cheer(joy, 0, _fit([f"READING! {pages} PAGES +{_n(joy)} JOY", f"READING! +{_n(joy)} JOY"]),
+                                   "happy", 20)
+            self.event("library", f"Read {pages} page{'s' if pages != 1 else ''} of {title}"
+                                  + (f" (+{_n(joy)} joy)." if joy > 0 else "."))
+        elif act == "edit":
+            out.update(res)
+        elif act == "start":
+            self.event("library", f"Started reading {res['title']} ({res['pages']} pages).")
+        self._library_news()
+        if out.get("finished"):
+            self.check_achievements()
+        return out
+
     def _garden_event(self, kind, info):
         """Hatching, pupating and emerging: queued, so a treat's own message isn't covered up."""
         self._garden_news.append((kind, info))
@@ -388,31 +477,33 @@ class Dragon:
         if kind == "hatch":
             j = tuning.get("garden_hatch_joy")
             self.pet._gain(0, 0, j)
-            words = [f"AN EGG HATCHED! A {name.upper()} {young.upper()}", f"EGG HATCHED: {name.upper()}!",
+            words = [f"AN EGG HATCHED! {gardenmod.a_(name).upper()} {young.upper()}", f"EGG HATCHED: {name.upper()}!",
                      f"A {young.upper()} HATCHED!"]
             self.pet.say(words, "happy", 20, speak=False)
-            self.dot.news(f"An egg hatched in the Butterfly Garden! It's a {name} {young}.")
-            self.event("garden", f"An egg hatched in the Butterfly Garden: a {name} {young} ({info['rarity']})")
+            self.dot.news(f"An egg hatched in the Butterfly Garden! It's {gardenmod.a_(name)} {young}.")
+            self.event("garden", f"An egg hatched in the Butterfly Garden: {gardenmod.a_(name)} {young} ({info['rarity']})")
         elif kind == "pupate":
             j = tuning.get("garden_pupate_joy")
             self.pet._gain(0, 0, j)
-            words = [f"THE {name.upper()} {young.upper()} IS NOW A {pupa.upper()}!",
+            words = [f"{gardenmod.the_(name).upper()} {young.upper()} IS NOW A {pupa.upper()}!",
                      f"{name.upper()}: NOW A {pupa.upper()}!", f"A {young.upper()} PUPATED!"]
             self.pet.say(words, "happy", 20, speak=False)
-            self.dot.news(f"The {name} {young} in the Butterfly Garden is now a {pupa}!")
-            self.event("garden", f"The {name} {young} became a {pupa}")
+            the = gardenmod.the_(name)
+            self.dot.news(f"{the[0].upper() + the[1:]} {young} in the Butterfly Garden is now a {pupa}!")
+            self.event("garden", f"{the[0].upper() + the[1:]} {young} became a {pupa}")
         elif kind == "emerge":
             j = tuning.get("garden_emerge_joy")
             leveled = self.pet._gain(0, tuning.get("garden_xp"), j)
             form = gardenmod.FORM_WORD.get(info.get("form") or "", "")
-            new = "A NEW " if info.get("new") else "A "
-            words = [f"{new}{name.upper()} EMERGED{(' (' + form.upper() + ')') if form else ''}!",
-                     f"{new}{name.upper()} EMERGED!", f"{name.upper()} EMERGED!"]
+            one = (f"A NEW {gardenmod.bare(name)}" if info.get("new") else gardenmod.a_(name)).upper()
+            words = [f"{one} EMERGED{(' (' + form.upper() + ')') if form else ''}!",
+                     f"{one} EMERGED!", f"{name.upper()} EMERGED!"]
             if leveled:
                 self._garden_news.insert(0, ("say", (words, self.pet.face_for(j), 45)))
             else:
                 self.pet.say(words, self.pet.face_for(j), 45)
-            line = f"{'A new' if info.get('new') else 'A'} {name} emerged in the Butterfly Garden"
+            one = f"a new {gardenmod.bare(name)}" if info.get("new") else gardenmod.a_(name)
+            line = f"{one[0].upper() + one[1:]} emerged in the Butterfly Garden"
             if form:
                 line += f" ({form.lower()})"
             self.event("garden", line + ". Add it to the Collection from the Den.")
@@ -421,7 +512,7 @@ class Dragon:
             where = gardenmod.COUNTRY_NAME.get(info["country"], "")
             self.pet.say([f"{name.upper()} ADDED TO THE COLLECTION!", f"{name.upper()} COLLECTED!"], "happy", 20,
                          speak=False)
-            line = (f"Added {'a new' if info.get('new') else 'a'} {name}{' (' + form.lower() + ')' if form else ''} "
+            line = (f"Added {'a new ' + gardenmod.bare(name) if info.get('new') else gardenmod.a_(name)}{' (' + form.lower() + ')' if form else ''} "
                     f"to the {where} collection.")
             if info.get("habitat"):
                 line += f" A new habitat opened: {gardenmod.habitat_name(info['country'], info['habitat'])}."
@@ -517,6 +608,12 @@ class Dragon:
         elif what == "again":
             self.pet.cheer(tuning.get("friend_back_joy"), tuning.get("friend_back_xp"), f"{name} IS BACK! HI FRIEND!", "happy", 45)
             self.event("friend", f"{name} came back (level {d['level']})")
+
+    def beacon_on(self):
+        """The friend beacon: the Den's tick box, or until it's been used, the settings file
+        ([friends] beacon = true/false: how it starts)."""
+        v = self.store.get("friend_beacon")
+        return bool(self.cfg["friends"]["beacon"]) if v is None else bool(v)
 
     def beacon_payload(self):
         mood = self.pet.mood()
@@ -926,6 +1023,9 @@ class Dragon:
             "nearby": len(in_range), "xp": self.pet.xp, "next_xp": xp_for(self.pet.level() + 1),
             "network": self.home_ssid or "", "network_rank": self.network_rank(self.home_ssid),
             "napping": self.napping, "nap_since": int(self.nap_since),
+            "achievements": self.achievements_view(),
+            "library": self.library.view(),
+            "beacon_on": self.beacon_on(),
             **self._sky_view(now),
         }
 
@@ -1002,6 +1102,8 @@ class Dragon:
             self.pet.alarm = bool(self.trackers.alerts)
             self.pet.tick(self.ble.in_range())
             self._garden_tick()
+            if time.time() - self._ach_at > self.ACH_EVERY_S:
+                self.check_achievements()
             self.vitals = self.stats.sample()
             if time.time() - last_save > 60:
                 self.pet.save()
@@ -1240,6 +1342,63 @@ class Dragon:
         heard = self.stars.last_heard if self.stars else {}
         in_view = {k for k, t in heard.items() if now - t <= self.STAR_NOW_S}
         return starchart.page_data(self.pet.name, self.store.stars(), in_view, now, where=self.lair.where())
+
+    # ================================================================ achievements
+    ACH_EVERY_S = 120
+
+    def achievement_list(self, fresh=False):
+        from . import achievements
+        if fresh or self._ach is None:
+            self._ach = achievements.build(achievements.gather(self))
+        return self._ach
+
+    def check_achievements(self, now=None):
+        """Counts everything collected, and marks any new runestones (achievements.py): in the
+        diary, and on his screen (the best one, if several come at once)."""
+        from . import achievements as ach
+        now = now or time.time()
+        self._ach_at = now
+        if self.napping:
+            return []
+        try:
+            achs = self.achievement_list(fresh=True)
+        except Exception:
+            log.exception("achievements")
+            return []
+        fresh, first = ach.sync(self.store, achs, now)
+        if first:
+            if fresh:
+                self.event("achievement", f"Achievements: {len(fresh)} runestone{'s' if len(fresh) != 1 else ''} "
+                                          "for what's already been collected.")
+            return fresh
+        for a, m in fresh:
+            need = dict(a["steps"]).get(m)
+            self.event("achievement", f"{ach.TIER_NAMES[m]} runestone: {a['name']} ({need:,} {a['unit']}).")
+        if fresh:
+            a, m = fresh[0]
+            t, nm = ach.TIER_NAMES[m].upper(), a["name"].upper()
+            self.pet.say(_fit([f"{t} RUNESTONE: {nm}", f"{t}: {nm}", f"{t} RUNESTONE!"]),
+                         "ecstatic" if m >= 3 else "excited", 40)
+        return fresh
+
+    def achievements_view(self):
+        from . import achievements as ach
+        try:
+            return ach.summary(self.store, self.achievement_list())
+        except Exception:
+            log.exception("achievements")
+            return None
+
+    def achievements_data(self):
+        from . import achievements as ach
+        self.check_achievements()
+        locks = {}
+        if not self.explore_open():
+            why = f"Opens at level {petmod.EXPLORE_LEVEL}, when {self.pet.name} becomes a child."
+            locks.update(lands=why, places=why, nature=why, stars=why)
+        if not self.garden.unlocked(self.pet.level()):
+            locks["garden"] = f"The Butterfly Garden opens at level {gardenmod.UNLOCK_LEVEL}."
+        return ach.page_data(self.pet.name, self.store, self.achievement_list(), locks)
 
     def journal_data(self):
         from . import journal
@@ -1775,6 +1934,14 @@ class Dragon:
         if cmd in ("SLEEP", "REBOOT"):
             asyncio.get_running_loop().call_later(0.5, lambda: asyncio.ensure_future(self.shutdown(cmd)))
             return ["OK"]
+        if cmd == "BEACON":   # BEACON on|off: the friend beacon (the Den's tick box)
+            on = arg.strip().lower() in ("on", "1", "true", "yes")
+            self.store.put("friend_beacon", on)
+            b = getattr(self, "beacon", None)
+            if b:
+                b.kick.set()
+            self.event("friend", f"Friend beacon switched {'on' if on else 'off'}")
+            return ["OK"]
         if cmd == "FRIENDS":  # id|name|level|near(0/1)|meetings|last_met
             near = {f["id"] for f in self.friends.nearby(now)}
             return [f"{f['id']}|{f['name']}|{f['level']}|{1 if f['id'] in near else 0}|{f['meetings']}|"
@@ -2217,9 +2384,10 @@ class Dragon:
             tasks.append(self.wifi_loop())
             tasks.append(self.dot.run())
             tasks.append(self._awake_only(self.radio.run))   # the radio stick rests during a nap too
-            if self.cfg["friends"]["beacon"]:
-                beacon = friendsmod.Beacon(self.beacon_payload, quiet=scanner.quiet)
-                tasks.append(self._awake_only(beacon.run))
+            # (always running: the Den's tick box switches it on and off; the settings file's
+            # `beacon` under [friends] only says how it starts)
+            self.beacon = friendsmod.Beacon(self.beacon_payload, quiet=scanner.quiet, enabled_fn=self.beacon_on)
+            tasks.append(self._awake_only(self.beacon.run))
         if self.simulate:
             tasks.append(self.dot._timer_loop())   # timers work without the Dot too
         tasks.extend(extra_tasks)

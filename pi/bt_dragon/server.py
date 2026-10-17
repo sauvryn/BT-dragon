@@ -161,6 +161,57 @@ def _response(status, body, ctype="text/plain; charset=utf-8", extra=None, cache
     return ("\r\n".join(head) + "\r\n\r\n").encode() + body
 
 
+async def _receive_epub(app, reader, headers):
+    """An EPUB for the library's shelf, from the Library page: its index (made by the reader in
+    the browser) as JSON, then the file itself, written to the card as it arrives."""
+    lib = app.library
+    length = int(headers.get("content-length", "0") or 0)
+    try:
+        meta_n = int(headers.get("x-meta-length", "0") or 0)
+    except ValueError:
+        meta_n = 0
+    size = length - meta_n
+
+    def answer(err, extra=None):
+        return _response("200 OK", json.dumps(dict({"ok": not err, "error": err or ""}, **(extra or {}))),
+                         "application/json")
+    if app.napping:
+        return answer(f"{app.pet.name} is napping: wake {app.pet.name} first, then add it.")
+    if not 0 < meta_n <= 4 * 1024 * 1024 or size <= 0:
+        return answer("That upload didn't look right.")
+    why = lib.can_add(size)
+    if why:
+        return answer(why)
+    try:
+        meta = json.loads((await asyncio.wait_for(reader.readexactly(meta_n), 30)).decode("utf-8", "replace"))
+    except (ValueError, asyncio.IncompleteReadError, asyncio.TimeoutError):
+        return answer("That upload didn't look right.")
+    tmp = os.path.join(lib.epub_dir, f"upload-{os.getpid()}-{int(time.time() * 1000)}.part")
+    try:
+        with open(tmp, "wb") as f:
+            left, first = size, True
+            while left:
+                chunk = await asyncio.wait_for(reader.read(min(65536, left)), 30)
+                if not chunk:
+                    raise ConnectionError("the upload stopped part way")
+                if first and not chunk.startswith(b"PK"):
+                    raise ValueError("not a ZIP file")
+                first = False
+                f.write(chunk)
+                left -= len(chunk)
+    except (OSError, ConnectionError, ValueError, asyncio.TimeoutError) as e:
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass
+        return answer("That file couldn't be stored: " + str(e))
+    err, m = lib.epub_add(meta, tmp, size)
+    if err:
+        return answer(err)
+    app.event("library", f"Added {m['title']} to the e-book shelf.")
+    return answer(None, {"id": m["id"], "title": m["title"]})
+
+
 async def _receive_restore(app, reader, length):
     """A backup sent from the den: saved next to his database, checked, and if it's good,
     he restarts and puts it in place before anything else."""
@@ -225,6 +276,10 @@ async def web_server(app):
         art_page = f.read()
     with open(os.path.join(HERE, "collection.html"), encoding="utf-8") as f:
         coll_page = f.read()
+    with open(os.path.join(HERE, "library.html"), encoding="utf-8") as f:
+        lib_page = f.read()
+    with open(os.path.join(HERE, "achievements.html"), encoding="utf-8") as f:
+        ach_page = f.read()
     with open(os.path.join(HERE, "login.html"), encoding="utf-8") as f:
         login_page = f.read()
     with open(os.path.join(HERE, "auth.js"), encoding="utf-8") as f:
@@ -292,9 +347,9 @@ async def web_server(app):
                 await writer.drain()
                 return
             limit = (210 * 1024 if path == "/api/art" else 256 * 1024 if path == "/api/garden/seen"
-                     else 4096)                                          # a picture, sightings, or a command
+                     else 512 * 1024 if path == "/api/library" else 4096)                                          # a picture, sightings, or a command
             n = min(int(headers.get("content-length", "0") or 0), limit)
-            if n and path != "/api/restore":
+            if n and path not in ("/api/restore", "/api/library/epub"):
                 body = await asyncio.wait_for(reader.readexactly(n), 30)
             auth = app.den_auth
             if auth.enabled() and path not in PUBLIC_PATHS and not auth.session_ok(headers.get("cookie")) \
@@ -407,6 +462,56 @@ async def web_server(app):
                 out = _response("200 OK", collection(app.sky_data()), "text/html; charset=utf-8")
             elif path == "/whispers":
                 out = _response("200 OK", collection(app.whispers_data()), "text/html; charset=utf-8")
+            elif path == "/library":
+                out = _response("200 OK", lib_page, "text/html; charset=utf-8")
+            elif path == "/api/library" and method == "POST":
+                try:
+                    d = json.loads(body.decode(errors="replace"))
+                    res = app.library_action(d if isinstance(d, dict) else {})
+                except ValueError:
+                    res = {"ok": False, "error": "not JSON"}
+                out = _response("200 OK", json.dumps(res), "application/json")
+            elif path == "/api/library":
+                out = _response("200 OK", json.dumps(dict(app.library.view(full=True), name=app.pet.name,
+                                                          napping=app.napping, locked=app.den_auth.enabled())),
+                                "application/json")
+            elif path == "/api/library/epub" and method == "POST":
+                out = await _receive_epub(app, reader, headers)
+            elif path.startswith("/api/library/epub/"):
+                # an EPUB from the shelf, for the reader (…/<id>.epub), or its record (…/<id>.json)
+                name = path.rsplit("/", 1)[-1]
+                eid, _, ext = name.partition(".")
+                if ext == "json":
+                    m = app.library.epub_record(eid)
+                    out = (_response("200 OK", json.dumps(m), "application/json") if m
+                           else _response("404 Not Found", "no such e-book"))
+                else:
+                    p = app.library.epub_path(eid)
+                    if p and os.path.exists(p):
+                        with open(p, "rb") as f:
+                            data = f.read()
+                        out = _response("200 OK", data, "application/epub+zip", cache="private, max-age=86400")
+                    else:
+                        out = _response("404 Not Found", "no such e-book")
+            elif path == "/api/library/search":
+                q = (urllib.parse.parse_qs(urllib.parse.urlparse(target).query).get("q") or [""])[0]
+                try:
+                    found = await asyncio.wait_for(
+                        asyncio.get_running_loop().run_in_executor(None, app.library.search, q), 30)
+                    out = _response("200 OK", json.dumps({"ok": True, "results": found}), "application/json")
+                except Exception as e:
+                    log.info("library search: %s", e)
+                    out = _response("200 OK", json.dumps({"ok": False, "results": []}), "application/json")
+            elif path.startswith("/api/library/cover/"):
+                cid = path.rsplit("/", 1)[-1].split(".")[0]
+                keep = "peek" not in urllib.parse.parse_qs(urllib.parse.urlparse(target).query)  # (search results)
+                data = await asyncio.get_running_loop().run_in_executor(None, app.library.cover, cid, keep)
+                out = (_response("200 OK", data, "image/jpeg", cache="max-age=31536000, immutable") if data
+                       else _response("404 Not Found", "no cover"))
+            elif path == "/achievements":
+                out = _response("200 OK", ach_page.replace("__RUNEFONT__", json.dumps({"strokes": RUNES}))
+                                .replace("__DATA__", json.dumps(app.achievements_data()).replace("</", "<\\/")),
+                                "text/html; charset=utf-8")
             elif path == "/journal":
                 out = _response("200 OK", collection(app.journal_data()), "text/html; charset=utf-8")
             elif path == "/shopping":

@@ -25,8 +25,8 @@ KINDS = ("land", "realm", "green", "landmark", "star", "constellation")
 TITLES = [(0, "c0", "Fledgling Forager"), (250, "c1", "Wandering Wyrmling"), (750, "c2", "Scouting Skald"),
           (1500, "c3", "Roaming Raider"), (3000, "c4", "Trailblazing Thane"), (5000, "c5", "Boundary-Breaking Berserker"),
           (8000, "c6", "Longship Lookout"), (12000, "c7", "Realm-Raiding Rover"), (17500, "c8", "Jarl of the Journey"),
-          (25000, "c9", "Conquering Cartographer"), (35000, "c10", "Hoard-Hunting Huscarl"),
-          (50000, "c11", "Saga-Sung Sea-King"), (75000, "c12", "Wyrm-King of the Wilds")]
+          (25000, "c9", "Conquering Cartographer"), (35000, "c10", "Hoard-Hunting Herald"),
+          (50000, "c11", "Saga-Sung Sea-Sovereign"), (75000, "c12", "Wyrm-Ruler of the Wilds")]
 
 
 def points(kind):
