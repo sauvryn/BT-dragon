@@ -17,13 +17,13 @@ Optional GPS integration unlocks the ability to "conquer" squares on a real-worl
 
 **Added**
 
-- **Future Development Options:** a plan for optional child rescue and missing person alerts (the US, Canada, the UK and Ireland), with what's been decided so far.
 - **The e-reader (untested):** Bookworm's EPUB reader, with automatic tracking. Add DRM-free EPUBs to the library's **E-book shelf**: they're kept on the Pi, so your place and what you've read follow you between your phone and computer. Pages you read can be logged for joy, like any reading. EPUBs aren't included in backups.
 - **Friend beacon tick box (untested):** **Dragon friends** in the Den has a tick box to switch the friend beacon off and on.
 - **The library: Harald's Hoard (untested):** Bookworm's book tracker, for Harald's treasure: knowledge. Logging your reading brings him joy, and finishing a book earns rations (10, 20 or 30, by its length), library points and titles. **Open the Library** for your books, the Open Library search, Want To Read and Completed Books.
 - **Achievements (untested):** milestones for how many of each thing Harald has collected, in five stages from Copper to Platinum, each an oval runestone carved with its category's rune. The Den shows the latest; **Open Achievements** shows them all, including Bookworm's own for the Butterfly Garden.
 - **Rations (untested):** every feast and every land claimed earns you a ration. Harald can't touch them. Press **Give Ration** in the Den and his pack is filled completely, for days when you're stuck indoors and can't take him out. They can be stockpiled.
 - **Northern lights alerts:** Harald tells you when the aurora might be visible from the Lair on dark evenings.
+- **Future Development Options:** a plan for optional child rescue and missing person alerts (the US, Canada, the UK and Ireland), with what's been decided so far.
 - **The Gadget Journal:** every type of gadget as a collection, with rarities, cards, points and titles.
 - **The Star Chart:** navigation satellite constellations as a collection, with each one's rarity worked out for where the Lair is.
 - **Growing up (untested):** Harald's belly, joy and pack hold a little more at each level. An option in Developer Tools lets the Butterfly Garden's needs grow too.
