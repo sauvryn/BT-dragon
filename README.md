@@ -38,25 +38,25 @@ Optional GPS integration unlocks the ability to "conquer" squares on a real-worl
 **Fixed**
 
 - **Butterfly Garden messages:** a species whose name starts with "The" (The Footballer, a hoverfly) is now "the Footballer larva" and "a Footballer", not "The The Footballer", and "an" comes before a vowel ("an Elephant Hawk-moth").
-- **Echo Dot recovery (untested on a real Dot):**
+- **Echo Dot recovery (testing in progress):**
   - Clearer messages when a rescue doesn't work.
   - Fewer pointless rescue attempts.
   - The Dot's ears keep working while its debug link is stuck, and try to repair it.
   - The Dot's open setup network is now locked and closed once Harald is back in (tested).
 - **The Star Chart's own Den section,** so it's easier to find: satellites seen by constellation, and the button to the full collection.
-- **The Butterfly Garden's pace (untested change):** a pupa no longer eats; it takes 24 hours, and the adult emerges by itself.
+- **The Butterfly Garden's pace (testing in progress):** a pupa no longer eats; it takes 24 hours, and the adult emerges by itself.
 - **Buses and trams (untested change):** no longer counted as walking, running or cycling while they pull away, slow down or crawl in traffic.
 - **Alexa-ready headphones and speakers:** filed under their own names instead of as an Amazon Echo.
-- **Installing (tested):** a VPN on your computer stops it finding the Pi by name (`.local`); the README now says so, with the exact error.
-- **Raspberry Pi 5 (tested):** BT Dragon installs and runs unchanged on a Pi 5 (64-bit Raspberry Pi OS, no screen).
+- **Installing:** a VPN on your computer is confirmed to stop it from finding the Pi by name (`.local`); the README now says so, with the exact error.
+- **Raspberry Pi 5:** BT Dragon is confirmed to install and run unchanged on a Pi 5 (64-bit Raspberry Pi OS, no screen). This was tested because the project author needed to see how two dragons would interact, but only has one RPiZ2W (would get another but there are prohibitive supply issues currently) so therefore attempted a test on their RPi5. It works, so it is worth reporting for other users to know they can try BT Dragon on alternate RPi hardware if that's all they have.
 - **Friend beacon (untested change):** a new mood, level-up or rename no longer knocks a dragon's friend beacon off the air (before, two dragons often only saw each other after a restart); a new mood alone is re-announced at most every 10 minutes.
 - **Friend beacon on a Raspberry Pi 5 (untested on a real Pi):** a Pi 5 dragon could hear other dragons but never got its own beacon on the air, so they couldn't hear it. A beacon goes out from a throwaway random Bluetooth address, and the Pi 5's radio refuses to take a new address while it's scanning, which a dragon always is. Scanning now pauses for a second or two while the beacon goes up. If it still fails, the log says so three times, then once every half hour, instead of every minute.
 - **Growing up, stage by stage (untested):** baby (levels 1–4), child (5–9), teen (10–19) and adult (20+), shown in the Den. The map (lands, famous places, green spaces) and the Star Chart open at level 5, when a dragon becomes a child, like the Butterfly Garden, with an "Unlock now (prototype testing)" box; and a feast is 5 XP (it was 20), so a newborn dragon no longer reaches level 4 in its first minute.
-- **"Famished" instead of "starving" (tested)** for an empty belly, a gentler word, and his hungriest everyday message now fits the screen.
+- **"Famished" instead of "starving"** for an empty belly, a gentler word, and his hungriest everyday message now fits the screen.
 - **One Dot, one dragon (untested):** a second dragon on the same hotspot leaves an Echo Dot alone while another dragon is using it.
 - **README:** the setup stages are now "Tiers" (Tier 1: The basics ... Tier 4: A voice and ears), so they're never mixed up with your dragon's level; and a new section, *Already have a Pwnagotchi card?*, on installing over a Pwnagotchi card and checking its system is new enough (64-bit or 32-bit).
-- **Folding Den sections (untested):** every section below Harald's meters now folds away: tap its heading (or press Enter on it). Each heading has the same ▾ / ▸ on its left as the Butterfly Garden's. Each one stays as you left it on that phone or computer, and any section added in future folds the same way.
-- **Gender-neutral titles:** titles with a masculine word were renamed: **Hoard-Ruler of the Endless Library** (the library; it was Hoard-King), and in Conquests **Saga-Sung Sea-Sovereign** (Sea-King), **Wyrm-Ruler of the Wilds** (Wyrm-King) and **Hoard-Hunting Herald** (Huscarl, Old Norse for "house-man"). Titles that name a rank traditionally held by men, but aren't a masculine word, keep their names (Thane, Jarl). Titles already earned are kept.
+- **Folding Den sections:** every section below Harald's meters now folds away: tap its heading (or press Enter on it). Each heading has the same ▾ / ▸ on its left as the Butterfly Garden's. Each one stays as you left it on that phone or computer, and any section added in future folds the same way.
+- **Gender-neutral titles:** to mesh with allowance for non-masculine names, titles with a masculine word were renamed: **Hoard-Ruler of the Endless Library** (the library; it was Hoard-King), and in Conquests **Saga-Sung Sea-Sovereign** (Sea-King), **Wyrm-Ruler of the Wilds** (Wyrm-King) and **Hoard-Hunting Herald** (Huscarl, Old Norse for "house-man"). Titles that name a rank traditionally held by men, but aren't a masculine word, keep their names (Thane, Jarl). Titles already earned are kept.
 - **Fly on the Wall:** the Butterfly Garden's achievement for raising every British fly (it was Lord of the Flies).
 - **The Den's layout:** menus that were too squeezed or too wide were tidied, and the home zone setting moved to the WiGLE section.
 
