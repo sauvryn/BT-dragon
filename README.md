@@ -14,7 +14,7 @@ Optional GPS integration unlocks the ability to "conquer" squares on a real-worl
 
 **Known Issues**
 - GPS wobble is erroneously assigning minor "riding" distances while indoors. A fix is in the works but not yet implemented.
-- "Fed {x} food to the Butterfly Garden" message is still appearing, even if all current insects are in a pupating state (which doesn't advance with shared food). Need to disable this message when active insects are all uncollected emerged adults and/or pupa(e).
+- "Fed {x} food to the Butterfly Garden" message is still appearing when all current insects are in a pupating state (which doesn't advance with shared food). Need to disable this message when active insects are of a type that doesn't accept food (uncollected emerged adults and/or pupa(e)).
 
 **Added**
 
