@@ -10,7 +10,9 @@ Optional GPS integration unlocks the ability to "conquer" squares on a real-worl
 
 **Why Harald?** He's named after **Harald "Bluetooth" Gormsson**, a Viking king of Denmark who died around 986. He's remembered for uniting Denmark's tribes under one crown, for bringing Christianity to the Danes, and for the great runestone he raised at Jelling, which Danes still call their country's birth certificate. Nobody knows for sure where his nickname came from: perhaps a dead, dark tooth, or an older word meaning "dark chieftain". In 1997, engineers from Intel, Ericsson and Nokia were looking for a working name for a new short-range radio standard that would unite phones and computers, the way Harald had united the Danes. They called it Bluetooth, and the name stuck. The Bluetooth logo is Harald's initials in runes: ᚼ (H) and ᛒ (B), joined together. Thus, this Bluetooth-eating dragon is Viking-themed and named Harald in honor of that legacy.
 
-## Latest Updates as of October 17, 2026 at 14:24 PM BST
+**Why BT Dragon was created:** In brief, the project author initially created Harald to use existing hardware for a personal educational purpose: to learn more about Bluetooth and Wi-Fi and to encourage physical activity and exploration of their local area. The project quickly snowballed into lots of different directions based on what was discovered to be possible using the capabilities of a RPiZ2W on its own, plus additions that were available with a connected smartphone sharing its own sensors. BT Dragon is very much a learning-focused tool that other curious folk can try and hopefully enjoy.
+
+## Latest Updates as of October 17, 2026 at 14:45 PM BST
 
 **Known Issues**
 - GPS wobble is erroneously assigning minor "riding" distances while indoors. A fix is in the works but not yet implemented.
