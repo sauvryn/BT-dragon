@@ -166,7 +166,7 @@ if sync_playwright:
             for scheme in ("dark", "light"):
                 ctx = br.new_context(viewport={"width": 400, "height": 900}, color_scheme=scheme)
                 # (the pages are dark whatever the browser prefers; light mode is checked on the two main ones)
-                for path in (("/", "/garden", "/art", "/map", "/shopping", "/calendar", "/stars", "/journal", "/sky", "/whispers") if scheme == "dark"
+                for path in (("/", "/garden", "/art", "/map", "/shopping", "/calendar", "/stars", "/journal", "/sky", "/whispers", "/achievements", "/library") if scheme == "dark"
                              else ("/", "/garden")):
                     page = ctx.new_page()
                     page.route("**/*", lambda rt: rt.continue_() if "127.0.0.1" in rt.request.url else rt.abort())

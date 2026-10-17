@@ -88,6 +88,8 @@ stride_m = 0.75            # your step length in meters, to turn steps into dist
 # The beacon carries a random ID so friends recognize your dragon next time. Anyone listening
 # could also notice that ID, so switch it off if you'd rather he only listened.
 # (He still meets dragons that do broadcast.)
+# This is how the beacon starts. Once you've used the "Friend beacon" tick box in the Den
+# (Dragon friends), the tick box decides instead.
 beacon = true
 
 [diary]

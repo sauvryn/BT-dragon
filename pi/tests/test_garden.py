@@ -376,3 +376,9 @@ if sync_playwright:
         page.screenshot(path=os.path.join(tmp, "coll.png"), full_page=False)
         br.close()
 print("garden ok")
+
+# a species called "The ..." (The Footballer, a hoverfly) never gets a second "The" or "a The"
+from bt_dragon.garden import a_, the_
+assert a_("The Footballer") == "a Footballer" and the_("The Footballer") == "the Footballer"
+assert a_("Elephant Hawk-moth") == "an Elephant Hawk-moth" and a_("European Hornet") == "a European Hornet"
+print("species names ok")

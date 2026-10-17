@@ -134,3 +134,53 @@ async def once():
 asyncio.run(once())
 assert radio["on_air"] == [] and b.failures >= 1
 print("beacon pause ok")
+
+# the Den's tick box: off takes the beacon off the air at once (scanning paused for it), on puts it back
+radio.update(scanning=False, refuse=0, on_air=[])
+state = {"on": True}
+
+
+async def toggled():
+    stop = asyncio.Event()
+    sc = BleakScanner(lambda *a: None, bleak_cls=FakeScan)
+    b = friends.Beacon(lambda: a, quiet=sc.quiet, bus_fn=bus_fn, enabled_fn=lambda: state["on"])
+    b.GAP_S = 0
+    t1 = asyncio.ensure_future(sc.run(stop))
+    t2 = asyncio.ensure_future(b.run(stop))
+    for _ in range(100):
+        await asyncio.sleep(0.02)
+        if radio["on_air"]:
+            break
+    assert radio["on_air"], radio
+    state["on"] = False
+    b.kick.set()                                  # (what the BEACON command does)
+    for _ in range(100):
+        await asyncio.sleep(0.02)
+        if not radio["on_air"]:
+            break
+    assert radio["on_air"] == [], radio
+    state["on"] = True
+    b.kick.set()
+    for _ in range(100):
+        await asyncio.sleep(0.02)
+        if radio["on_air"]:
+            break
+    assert len(radio["on_air"]) == 1 and radio["scanning"], radio
+    stop.set()
+    await asyncio.gather(t1, t2)
+
+
+asyncio.run(toggled())
+# the app: the tick box wins over the settings file once it's been used
+import tempfile
+from bt_dragon import config
+from bt_dragon.app import Dragon
+cfg = config.load(None)
+cfg["data_dir"] = tempfile.mkdtemp()
+cfg["friends"]["beacon"] = False
+app = Dragon(cfg, simulate=True, out_dir=tempfile.mkdtemp())
+assert app.beacon_on() is False and app.view()["beacon_on"] is False          # how it starts, from the card
+assert asyncio.run(app.command("BEACON on")) == ["OK"] and app.beacon_on() and app.view()["beacon_on"]
+asyncio.run(app.command("BEACON off"))
+assert not app.beacon_on()
+print("beacon switch ok")
