@@ -10,10 +10,15 @@ Optional GPS integration unlocks the ability to "conquer" squares on a real-worl
 
 ![Harald's screen](docs/screen.png)
 
-## Latest Updates as of October 17, 2026 at 12:15 AM BST
+## Latest Updates as of October 17, 2026 at 12:29 PM BST
 
 **Added**
 
+- **Future Development Options:** a plan for optional child rescue and missing person alerts (the US, Canada, the UK and Ireland), with what's been decided so far.
+- **The e-reader (untested):** Bookworm's EPUB reader, with automatic tracking. Add DRM-free EPUBs to the library's **E-book shelf**: they're kept on the Pi, so your place and what you've read follow you between your phone and computer. Pages you read can be logged for joy, like any reading. EPUBs aren't included in backups.
+- **Friend beacon tick box (untested):** **Dragon friends** in the Den has a tick box to switch the friend beacon off and on.
+- **The library: Harald's Hoard (untested):** Bookworm's book tracker, for Harald's treasure: knowledge. Logging your reading brings him joy, and finishing a book earns rations (10, 20 or 30, by its length), library points and titles. **Open the Library** for your books, the Open Library search, Want To Read and Completed Books.
+- **Achievements (untested):** milestones for how many of each thing Harald has collected, in five stages from Copper to Platinum, each an oval runestone carved with its category's rune. The Den shows the latest; **Open Achievements** shows them all, including Bookworm's own for the Butterfly Garden.
 - **Rations (untested):** every feast and every land claimed earns you a ration. Harald can't touch them. Press **Give Ration** in the Den and his pack is filled completely, for days when you're stuck indoors and can't take him out. They can be stockpiled.
 - **Northern lights alerts:** Harald tells you when the aurora might be visible from the Lair on dark evenings.
 - **The Gadget Journal:** every type of gadget as a collection, with rarities, cards, points and titles.
@@ -29,6 +34,7 @@ Optional GPS integration unlocks the ability to "conquer" squares on a real-worl
 
 **Fixed**
 
+- **Butterfly Garden messages:** a species whose name starts with "The" (The Footballer, a hoverfly) is now "the Footballer larva" and "a Footballer", not "The The Footballer", and "an" comes before a vowel ("an Elephant Hawk-moth").
 - **Echo Dot recovery (untested on a real Dot):**
   - Clearer messages when a rescue doesn't work.
   - Fewer pointless rescue attempts.
@@ -46,6 +52,9 @@ Optional GPS integration unlocks the ability to "conquer" squares on a real-worl
 - **"Famished" instead of "starving" (tested)** for an empty belly, a gentler word, and his hungriest everyday message now fits the screen.
 - **One Dot, one dragon (untested):** a second dragon on the same hotspot leaves an Echo Dot alone while another dragon is using it.
 - **README:** the setup stages are now "Tiers" (Tier 1: The basics ... Tier 4: A voice and ears), so they're never mixed up with your dragon's level; and a new section, *Already have a Pwnagotchi card?*, on installing over a Pwnagotchi card and checking its system is new enough (64-bit or 32-bit).
+- **Folding Den sections (untested):** every section below Harald's meters now folds away: tap its heading (or press Enter on it). Each heading has the same ▾ / ▸ on its left as the Butterfly Garden's. Each one stays as you left it on that phone or computer, and any section added in future folds the same way.
+- **Gender-neutral titles:** titles with a masculine word were renamed: **Hoard-Ruler of the Endless Library** (the library; it was Hoard-King), and in Conquests **Saga-Sung Sea-Sovereign** (Sea-King), **Wyrm-Ruler of the Wilds** (Wyrm-King) and **Hoard-Hunting Herald** (Huscarl, Old Norse for "house-man"). Titles that name a rank traditionally held by men, but aren't a masculine word, keep their names (Thane, Jarl). Titles already earned are kept.
+- **Fly on the Wall:** the Butterfly Garden's achievement for raising every British fly (it was Lord of the Flies).
 - **The Den's layout:** menus that were too squeezed or too wide were tidied, and the home zone setting moved to the WiGLE section.
 
 ## Previous Updates on October 15, 2026
@@ -90,7 +99,7 @@ This guide grows with your setup. Start with the bare minimum, a Pi on your home
 
 | Tier | You add | He gains |
 |---|---|---|
-| [1. The basics](#tier-1-the-basics) | A Raspberry Pi Zero 2 W, a microSD card, your home Wi-Fi and a computer | Bluetooth snacks, Wi-Fi treats, types of gadget, friends, finding your own gadgets, tracker warnings, the moon, a shopping list and calendar, kitchen timers, typed questions, the weather and local weather news from his Lair, a Butterfly Garden (from level 5), the Den |
+| [1. The basics](#tier-1-the-basics) | A Raspberry Pi Zero 2 W, a microSD card, your home Wi-Fi and a computer | Bluetooth snacks, Wi-Fi treats, types of gadget, friends, finding your own gadgets, tracker warnings, the moon, a shopping list and calendar, kitchen timers, typed questions, the weather and local weather news from his Lair, a Butterfly Garden (from level 5), a library of the books you read, achievements, the Den |
 | [2. Out and about](#tier-2-out-and-about) | Your smartphone's hotspot and a USB power bank | Walks together: more to eat, dragons to meet, the Den in your pocket. Optionally, much of Tier 3 without phone apps: a USB GPS receiver, or claiming land by Wi-Fi |
 | [3. Your phone's senses](#tier-3-your-phones-senses) | An Android phone sharing its sensors | Walks tracked and logged, wardriving, conquering the map, landmarks, parks, stars (these from dragon level 5), weather, sunshine, his voice through your phone |
 | [4. A voice and ears](#tier-4-a-voice-and-ears-echo-dot) | A rooted Echo Dot (2nd generation) | Spoken news, a mood ring, using your own voice to ask questions and set timers, verbally add to your calendar and shopping list, the "Hey dragon" wake word for hands-free use |
@@ -270,6 +279,8 @@ Without a screen on the Pi, the Den *is* how you see him: a live copy of his scr
 
 **The order of the Den.** Below his meters, the Den starts with what a dragon at Tiers 1 and 2 (no GPS, no Echo Dot) does most: **Find my pals**, **Dragon friends**, **Gadgets nearby**, **Recent treats**, his **Life list** and **Diary**, then looking after him: **Network**, **Care and Accessibility**, **Backup** and **Developer Tools**. After that come the parts that are still useful without GPS or a Dot (**The moon**, the **Butterfly Garden**, then the **Shopping list and calendar**, **Ask Harald** for typed questions and kitchen timers, **Harald's Lair** for the weather at home, then **Voice and light ring**), and last the ones that need GPS (**Adventures today**, **Conquests**, **WiGLE**). **Voice and light ring** is folded away until you open it. To change the order, press **Arrange the den** at the bottom of the page and move sections up or down; **Back to the usual order** undoes it. The order is remembered by each phone or computer's browser, so your phone and your computer can each have their own.
 
+**Folding sections (untested).** Every section below his meters folds away to just its heading: tap the heading (or press Enter on it) to fold or unfold it. A ▾ before the heading means it's open, ▸ that it's folded. Each section stays as you left it on that phone or computer. His meters, alerts and the nap notice never fold.
+
 **Always put him to sleep before unplugging.** Use **Put to sleep** in the Den and wait about 30 seconds (with a screen: until the **SLEEP** screen appears, or *SAFE TO UNPLUG* if you've turned the sleep screen off), then pull the plug. Cutting the power while the Pi is writing to the card can corrupt it.
 
 ### Keep him on a private network
@@ -309,7 +320,7 @@ Harald has separate meters, so he can be **hungry and happy** after a long walk 
 - **JOY** drops when nothing's happening (a full meter lasts about 10 hours). New things, friends and walks raise it; the everyday snacks and treats only a little, so a day at home lets it drift down, and an outing brings it back.
 - **BELLY** (food) empties in about 2½ hours with nothing to eat. Bluetooth snacks and Wi-Fi treats fill it.
 - **PACK.** Berries and treats he finds while his belly is already full go into his pack (up to 50). When his belly drops to 25%, he eats half of what's in it, never more than fills his belly back up.
-- **Rations (untested).** Rations are yours, not his: a bundle of food you earn for every **feast** (a type of gadget he's never eaten before) and every **land** he claims (a new realm comes with its first land, so it earns one too). He can't eat them by himself. When you press **Give Ration**, under his pack in the Den, one ration fills his pack completely, however empty it was, and he eats from it in the usual way as he gets hungry. They're for lean times: a day stuck indoors, ill in bed, or snowed in. Feasts grow rarer as his Gadget Journal fills up, and lands only come from going somewhere new, so they're a limited resource, but they can be stockpiled and never go off. The button is greyed out when there are none, when his pack is already full, or while he's napping. Each one given goes in his diary. In Developer Tools (*Food*), you can change how many each feast and each land earns (fractions add up: 0.25 is one ration for every four), set a most that can be stored (0 is no limit, the default), and set the number you have, for testing. Lands claimed while riding in a vehicle earn the same share as their other rewards (*Lands: rewards while riding*, 25% by default).
+- **Rations (untested).** Rations are yours, not his: a bundle of food you earn for every **feast** (a type of gadget he's never eaten before) and every **land** he claims (a new realm comes with its first land, so it earns one too), and by the pack for every book you finish in the [library](#the-library-haralds-hoard-untested). He can't eat them by himself. When you press **Give Ration**, under his pack in the Den, one ration fills his pack completely, however empty it was, and he eats from it in the usual way as he gets hungry. They're for lean times: a day stuck indoors, ill in bed, or snowed in. Feasts grow rarer as his Gadget Journal fills up, and lands only come from going somewhere new, so they're a limited resource, but they can be stockpiled and never go off. The button is greyed out when there are none, when his pack is already full, or while he's napping. Each one given goes in his diary. In Developer Tools (*Food*), you can change how many each feast and each land earns (fractions add up: 0.25 is one ration for every four), set a most that can be stored (0 is no limit, the default), and set the number you have, for testing. Lands claimed while riding in a vehicle earn the same share as their other rewards (*Lands: rewards while riding*, 25% by default).
 - **Time switched off counts too.** When he starts up with a correct clock, he works out how long he was off and drops his meters as if he'd been awake with nothing to eat or do. **XP never drops.**
 
 | | What it is | Food | Joy | XP |
@@ -362,6 +373,17 @@ A baby can't claim land, recognize stars or raise butterflies, so a newborn drag
 
 Like Pwnagotchis, dragons make friends. Each BT Dragon sends a small Bluetooth beacon carrying a dragon ID, its name, level and mood. When another dragon comes near, the two meet: a first meeting is a big XP bonus and the newcomer joins his friends list; coming back after half an hour or more is a happy reunion.
 
+**Switching the beacon off (untested).** In the Den, **Dragon friends** has a **Friend beacon** tick box, on to start with. Untick it and the beacon goes off the air straight away: other dragons can't find him, but he still meets the ones that broadcast. Tick it to switch the beacon back on.
+
+To have the beacon **start switched off**, before he ever broadcasts, change the settings file: open `bt-dragon.toml` on the memory card's **bootfs** partition (or over SSH, `sudo nano /boot/firmware/bt-dragon.toml`), find `[friends]` and set:
+
+```toml
+[friends]
+beacon = false
+```
+
+Then restart him (or put the card back in). That's only how it starts: once you've used the tick box in the Den, the tick box decides.
+
 **A new ID every day (untested on a real Pi).** A dragon ID that never changed would let anyone with a Bluetooth scanner recognize Harald, and so you, from one day to the next. So the ID changes at midnight. Each day's ID is worked out on the Pi from a secret that never leaves it: the first 4 bytes of HMAC-SHA256(secret, today's date). HMAC mixes a secret key into a hash, so without the key one day's ID says nothing about the next; they look like unrelated random numbers. With it, the same day always gives the same ID, so restarting him mid-day doesn't make him a stranger. Friends still know each other across days by name: a dragon with a new ID, the same name as one of his friends, and the same level or higher, is that friend (as long as only one friend fits). That means a dragon with an unusual name can still be recognized by anyone listening, because the name is in every beacon; a common name ("Harald") hides in the crowd. The beacon goes out from a throwaway random Bluetooth address that Linux picks, not the Pi's own fixed one. He also recognizes a real **Pwnagotchi** nearby (they all beacon from Wi-Fi address `DE:AD:BE:EF:DE:AD`) and gets excited about his distant cousin.
 
 **Two dragons on one network:** give the second one a different hostname in Raspberry Pi Imager (say `bt-dragon2`), and if you use an Echo Dot (Tier 4), set `enabled = false` under `[dot]` in the second one's settings, or both will try to use it. They'll meet each other as friends.
@@ -377,11 +399,81 @@ Once Harald reaches **level 5**, a **Butterfly Garden** opens in the Den. It com
 - **Hunger:** as in Bookworm, it's about time going by without food. A larva is **Well fed** for 24 hours after it last ate, **Satisfied** until 48 hours, **Peckish** until 72, then **Hungry** (its picture gets a thought bubble with a leaf) and, from 96 hours (4 days), **Very hungry** (with a "!" too). A female of a social species that goes hungry grows up a worker rather than a queen. Pupae don't eat, so they never get hungry. The garden only gets spare food when Harald's belly and pack are both full, and in a quiet place the trickle of new signals keeps him fed but rarely overflowing: it's the burst of new signals on a walk, a run, a ride or a drive that fills him up enough to feed the larvae. So hungry larvae are a nudge to take your dragon out on an adventure.
 - **Collecting an adult:** a new adult stays in its spot at 100% (shown as the adult, with **tap to add to Collection**) and eats nothing. Tapping it opens its field notes and adds it to the collection, with its points in the diary (*"Added a new Peacock butterfly to the United Kingdom collection. +100 Butterfly Garden points."*). Its spot is then freed: any larvae in the spots below it move up one, and the last spot is left empty (with **Put an egg here**), or, if it was the only spot, gets a new egg.
 - **Queens and workers:** a female of a social species (bumblebees, wasps, ants) becomes a **queen** if she never goes hungry while she's growing, and a **worker** if she does, as in Bookworm.
-- **The Collection:** **See Collection** opens the Garden Collection: Bookworm's own collection page, in the Den's colors, with every species, its card, artwork, facts, **I've Seen It!** sightings and the search. Collecting an adult adds it there, in the collection of the country it hatched in (if you've moved the garden to another country since, it still goes home), may unlock a **habitat** (**See Habitats** at the bottom of the collection; **Go back to Collection** at the top of the habitats), and earns points towards a **title**: 100 for Common, 200 for Uncommon and 300 for Rare. The points needed are Bookworm's, but the titles are Harald's own: Egg Explorer, Bluetooth Beetle (500), Wi-Fi Wasp (1,500), Berry-picking Bumblebee, Snack-seeking Sawfly, Treat-hunting Hoverfly, Beacon Butterfly, Signal-sniffing Hawk-moth, Land-claiming Leafcutter, Satellite Stag Beetle, Hotspot Hornet, Runestone Rhinoceros Beetle and, at 75,000, Monarch of the Lair. Bookworm's achievements aren't included yet; they'll come later, as a Den section of their own for Harald's milestones.
+- **The Collection:** **See Collection** opens the Garden Collection: Bookworm's own collection page, in the Den's colors, with every species, its card, artwork, facts, **I've Seen It!** sightings and the search. Collecting an adult adds it there, in the collection of the country it hatched in (if you've moved the garden to another country since, it still goes home), may unlock a **habitat** (**See Habitats** at the bottom of the collection; **Go back to Collection** at the top of the habitats), and earns points towards a **title**: 100 for Common, 200 for Uncommon and 300 for Rare. The points needed are Bookworm's, but the titles are Harald's own: Egg Explorer, Bluetooth Beetle (500), Wi-Fi Wasp (1,500), Berry-picking Bumblebee, Snack-seeking Sawfly, Treat-hunting Hoverfly, Beacon Butterfly, Signal-sniffing Hawk-moth, Land-claiming Leafcutter, Satellite Stag Beetle, Hotspot Hornet, Runestone Rhinoceros Beetle and, at 75,000, Monarch of the Lair. Bookworm's achievements are on the Achievements page (see [Achievements](#achievements-untested)).
 - **Country:** Bookworm's countries are the United Kingdom, Ireland, the United States and Canada. To start with, the garden uses the Pi's own country (the Wi-Fi country you chose in Raspberry Pi Imager) if it's one of those, and the United Kingdom if not. Change it with the menu in the garden at any time. When you move the Lair to one of those countries, the Den asks whether to move the garden there too (and the language, below). Each country has its own collection; the score counts them all.
 - **No spiders.** Spiders aren't included at the moment. If they're ever added, there will be an "arachnophobia" tick box in the garden to keep them from hatching.
 
 To try it before level 5, tick **Unlock now (prototype testing)** in the garden (the box disappears once he's level 5). Unticking it locks the garden again (anything raised is kept). The food each rarity needs and the joy each step brings are in **Developer Tools**.
+
+### The library: Harald's Hoard (untested)
+
+Dragons guard treasure. Harald's is **knowledge**: the books you read. The Library page opens with a word from one of the oldest dragon stories in English: **wordhord**, Old English for a store of words and knowledge. In *Beowulf*, the poem that ends with a dragon guarding its hoard, the hero answers a coastguard by "unlocking the word-hoard" (*wordhord onleac*). The Den's **Harald's Hoard: Literary Treasures** section is Bookworm's book tracker, brought over and changed for BT Dragon. Instead of each book raising an insect, your reading feeds Harald:
+
+- **Logging your progress** ("I'm now on page 120") brings him **joy**: half a point for each page read, and at most 25 from one log, so catching up on a week's reading in one go doesn't fill the meter by itself. Reading by percentage (for an e-book) shares the book's pages out: 10% of a 300-page book is 30 pages.
+- **Finishing a book** earns **rations**, by its length: **10** for a Short book, **20** for a Medium one and **30** for a Long one. Rations are yours to give him: each fills his PACK (see [Rations](#his-meters)), so a finished book is food for the days you can't take him out. His screen cheers (*A BOOK FINISHED! +10 RATIONS*), and the diary notes it.
+- **Points and titles,** as in Bookworm: **100** library points for a Short book, **200** for a Medium one and **300** for a Long one, with Bookworm's thresholds and titles of a dragon and its books: **Dog-Eared Drakeling** (to start), **Paperback Wyrmling** (500), **Chapter-Chasing Whelp**, **Bookmark-Bearing Drake**, **Hardback Hoarder**, **Wyvern of the Written Word**, **Scroll-Guarding Serpent**, **Lindworm of the Library**, **Beowulf's Bookish Foe**, **Grimoire-Guarding Wyrm**, **Lore-Laden Elder Wyrm**, **Dragon of a Thousand Tales** and, at 75,000, **Hoard-Ruler of the Endless Library**.
+
+**Lengths** are Bookworm's: **Short** is under 450 pages, **Medium** 450 to 799, and **Long** 800 or more.
+
+**In the Den,** the section shows the books you're reading (up to 5), each with its cover, progress bar and length, your library points and title, and **Open the Library**.
+
+**The Library page** is like Bookworm's reading screens:
+
+- **Currently reading:** up to 5 books on the go. Type the page you're on (or the percentage) and press **Log**. **More** has **Edit book** (to fix a typo or another edition's page count; edits don't count as reading, and reaching the end by an edit still finishes the book), **Freeze book** (paused, to come back to; up to 5, and they don't count towards the 5 on the go) and **Abandon book** (off the shelf, earning nothing).
+- **Add a book:** search by title, author or ISBN. An ISBN finds that exact edition, with its own page count; anything else finds the book with its typical page count across editions, so check yours. Choose **Page number** or **Percentage**, then **Start reading** or **Add to Want To Read**. Reading a book again is allowed: if it's already in the library, it asks first.
+- **Want To Read:** your list, newest first, which you can reorder, start from (choosing, as in Bookworm, whether to track it by page number or percentage) or remove from.
+- **Frozen** and **Completed Books** (the dates you read each one, its length, what it earned, and a ★ for favourites).
+- **Titles:** the list, with when you reached each one.
+
+**Book data and covers come from [Open Library](https://openlibrary.org)**, the Internet Archive's free catalogue. Harald looks them up himself, so the Den's pages never talk to another website, and he keeps the covers of your books, so they still show without the internet. Without the internet, you can still type a book's details in by hand.
+
+#### The e-reader and the E-book shelf (untested)
+
+The Library page has **Bookworm's e-book reader**, for DRM-free EPUBs. Many shops lock their e-books to their own apps, but books from places like Project Gutenberg and Standard Ebooks, and many independent publishers, are DRM-free.
+
+- **Adding books:** **Add EPUBs**, on the **E-book shelf**, sends them to the Pi. Your browser opens each one first (to check it isn't locked, and to count its pages), then Harald keeps the file on his memory card. So your shelf, your place in each book and what you've read are the same on your phone and your computer.
+- **Room:** at most **50 MB** for one EPUB and **2,048 MB** for the whole shelf, to start with (Developer Tools → **Library**), and never so much that the card has less than 300 MB free. The shelf shows how much is used. Lower the limit below what's already there and nothing is deleted: the Library and Developer Tools say so and ask you to remove some, and no more can be added until then.
+- **Removing:** **Remove** on the shelf (tap twice) deletes the EPUB from the Pi.
+- **Reading:** **Read** (or **Open in reader** on a book's card) opens it. Tap or swipe at the sides to turn pages; **A−** and **A+** change the text size; the list button opens the contents. It opens where you left off.
+- **Pages:** the reader splits each book into pages of about 250 words, so the page count won't match a printed copy. **Start reading** on the shelf starts the book with these pages; a book you're already reading can be linked to its EPUB instead (**Link an EPUB** on its card).
+- **Automatic tracking:** while you read, the reader notes which pages you actually spend time on. A page counts once it has been on screen long enough to read it (about 10 to 20 seconds for a screenful of text). Flicking past pages doesn't count, nor does time with the page in the background, and each page only counts once. The contents, cover, copyright page, index, notes and similar parts aren't counted. Nothing is logged by itself: when you close the reader, a summary shows the new pages, with **Log these pages** (joy, as for any reading) or **Log it myself instead**. Reading nearly all of a book (90% or more, including its last page) and logging finishes it. Automatic tracking can be switched off on each phone or computer (**How the e-reader works**, on the shelf).
+- **Marking as read:** already read some of a book elsewhere? Tick chapters in the contents, or **Marked as read** at the top of a page. These count once the book is further on in the reader than its progress in the library; pages never count twice, and unticking never takes progress away.
+
+**EPUBs aren't included in backups** (they'd make them far too big), so keep copies of your EPUBs somewhere else. Your reading records are in the backup: after restoring one on a new card, the shelf lists your books with *This EPUB isn't on the Pi*, and adding the same EPUB again picks up where you were.
+
+**With the Den password off,** anyone on the same network could download the e-books on the shelf, so the Library page reminds you at the top. That matters little on your own phone's hotspot, more on shared Wi-Fi (see [A password for the Den](#a-password-for-the-den)).
+
+During a nap, nothing can be added, and reading progress waits in your browser until he wakes.
+
+Everything else is kept on the Pi (so it's in his backups, and the same on every phone or computer). Nothing can change during a nap. The amounts are in Developer Tools: *Library: rations for finishing a Short / Medium / Long book* (Food) and *Library: joy for each page read* and *most joy from one log* (Joy).
+
+### Achievements (untested)
+
+Achievements are milestones for **how many** of each thing Harald has collected: types of gadget, Wi-Fi networks, lands, famous places, green spaces, stars, dragon friends, books and insects. They count things, never points: points are for titles.
+
+**Five stages, as in Bookworm:** Copper, Bronze, Silver, Gold, then Platinum. Each stage is an oval **runestone** in its metal's color, carved with the rune of its category. No two categories share a rune, so where a first letter is already taken, the next fitting word gives it. The page's **How achievements work** says what each rune's name means (Gebo is "gift", Sowilo "the sun"...) and where the Elder Futhark comes from:
+
+| Category | Rune | What counts |
+|---|---|---|
+| Gadgets | ᚷ G (Gebo) | Types in the Gadget Journal: all of them, each group, each rarity, and field finds |
+| Wi-Fi Treats | ᚹ W (Wunjo) | Networks found: all of them, and each kind (WPA2, WPA3, open, office, WEP, mobile Wi-Fi) |
+| Lands and Realms | ᛚ L (Laguz) | Lands and realms claimed |
+| Famous Places | ᛈ P (Perthro), for Places | Famous places seen |
+| Green Spaces | ᚾ N (Naudiz), for Nature | Green spaces found: all of them, and parks, woods, nature reserves, commons and greens, and gardens |
+| Stars | ᛊ S (Sowilo) | Satellites heard, constellations, and each navigation system's satellites |
+| Dragon Friends | ᚠ F (Fehu) | Other dragons met |
+| The Library | ᚲ K (Kaunan), for Knowledge | Books finished: of any length, and Short, Medium and Long |
+| Butterfly Garden | ᛒ B (Berkano), for Butterflies | Bookworm's own achievements, below |
+
+**How the stages are set.** For a whole collection with a known size, such as every type in the Gadget Journal, the stages are spread evenly over it, as in Bookworm: Copper at a fifth, Bronze at two fifths, and so on, so Platinum always means all of it. (With fewer than five to collect, the lowest stages are skipped: two things give Gold at one and Platinum at two.) Open-ended counts have fixed milestones: lands claimed are 10, 50, 250, 1,000 and 5,000, for example. For each navigation system, "all of it" is about how many of its satellites are up there (31 for GPS, 26 for Galileo...), since old ones retire and new ones launch.
+
+**The Butterfly Garden's achievements are Bookworm's own:** a "collect them all" for each category of insect, with Bookworm's names for each country (*Butterfly House*, *Moth Trap*, *The Hive*... in the United Kingdom); every Common, Uncommon and Rare species, in the whole country and in each category; **Keen Spotter** and **Life Cycle Watcher** for **I've Seen It!** sightings; and the meta achievements (*Collect All British Species*, *Common Ground*...), which count the collections of every country.
+
+**In the Den,** the **Achievements** section shows the latest runestone earned and how many there are. **Open Achievements** opens the page with all of them: each one's progress, its five stages as dots, the date of its latest stage, and what the next one needs. The map's, the stars' and the garden's achievements are there from the start, with a note that they open at level 5.
+
+**Earning one** goes in his diary (*"Bronze runestone: Land Claimer (50 lands)."*) and on his screen (*SILVER RUNESTONE: STARGAZER*). If several come at once, his screen shows the best and the diary lists them all.
+
+**Counted from what's been collected.** Everything is counted from his collections every two minutes, so anything collected before achievements existed counts too: the first time, he earns those runestones quietly, with one line in the diary. If a collection shrinks (**Forget my map**, say), its stages are taken away quietly, as Bookworm does. Nothing is counted during a nap.
 
 ### Looking after him
 
@@ -545,7 +637,7 @@ Your phone has a GPS, a step counter, a barometer and a light sensor. Shared wit
   - **Vector tiles.** The pieces are shapes and names, not pictures: your phone draws them (with protomaps-leaflet), in a dark style that's similar to OpenStreetMap's map but not the same. The Pi keeps that library and Leaflet itself too (checked against the same fingerprints the map page already pins, and npm's own), so the map page needs nothing from the internet.
   - **Size and the card.** A city's worth of lands is a few megabytes. They're written once a day in one go, in their own file (`offline-map.db`), not in his database or backups. At most 3,000 pieces a day; the rest come the next day.
   - **Privacy.** Which pieces are asked for shows Protomaps roughly where he's been, to the nearest few hundred meters, as any online map does while you look at it. So it's off until you switch it on, and **Forget my map** deletes it too.
-- **Conquest points (untested).** Everything claimed out in the world scores, like the Butterfly Garden's insects: **10** for a new land, **50** for a realm, **50** for a green space discovered, **100** for a famous place seen for the first time, **20** for a star never seen before, and **80** more for the first star of a new constellation. A landmark or a new constellation is as rare as a Common insect (100), so it's worth as much; lands and stars come by the dozen, so each is worth a little. The diary records the points with each claim (*"Harald claimed a new land (land 214). +10 Conquest points."*), the score is under the **Conquests** heading in the Den and under the title of the map page, and Developer Tools → **Conquest points** changes what each is worth. The score is counted from what's been claimed, so claims from before scoring existed count too, and **Forget my map** takes the map's points back off (stars stay). Titles along the way: Fledgling Forager, Wandering Wyrmling (250), Scouting Skald (750), Roaming Raider (1,500), Trailblazing Thane (3,000), Boundary-Breaking Berserker (5,000), Longship Lookout (8,000), Realm-Raiding Rover (12,000), Jarl of the Journey (17,500), Conquering Cartographer (25,000), Hoard-Hunting Huscarl (35,000), Saga-Sung Sea-King (50,000) and, at 75,000, Wyrm-King of the Wilds.
+- **Conquest points (untested).** Everything claimed out in the world scores, like the Butterfly Garden's insects: **10** for a new land, **50** for a realm, **50** for a green space discovered, **100** for a famous place seen for the first time, **20** for a star never seen before, and **80** more for the first star of a new constellation. A landmark or a new constellation is as rare as a Common insect (100), so it's worth as much; lands and stars come by the dozen, so each is worth a little. The diary records the points with each claim (*"Harald claimed a new land (land 214). +10 Conquest points."*), the score is under the **Conquests** heading in the Den and under the title of the map page, and Developer Tools → **Conquest points** changes what each is worth. The score is counted from what's been claimed, so claims from before scoring existed count too, and **Forget my map** takes the map's points back off (stars stay). Titles along the way: Fledgling Forager, Wandering Wyrmling (250), Scouting Skald (750), Roaming Raider (1,500), Trailblazing Thane (3,000), Boundary-Breaking Berserker (5,000), Longship Lookout (8,000), Realm-Raiding Rover (12,000), Jarl of the Journey (17,500), Conquering Cartographer (25,000), Hoard-Hunting Herald (35,000), Saga-Sung Sea-Sovereign (50,000) and, at 75,000, Wyrm-Ruler of the Wilds.
 - **Landmarks.** The first time he enters a realm, he asks Wikipedia which famous places are in and around it. "Famous" means Wikipedia has an article about it in at least 10 languages: the Tower of London passes easily, the pub on the corner doesn't. When you come within about 250 m of one, he points it out: **"LOOK! TOWER BRIDGE!"** The map marks them.
   **In the countryside, lower the bar.** 10 languages suits a city, but a rural area may have few places that famous, or none. The number is **Landmarks: how famous** in **Developer Tools → Detection**, and lowering it is highly recommended for rural areas. If you don't see any landmarks on the map within a reasonable distance, lower it by 1 and look at the map again, and repeat until your area feels as full of landmarks as you'd like. The change shows straight away, since he keeps every place Wikipedia told him about along with how many languages it's written about in.
 - **Green spaces.** Public parks, woods, nature reserves, commons, village greens and gardens, from OpenStreetMap (the same map the Den draws, so the outlines match its green areas). Going into one for the first time finds it: **"A NEW GREEN SPACE: FERNHILL VALE!"** Ten minutes on foot in one (with at least 150 m of actual walking) earns **"Took a walk in Oakfield Country Park!"**; five minutes running or cycling, **"Went for a run in..."** or **"Biked through..."**. Time in a vehicle never counts. "Inside" means within the outline or 20 m of it: from your position, picture a line heading due east and count how many times it crosses the outline; an odd number means inside. The Den's **Conquests** section lists them under **Green spaces**: the ones he's discovered, with how many visits, walks, runs and rides each, and the ones nearby he hasn't been in yet.
@@ -736,6 +828,7 @@ Everything he knows lives on the Pi's memory card, in `/var/lib/bt-dragon/` and 
 - the calendar, the shopping list and Harald's Lair (the town or postcode area you typed, and its position rounded to about 10 km);
 - the Butterfly Garden: what's growing, what's been raised, habitats and your **I've Seen It!** sightings (the Collection page is served by the Pi and loads nothing from the internet, not even fonts);
 - *Tier 3:* the home zone, if you switch it on: its size and its middle, moved a random distance from home (your home's own position is never stored);
+- the library: your books, Want To Read list and Completed Books, the covers of your books, and the EPUBs on your E-book shelf with what you've read in each (the EPUB files themselves aren't in backups);
 - the secret that each day's friend-beacon ID is worked out from, and the dragon friends he's met (their names, levels and the day's ID he last heard);
 - *Tier 4:* voice prints (128 numbers each, never recordings);
 - the settings file, with your Wi-Fi details (passwords scrambled into keys on first start) and WiGLE token.
@@ -752,6 +845,7 @@ No personal data. The Dot holds Harald's programs, his light ring animations, th
 | *Tier 3:* the first time he enters a new 1 km square | Wikipedia and Wikidata (landmarks), OpenStreetMap's Overpass service (green spaces) | The square's corners (roughly which square kilometer you're in). Each square is asked about once, and again after half a year to look for any updates |
 | *Tier 3:* when the Den's map is open | OpenStreetMap's map tiles and the unpkg.com code library, loaded by your phone's browser, not by Harald | Which area you're looking at, as with any web map |
 | *Tier 2 and up:* only if you switch on **Find him by Wi-Fi**, and only while there's no GPS | beaconDB | The Wi-Fi networks he can hear (their hardware addresses and signal strengths), which shows where he is to within tens of meters. Its server logs keep your internet address and the time for 28 days |
+| When you search for a book in the library, and the first time each of your books' covers is shown | Open Library (openlibrary.org, covers.openlibrary.org), asked by Harald | What you typed in the search (a title, author or ISBN), or which cover. Nothing else about you or your reading |
 | *Tier 3:* wardriving, if you've added your WiGLE token | WiGLE, your own account | The networks he heard, with where and when |
 | When you ask about the weather (any tier), and every hour with the Lair's **Local announcements** on | Open-Meteo | A position rounded to about 10 km, or the city you named. Setting **Harald's Lair** looks up the place you typed once, with its country; a postcode is cut to its area first (`SW1A` of `SW1A 1AA`, the first three characters of a Canadian code, the five-digit ZIP of a ZIP+4), so a full postcode never leaves the Pi |
 | With the Lair's **Local announcements** on, every 15 minutes (UK) | The Met Office | Nothing about you: he downloads the public warnings feed for the Lair's region, the same file anyone can open |
@@ -797,7 +891,7 @@ The map's code (Leaflet, from unpkg.com) is pinned with a fingerprint (`integrit
 
 **The system log** (`journalctl`) is kept on the card too, so it never gets what you said to him, which square kilometer he was in, or a gadget's address or name: only that something happened. During a nap nothing is logged either.
 
-**Out in the world**, he only listens. His friend beacon broadcasts his name, level, mood and an ID that changes every day, so other dragons can recognize him. Anyone listening could recognize him on the same day, and on later days too if his name is unusual (see [Dragon friends](#dragon-friends)). Set `beacon = false` under `[friends]` to stop broadcasting; he still meets dragons that do broadcast.
+**Out in the world**, he only listens. His friend beacon broadcasts his name, level, mood and an ID that changes every day, so other dragons can recognize him. Anyone listening could recognize him on the same day, and on later days too if his name is unusual (see [Dragon friends](#dragon-friends)). Untick **Friend beacon** in the Den's **Dragon friends** to stop broadcasting (or set `beacon = false` under `[friends]` in the settings file to have it start switched off); he still meets dragons that do broadcast.
 
 ---
 
@@ -939,6 +1033,10 @@ The collection (**Open Radio Whispers**) has a card for each of 12 **kinds of de
 
 **Points:** **20** for a Common kind, **60** Uncommon, **150** Rare, **15** for each new make and model, and **1** for each device, once a day. **Titles:** **Faint-Eared Fledgling** (to start), **Static-Sifting Sprout** (100), **Chirp-Collecting Cub** (300), **Weather-Wise Wyrm** (700), **Seiðr-Sensing Seer** (1,500: *seiðr* was Norse magic for seeing what's hidden), **Heimdall's Apprentice** (3,000) and **Ear of Heimdall** (6,000: Heimdall, the gods' watchman, could hear the grass grow and the wool grow on sheep).
 
+#### Achievements for the radio stick (untested)
+
+The Achievements page has two categories for the radio stick, marked as in development: **Sky Dragons** (ᚨ, A (the Ansuz rune) for Aircraft: every kind of aircraft, planes heard, airlines and countries) and **Radio Whispers** (ᚱ, R (the Raido rune) for Radio: every kind of little radio, and makes and models). They work like the others (see [Achievements](#achievements-untested)).
+
 #### What's kept
 
 Nothing that could follow a plane, a car or a home. A plane's address is fixed to the airframe (and a private plane's belongs to its owner), and a tyre sensor's ID never changes, so researchers have shown these could be used to follow a car. So, as with gadgets, each plane and device is counted once a day using a scrambled code with a key that's thrown away at midnight, and never stored. Planes overhead are held in memory for the Den and forgotten two minutes after they're last heard. Readings (the neighbour's temperature, a tyre's pressure) are never kept. What's stored: the kinds, airlines, countries and makes and models heard, when each was first heard, and the day-by-day counts. Nothing is sent anywhere.
@@ -1002,7 +1100,7 @@ Den → **Care and Accessibility** → **Den password**. Type a password twice (
 
 ## Future Development Options
 
-Ideas for new senses, not built yet: nothing in this section works today. They're noted here so they aren't forgotten. Prices are from The Pi Hut in October 2026.
+Ideas not built yet: nothing in this section works today. They're noted here so they aren't forgotten. Prices are from The Pi Hut in October 2026.
 
 ### Connecting sensors without the screen in the way
 
@@ -1029,6 +1127,29 @@ The **[Adafruit LTR390 UV light sensor](https://thepihut.com/products/adafruit-l
 ### Counting cosmic rays
 
 The **[Gravity Geiger counter module](https://thepihut.com/products/gravity-geiger-counter-module-ionizing-radiation-detector)** (about £57.60) clicks for each particle of ionizing radiation passing through its tube: the gentle background of cosmic rays and natural radioactivity that's always around us. Counts rise a little near granite buildings, on flights and, famously, next to bananas (they contain a tiny amount of naturally radioactive potassium). It's for learning, not for measuring anyone's safety. It's bigger (107 mm long) and signals each click on a pin, which is harder to connect around the e-ink screen, so it's for later.
+
+### Other public alerts: child rescue and missing person alerts
+
+An idea to look into: official alerts about missing children and missing people, below the Lair's weather warnings in a subsection of their own, **Other alerts (optional)**, with a tick box for each kind, all **off** to start with.
+
+**Where they could come from.** Harald can only pass on alerts that are published as a feed a program can read, not ones that only reach people through texts, apps or social media:
+
+| Country | Alerts | Is there a feed? |
+|---|---|---|
+| United States | AMBER Alerts (and some states' missing-person alerts) | Probably: the National Weather Service passes AMBER Alerts on as "Child Abduction Emergency" messages, and Harald already reads its alerts for US weather warnings. To check before building: that they appear in its public alerts API. Missing-person alerts vary by state and mostly don't come this way. |
+| Canada | AMBER Alerts | Yes: Alert Ready's alerts go out through Pelmorex's NAAD system, published over the internet in the standard alert format (CAP), each one tagged with the area it covers. |
+| United Kingdom | Child Rescue Alert (the Missing People charity, with the police), and police forces' missing-person appeals | Not that we've found: Child Rescue Alerts reach people who sign up for texts, emails or apps, and appeals come from each police force separately. |
+| Ireland | Child Rescue Ireland (CRI) alerts, from An Garda Síochána | Not a proper one: CRI alerts go to the media and are posted as Garda press releases. |
+
+Where there's no feed, the subsection could instead explain the official scheme and link to where to sign up for it.
+
+**Decided so far:**
+
+- **Respectful, not cheerful.** Harald shows the **alarmed** face and a short, general message (for example, *AMBER ALERT ISSUED IN YOUR AREA*), with no joy, XP or other reaction, and the Den links to the official alert for the details.
+- **No names stored.** The alert's details (a child's name and description) aren't written to the diary or kept in backups, and an alert that's been cancelled disappears straight away, so nothing out of date lingers.
+- **Where:** two tick boxes, **the Lair's area** and **where he is now** (by GPS), so someone away from home, on holiday say, can choose to hear about alerts where they are.
+
+**Still to decide:** whether the Echo Dot reads them out, and what Adventure mode does.
 
 ### Not needed for now
 
