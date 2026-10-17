@@ -60,6 +60,10 @@ Optional GPS integration unlocks the ability to "conquer" squares on a real-worl
 - **Fly on the Wall:** the Butterfly Garden's achievement for raising every British fly (it was Lord of the Flies).
 - **The Den's layout:** menus that were too squeezed or too wide were tidied, and the home zone setting moved to the WiGLE section.
 
+**Notes**
+
+- Current space used on the prototype Harald's microSD card is 78.33 MB on bootfs partition and 3.41 GB on rootfs partition.
+
 ## Previous Updates on October 15, 2026
 
 **Added**
