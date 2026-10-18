@@ -17,6 +17,7 @@ Optional GPS integration unlocks the ability to "conquer" squares on a real-worl
 ## Latest Updates as of October 18, 2026 at 13:22 PM BST
 
 **Known Issues**
+- Ticking "exclusion zone" on for WiGLE is blocking all sightings, not just the ones at "home".
 - The text about Rations in the Den currently fails to mention that they can now be awarded from book completion in the Library.
 - ISBN search in the Library isn't working currently (Author and Title searching is functional).
 - GPS wobble is erroneously assigning minor "riding" distances while indoors. A fix is in the works but not yet implemented.
