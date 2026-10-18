@@ -14,10 +14,10 @@ Optional GPS integration unlocks the ability to "conquer" squares on a real-worl
 
 **Why BT Dragon was created:** In brief, the project author initially created Harald to use existing hardware for a personal educational purpose: to learn more about Bluetooth and Wi-Fi and to encourage physical activity and exploration of their local area. The project quickly snowballed into lots of different directions based on what was discovered to be possible using the capabilities of a RPiZ2W on its own, plus additions that were available with a connected smartphone sharing its own sensors. BT Dragon is very much a learning-focused tool that other curious folk can try and perhaps enjoy.
 
-## Latest Updates as of October 18, 2026 at 13:22 PM BST
+## Latest Updates as of October 18, 2026 at 15:24 PM BST
 
 **Known Issues**
-- Ticking "exclusion zone" on for WiGLE is blocking all sightings, not just the ones at "home".
+- Ticking "exclusion zone" on for WiGLE seems to be blocking all sightings, not just the ones at "home" (or ranges are wrong). Tested at 1 km distance from home with exclusion set to 500 m. No apparent workaround currently.
 - The text about Rations in the Den currently fails to mention that they can now be awarded from book completion in the Library.
 - ISBN search in the Library isn't working currently (Author and Title searching is functional).
 - GPS wobble is erroneously assigning minor "riding" distances while indoors. A fix is in the works but not yet implemented.
