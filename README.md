@@ -14,7 +14,7 @@ Optional GPS integration unlocks the ability to "conquer" squares on a real-worl
 
 **Why BT Dragon was created:** In brief, the project author initially created Harald to use existing hardware for a personal educational purpose: to learn more about Bluetooth and Wi-Fi and to encourage physical activity and exploration of their local area. The project quickly snowballed into lots of different directions based on what was discovered to be possible using the capabilities of a RPiZ2W on its own, plus additions that were available with a connected smartphone sharing its own sensors. BT Dragon is very much a learning-focused tool that other curious folk can try and perhaps enjoy.
 
-## Latest Updates as of October 17, 2026 at 14:45 PM BST
+## Latest Updates as of October 18, 2026 at 13:22 PM BST
 
 **Known Issues**
 - The text about Rations in the Den currently fails to mention that they can now be awarded from book completion in the Library.
