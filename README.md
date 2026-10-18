@@ -17,6 +17,8 @@ Optional GPS integration unlocks the ability to "conquer" squares on a real-worl
 ## Latest Updates as of October 17, 2026 at 14:45 PM BST
 
 **Known Issues**
+- The text about Rations in the Den currently fails to mention that they can now be awarded from book completion in the Library.
+- ISBN search in the Library isn't working currently (Author and Title searching is functional).
 - GPS wobble is erroneously assigning minor "riding" distances while indoors. A fix is in the works but not yet implemented.
 - "Fed {x} food to the Butterfly Garden" message is still appearing when all current insects are in a pupating state (which doesn't advance with shared food). Need to disable this message when active insects are of a type that doesn't accept food (uncollected emerged adults and/or pupa(e)).
 
