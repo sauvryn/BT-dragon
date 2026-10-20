@@ -17,7 +17,9 @@ Optional GPS integration unlocks the ability to "conquer" squares on a real-worl
 ## Latest Updates as of October 18, 2026 at 15:24 PM BST
 
 **Known Issues**
-- Ticking "exclusion zone" on for WiGLE seems to be blocking all sightings, not just the ones at "home" (or ranges are wrong). Tested at 1 km distance from home with exclusion set to 500 m. No apparent workaround currently.
+- Up time is not resetting upon Sleep for some reason.
+- Book Tracker shows reading percentage twice.
+- Ticking "exclusion zone" on for WiGLE seems to be blocking all sightings, not just the ones at "home" (or ranges are wrong). Tested at 1 km distance from home with exclusion set to 500 m. No apparent workaround currently. UPDATE: Exclusion zone set to 250 m DOES work. still unsure if radius distance is incorrect.
 - The text about Rations in the Den currently fails to mention that they can now be awarded from book completion in the Library.
 - ISBN search in the Library isn't working currently (Author and Title searching is functional).
 - GPS wobble is erroneously assigning minor "riding" distances while indoors. A fix is in the works but not yet implemented.
