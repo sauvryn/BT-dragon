@@ -37,6 +37,7 @@
   button:disabled { color: var(--dim); border-color: var(--line); cursor: default; }
   button.primary { background: var(--rune); color: #1d1c1a; font-weight: 600; }
   button.danger { border-color: var(--blood); color: var(--blood); }
+  button.xbtn { padding: 2px 10px; font-size: 18px; line-height: 1; border-color: var(--line); color: var(--dim); min-width: 36px; min-height: 36px; }
   .actions { display: flex; flex-wrap: wrap; gap: 8px; }
   .alert { border-color: var(--blood); }
   .alert h2 { color: var(--blood); }
@@ -104,6 +105,12 @@
   #arrange > section > h2.foldable:focus-visible { outline: 2px solid var(--rune); outline-offset: 3px; border-radius: 4px; }
   #arrange > section.folded > h2.foldable { margin-bottom: 0; }
   #arrange > section.folded > :not(h2):not(.arrange-bar) { display: none !important; }
+  h3.subhead { margin: 16px 0 6px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 12px; letter-spacing: 1.5px;
+               text-transform: uppercase; color: var(--rune); font-weight: 600; }
+  /* Voice and light ring's unsaved changes: stays in view at the bottom while you scroll the section */
+  .savebar { position: sticky; bottom: 8px; z-index: 5; display: flex; justify-content: space-between; align-items: center;
+             gap: 8px; flex-wrap: wrap; margin-top: 10px; padding: 8px 10px; background: var(--stone); border: 1px solid var(--rune);
+             border-radius: 10px; box-shadow: 0 4px 14px rgba(0,0,0,.5); }
   .arrange-bar { display: none; align-items: center; justify-content: space-between; gap: 8px;
                  margin: -4px 0 10px; padding: 6px 8px; border: 1px dashed var(--rune); border-radius: 6px; }
   body.arranging .arrange-bar { display: flex; }
@@ -143,6 +150,15 @@
   .lv-text { flex: 1; min-width: 0; line-height: 1.35; }
   .gd-art.lv-art { flex: 0 0 110px; width: 110px; margin: 0; }   /* half size: the field notes have it full size */
   .larva.adult { border-color: var(--rune); }
+  label.prio { display: flex; gap: 8px; align-items: flex-start; margin: 8px 0 2px; white-space: normal; }
+  label.prio input { margin-top: 2px; flex: none; }
+  label.prio span { flex: 1; min-width: 0; }
+  .pd-art { flex: 0 0 110px; width: 110px; }
+  .pd-art svg { display: block; width: 100%; height: auto; }
+  .pdbar { position: relative; height: 12px; margin: 8px 0 2px; background: var(--line); border-radius: 6px; }
+  .pdbar .fill { position: absolute; left: 0; top: 0; bottom: 0; background: var(--moss); border-radius: 6px; transition: width .3s; }
+  .pdbar .cap { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: var(--rune); }
+  .pdbar .tick { position: absolute; top: 2px; bottom: 2px; width: 1px; background: var(--stone); }
   .gd-art { max-width: 220px; margin: 0 auto 4px; --leaf: #7fa36b; --leaf-dark: #5d7f4c; --surface-2: #1d1c1a;
             --danger: var(--blood); --accent: var(--rune); --muted: #a69f92; --surface: #282623; --ink: #ece6da; }
   .gd-art svg { display: block; width: 100%; height: auto; }
@@ -158,6 +174,7 @@
   .devnote { font-weight: 800; color: var(--ink); text-transform: none; letter-spacing: 0; }
 </style>
 <script src="/lang.js"></script>
+<script src="/pond-art.js"></script>
 <script src="/auth.js"></script>
 <link rel="stylesheet" href="/theme.css">
 </head>
@@ -199,7 +216,7 @@
     <div class="meter"><div id="packBar" style="width:0; background: var(--dim)"></div></div>
     <div class="row" style="margin-top:4px; border-top:0">
       <div class="grow sub">Rations <b id="rations" style="color: var(--ink)">0</b><span id="rationPart"></span>
-        · yours to give: each fills the pack completely. Earned for every feast and land claimed.</div>
+        · yours to give: each fills the pack completely. Earned for every feast and land claimed, and for every book finished in the Library.</div>
       <button id="rationBtn" onclick="giveRation()" disabled>Give Ration</button></div>
     <p id="feeling" style="margin:10px 0 0; font-weight:600"></p>
     <p class="sub" id="stage" style="margin:4px 0 0"></p>
@@ -234,7 +251,7 @@
   </section>
 
   <section data-arrange="nearby">
-    <h2>Gadgets nearby</h2>
+    <h2>Gadgets nearby and Life list</h2>
     <p class="sub">Only gadgets with a fixed address are listed. Phones and watches change their address every few
       minutes to stay private, so <span class="pname" data-nolang>Harald</span> counts them but never lists them. Mark the ones that are yours.</p>
     <div class="actions" style="margin-bottom:8px">
@@ -244,19 +261,17 @@
       pairing mode now (and turn your phone's Bluetooth off for a moment).</p>
     <details class="fold" id="fold-nearby"><summary>Show the list <span class="sub" id="nearbyCount"></span></summary>
       <div id="nearby" data-nolang></div></details>
+    <h3 class="subhead">Life list</h3>
+    <p style="margin:0 0 8px" id="jnLine"></p>
+    <details><summary>Every type of gadget <span class="pname" data-nolang>Harald</span> has eaten</summary><div id="species" data-nolang></div></details>
+    <div class="actions" style="margin-top:10px"><a href="/journal" target="_blank"><button class="primary">Open the Gadget Journal</button></a></div>
   </section>
 
   <section data-arrange="treats">
     <h2>Recent treats</h2>
     <details class="fold" id="fold-treats"><summary>Show the list <span class="sub" id="treatsCount"></span></summary>
       <div id="treats" data-nolang></div></details>
-  </section>
-
-  <section data-arrange="life">
-    <h2>Life list</h2>
-    <p style="margin:0 0 8px" id="jnLine"></p>
-    <details><summary>Every type of gadget <span class="pname" data-nolang>Harald</span> has eaten</summary><div id="species" data-nolang></div></details>
-    <div class="actions" style="margin-top:10px"><a href="/journal" target="_blank"><button class="primary">Open the Gadget Journal</button></a></div>
+    <div class="actions" style="margin-top:10px"><a href="/wifijournal" target="_blank"><button class="primary">Open the Wi-Fi Journal</button></a></div>
   </section>
 
   <section data-arrange="diary">
@@ -420,6 +435,7 @@
     <div id="gdOpen" hidden>
       <div class="row"><div class="grow"><b id="gdTitle"></b><div class="sub" id="gdScore"></div></div></div>
       <div class="sub" id="gdFood"></div>
+      <label class="sub prio"><input type="checkbox" id="prioGarden" onchange="feedPriority('garden', this.checked)"> <span>Priority for spare food. All spare food goes here until maxed, then shared elsewhere.</span></label>
       <div class="sub" id="gdSpots" style="margin-top:4px"></div>
       <div id="gdLarvae"></div>
       <div class="row" id="gdCountryRow" style="margin-top:8px"><div class="grow sub" id="gdCountryNote"></div>
@@ -427,6 +443,18 @@
           <option value="ie">Ireland</option><option value="us">United States</option><option value="ca">Canada</option></select></div>
       <div class="actions" style="margin-top:10px"><a id="gdCollLink" href="/garden" target="_blank"><button class="primary">See Collection</button></a></div>
     </div>
+    <h3 class="subhead" id="pondHead">Tadpole Pond</h3>
+    <p class="sub" style="margin:0 0 6px">Frogs, toads, newts and salamanders, raised one at a time on spare food. Each
+      can grow by at most <b id="pdDaily">25%</b> of its progress bar a day.</p>
+    <p class="sub" id="pdLocked" style="margin:0 0 6px">Opens when <span class="pname" data-nolang>Harald</span> reaches level 8.</p>
+    <div class="row" id="pdTestRow" style="border:0"><div class="grow sub">Unlock now (prototype testing)</div>
+      <label class="sub"><input type="checkbox" id="pdTest" onchange="pondUnlock(this.checked)"> On</label></div>
+    <div id="pdOpen" hidden>
+      <div class="sub" id="pdScore"></div>
+      <label class="sub prio"><input type="checkbox" id="prioPond" onchange="feedPriority('pond', this.checked)"> <span>Priority for spare food. All spare food goes here until maxed, then shared elsewhere.</span></label>
+      <div id="pdSlot"></div>
+    </div>
+    <div class="actions" style="margin-top:10px"><a href="/pond" target="_blank"><button class="primary">See Pond Collection</button></a></div>
     </details>
   </section>
 
@@ -462,6 +490,19 @@
         onkeydown="if(event.key==='Enter') askTyped()"><button onclick="askTyped()">Ask</button></div>
       <div class="row" style="border:0"><div class="grow sub" id="askLast"></div></div>
       <div id="timerList" data-nolang></div>
+    <details class="subtools" id="rssBox" ontoggle="if(this.open) loadRss()"><summary><b>RSS feeds</b> <span class="sub">· news from websites you choose</span></summary>
+      <p class="sub" style="margin:6px 0">Many websites publish a <b>feed</b> (RSS or Atom): a list of their newest articles,
+        episodes or posts. Paste a feed's address and press <b>Add</b>, and <span class="pname" data-nolang>Harald</span> checks it on the clock:
+        every <span id="rssEvery">20</span> minutes to start with (6:00, 6:20, 6:40...), or as often as you set for each
+        feed below (counted from midnight, so 30 means on the hour and half past). Anything new is on the e-ink screen (<b>RSS</b>, the source and as
+        much of the title as fits) and said out loud if your dragon has a voice ("New RSS for BBC News", then the title).
+        What's already in a feed when you add it isn't announced. Look for an RSS or feed link on the website, or try its
+        address with <code>/feed</code> or <code>/rss</code> on the end. Up to <span id="rssMax">50</span> feeds.</p>
+      <div class="row"><input type="url" id="rssUrl" maxlength="1000" placeholder="https://example.com/feed.xml" style="flex:1; min-width:0"
+        onkeydown="if(event.key==='Enter') rssAdd()"><button id="rssAddBtn" onclick="rssAdd()">Add</button></div>
+      <p class="sub" id="rssCount" style="margin:6px 0 0"></p>
+      <div id="rssList" data-nolang></div>
+    </details>
   </section>
 
   <section data-arrange="lair">
@@ -552,6 +593,13 @@
         <label class="sub"><input type="checkbox" id="say_phone_storm" onchange="sayTick(this)"> Storm or change</label>
         <label class="sub"><input type="checkbox" id="say_phone_sun" onchange="sayTick(this)"> Sunshine</label>
       </div></div>
+    <div class="row wrap"><div class="grow full">Stars<div class="sub">Navigation satellites (Tier 3): a new star or
+      constellation, and a known star rising again. Off, they're still on <span class="pname" data-nolang>Harald</span>'s
+      screen and the light ring, just not said out loud.</div></div>
+      <div class="saybox"><label class="sub"><input type="checkbox" id="say_stars" onchange="sayTick(this)"> Stars</label></div></div>
+    <div class="row wrap"><div class="grow full">RSS feeds<div class="sub">New items in the feeds you added under
+      <b>Ask <span class="pname" data-nolang>Harald</span> → RSS feeds</b>. Off, they're still on the e-ink screen, just not said out loud.</div></div>
+      <div class="saybox"><label class="sub"><input type="checkbox" id="say_rss" onchange="sayTick(this)"> RSS feeds</label></div></div>
     <div class="row"><div class="grow">Volume<div class="sub">The speaker's own volume: 50 is 12 dB below full</div></div><input type="range" min="0" max="100" step="5" id="dotVolume"
       oninput="$('dotVolumeV').textContent=this.value" onchange="dotSet('volume', this.value)"><span class="val" id="dotVolumeV"></span></div>
     <div class="row"><div class="grow">Adventure volume<div class="sub">Used instead in Adventure mode, out and about</div></div><input type="range" min="0" max="100" step="5" id="dotAdvVolume"
@@ -607,8 +655,8 @@
         Wi-Fi list while the ring is orange (like "Amazon-XY7"). If nothing answers there, the tries get further apart
         (up to 30 minutes); unplugging the Dot for 10 seconds starts it afresh.</p>
       <div class="row"><input type="text" id="dotSetupNet" maxlength="20" placeholder="Amazon-…"
-        onkeydown="if(event.key==='Enter') dotSet('setup_network', this.value)">
-        <button onclick="dotSet('setup_network', $('dotSetupNet').value)">Save</button></div>
+        onkeydown="if(event.key==='Enter') dotSetNow('setup_network', this.value)">
+        <button onclick="dotSetNow('setup_network', $('dotSetupNet').value)">Save</button></div>
       <div class="row"><div class="grow sub" id="dotRescueNote"></div>
         <button onclick="dotRescue()">Rescue now</button></div>
     </details>
@@ -616,6 +664,8 @@
       <button onclick="cmd('DOTFIND', true)">Look for the Dot now</button>
       <button class="danger" onclick="dotForget()">Forget this Dot</button>
     </div>
+        <div class="savebar" id="dotSaveBar" hidden><span id="dotSaveN"></span>
+      <span><button onclick="dotUndo()">Undo</button> <button class="primary" onclick="dotSaveNow()">Save settings</button></span></div>
     </details>
   </section>
 
@@ -629,7 +679,7 @@
     <div class="stats" style="margin-top:8px">
       <div class="stat"><b id="aLands">0</b><span>new lands</span></div>
       <div class="stat"><b id="aClimb">0 m</b><span>climbed</span></div>
-      <div class="stat"><b id="aStars">0</b><span>stars seen</span></div>
+      <div class="stat"><b id="aPlaces">0</b><span>places seen</span></div>
     </div>
     <p class="sub" id="aTrip" hidden style="margin:10px 0 0"></p>
     <div class="sub" id="aDone" hidden style="margin:6px 0 0"></div>
@@ -654,6 +704,10 @@
       <p class="sub">Named parks, woods, nature reserves, commons and gardens from OpenStreetMap, looked up for each
         new realm. Step inside one to discover it; ones you haven't been in yet are listed too, and drawn dashed on the map.</p>
       <div id="grList" data-nolang></div></details>
+    <details style="margin-top:8px"><summary>Libraries: <span id="cTv">0</span> treasure troves found</summary>
+      <p class="sub">Libraries from OpenStreetMap, looked up for each new realm. Pass close by one to find it ("NEW TROVE!"),
+        and again on another day for "TREASURE TROVE!". Ones you haven't found yet are listed too, and shown on the map.</p>
+      <div id="tvList" data-nolang></div></details>
     <details style="margin-top:8px" id="wpBox"><summary>Find your dragon by Wi-Fi <span class="sub">(no GPS)</span>: <span id="wpOn">off</span></summary>
       <p class="sub">For a dragon with no GPS. <span class="pname" data-nolang>Harald</span> sends the list of Wi-Fi networks in range to
         <a href="https://beacondb.net" target="_blank" rel="noopener" style="color: var(--ink)">beaconDB</a>,
@@ -737,7 +791,7 @@
         recorded, so they're never uploaded to WiGLE. Without it, your sightings start and end at your door. The circle's
         middle is moved a random distance from home, so nobody can find home by finding the middle of the empty patch.
         Your home's own position is never stored. Networks inside still count as treats.
-        Switch it on <b>at home</b>, with the GPS working.</div>
+        Switch it on <b>at home</b>, with the GPS working: the first time, the circle goes around wherever <span class="pname" data-nolang>Harald</span> is.</div>
       <div class="sub" id="hzStatus"></div></div>
       <label class="sub"><input type="checkbox" id="hzOn" onchange="homeZoneSet(this.checked)"> On</label></div>
     <div id="hzSizeRow" hidden style="margin-top:6px">
@@ -990,7 +1044,7 @@ async function refresh() {
       $('rations').textContent = v.rations; $('nowRations').textContent = v.rations + (v.ration_part ? ` (+${Math.round(v.ration_part * 100)}% of the next)` : '');
       $('rationPart').textContent = v.ration_part ? ` (+${Math.round(v.ration_part * 100)}% of the next)` : '';
       const rb = $('rationBtn'); rb.disabled = v.rations < 1 || v.ration_room < 0.05 || !!v.napping;
-      rb.title = v.rations < 1 ? 'No rations yet: feasts and new lands earn them' : v.ration_room < 0.05 ? 'The pack is already full'
+      rb.title = v.rations < 1 ? 'No rations yet: feasts, new lands and finished books earn them' : v.ration_room < 0.05 ? 'The pack is already full'
         : v.napping ? PET + ' is napping' : `Fills the pack: +${v.ration_room} food`;
     }
     $('nowXp').textContent = `${v.xp.toLocaleString()} XP, level ${v.level} (next at ${v.next_xp.toLocaleString()})`;
@@ -1020,7 +1074,7 @@ async function refresh() {
       (v.baro_link ? ' Barometer linked.' : '') +
       (v.light_link ? ' Light sensor linked' + (v.lux !== null ? ` (${v.lux.toLocaleString()} lux now).` : '.') : '');
     $('aLands').textContent = v.lands_today; $('aClimb').textContent = v.climbed_today + ' m';
-    $('aStars').textContent = v.stars_today;
+    $('aPlaces').textContent = v.places_today;     // landmarks, green spaces and libraries, new or known
     $('cLands').textContent = v.lands.toLocaleString(); $('cRealms').textContent = v.realms.toLocaleString();
     $('cLandsW').textContent = v.lands === 1 ? 'land' : 'lands'; $('cRealmsW').textContent = v.realms === 1 ? 'realm' : 'realms';
     $('cStars').textContent = v.stars;
@@ -1120,11 +1174,19 @@ async function refresh() {
         times(visits, 'visit', 'visits'), times(walks, 'walk', 'walks'), times(runs, 'run', 'runs'),
         times(rides, 'ride', 'rides')].filter(x => x).join(' · ') : 'Not discovered yet'}</div></div></div>`).join('')
     : '<p class="empty">None nearby yet. New realms are looked up while the dragon is on your hotspot.</p>';
+  const tvs = (await cmd('TROVES')).map(l => split(l)).filter(x => x.length >= 4);
+  $('cTv').textContent = tvs.filter(x => +x[2] > 0).length;
+  $('tvList').innerHTML = tvs.length ? tvs.map(([id, name, first, visits]) =>
+    `<div class="row"><div class="grow">${+first ? '<b>' + esc(name) + '</b>' : esc(name)}
+      <div class="sub">${+first ? 'Found ' + new Date(first * 1000).toLocaleDateString() + (visits > 1 ? ` · ${visits} visits` : '')
+                                : 'Not found yet'}</div></div></div>`).join('')
+    : '<p class="empty">None nearby yet. New realms are looked up while the dragon is on your hotspot.</p>';
   loadWifiPos();
   loadHomeZone();
   loadRadio();
   loadLair();
   loadGarden();
+  loadPond();
 
   try {
     const files = await (await fetch('/api/diary-files')).json();
@@ -1409,7 +1471,8 @@ async function loadDot() {
   const voice = d.voice === 'piper' ? 'Piper voice ' + d.voice_name : d.voice === 'espeak' ? 'eSpeak voice (Piper not installed)' : 'no voice installed';
   $('dotSub').textContent = [on ? d.ip : '', voice, d.adb === 'False' ? 'adb missing' : '',
     d.quiet_now === 'True' ? 'quiet hours now' : '', +d.spoken ? `${d.spoken} remarks so far` : ''].filter(x => x).join(' · ');
-  const keep = el => document.activeElement === el;
+  const held = new Set([...DOT_PENDING.keys()].flatMap(dotEls));
+  const keep = el => document.activeElement === el || held.has(el);
   if (!keep($('dotOn'))) $('dotOn').checked = d.enabled === 'True';
   if (!keep($('phoneOn'))) $('phoneOn').checked = d.phone === 'True';
   if (!keep($('phoneBackup'))) $('phoneBackup').checked = d.phone_backup === 'True';
@@ -1460,17 +1523,43 @@ async function loadDot() {
 }
 const SAY_KEYS = ['say_lair_temp', 'say_lair_storm', 'say_lair_warnings', 'say_lair_air', 'say_lair_pollen', 'say_lair_uv', 'say_lair_sun',
                   'say_lair_aurora',
-                  'say_phone_storm', 'say_phone_sun'];
+                  'say_phone_storm', 'say_phone_sun', 'say_stars', 'say_rss'];
 function sayTick(box) {
   const when = $(box.id + '_when');
   if (when) when.disabled = !box.checked;
   dotSet(box.id, box.checked);
 }
-async function dotSet(key, value) {
+// Voice and light ring: changes wait for "Save settings", so a finger scrolling the page past a
+// slider, a menu or a tick box can't change anything by accident.
+const DOT_PENDING = new Map();             // setting -> value, until saved
+const dotEls = key => [...document.querySelectorAll('#fold-voice [onchange], #fold-voice [oninput]')]
+  .filter(el => el.id === key || (el.getAttribute('onchange') || '').includes(`'${key}'`));
+function dotSet(key, value) {
+  DOT_PENDING.set(key, value);
+  dotSaveBar();
+}
+function dotSaveBar() {
+  const n = DOT_PENDING.size;
+  $('dotSaveBar').hidden = !n;
+  $('dotSaveN').textContent = n === 1 ? '1 unsaved change' : `${n} unsaved changes`;
+}
+async function dotSaveNow() {
+  const bad = [];
+  for (const [key, value] of DOT_PENDING) {
+    const r = await cmd(`DOTSET ${key} ${value}`);
+    if (r[0] !== 'OK') bad.push((r[0] || PET + ' is not answering').replace(/^ERR /, ''));
+  }
+  DOT_PENDING.clear(); dotSaveBar();
+  toast(bad.length ? bad.join(' · ') : 'Settings saved');
+  loadDot();
+}
+function dotUndo() { DOT_PENDING.clear(); dotSaveBar(); loadDot(); toast('Changes undone'); }
+async function dotSetNow(key, value) {      // (the setup network's name has its own Save button)
   const r = await cmd(`DOTSET ${key} ${value}`);
   if (r[0] !== 'OK') toast((r[0] || PET + ' is not answering').replace(/^ERR /, ''));
   loadDot();
 }
+window.addEventListener('beforeunload', e => { if (DOT_PENDING.size) { e.preventDefault(); e.returnValue = ''; } });
 function scoreLine(s, what) {
   return `<b>${s.points.toLocaleString()}</b> ${what} · <b data-nolang>${esc(s.title)}</b>` +
     (s.next ? ` <span class="sub">(${(s.next_at - s.points).toLocaleString()} to ${esc(s.next)})</span>` : '');
@@ -1496,6 +1585,45 @@ async function radioSet(mode) {
   if (r[0] !== 'OK') toast((r[0] || PET + ' is not answering').replace(/^ERR /, ''));
   loadRadio();
 }
+// ---- RSS feeds (Ask Harald)
+let RSS = [];
+async function loadRss() {
+  const d = {};
+  (await cmd('RSS')).forEach(l => { const i = l.indexOf('='); if (i > 0) d[l.slice(0, i)] = l.slice(i + 1); });
+  if (!('feeds' in d)) return;
+  try { RSS = JSON.parse(d.feeds); } catch (e) { RSS = []; }
+  $('rssMax').textContent = d.max; $('rssEvery').textContent = d.minutes;
+  $('rssCount').textContent = RSS.length ? `${RSS.length} of ${d.max} feeds` : 'No feeds yet.';
+  $('rssAddBtn').disabled = RSS.length >= +d.max;
+  $('rssList').innerHTML = RSS.map((f, i) => `<div class="row"><div class="grow"><b>${esc(f.name)}</b>
+      <div class="sub" style="word-break:break-all">${esc(f.url)}</div>
+      ${f.error ? `<div class="sub" style="color:var(--ink)">Last check: ${esc(f.error)}</div>`
+        : f.last ? `<div class="sub">Latest: ${esc(f.last)}</div>` : ''}
+      <label class="sub" style="display:flex; gap:6px; align-items:center; margin-top:4px">Check every
+        <input type="number" min="10" max="1440" step="1" value="${f.every}" data-every="${i}" inputmode="numeric"
+          style="width:5.5em" aria-label="Minutes between checks of ${esc(f.name)}"> minutes</label></div>
+      <button class="xbtn" data-rss="${i}" aria-label="Remove ${esc(f.name)}" title="Remove">✕</button></div>`).join('');
+  $('rssList').querySelectorAll('[data-rss]').forEach(b => b.onclick = () => rssDel(RSS[+b.dataset.rss].url));
+  $('rssList').querySelectorAll('[data-every]').forEach(el => el.onchange = async () => {
+    const f = RSS[+el.dataset.every], r = await cmd(`RSSEVERY ${el.value} ${f.url}`);
+    toast(r[0] === 'OK' ? `${f.name}: every ${el.value} minutes` : (r[0] || PET + ' is not answering').replace(/^ERR /, ''));
+    loadRss();
+  });
+}
+async function rssAdd() {
+  const u = $('rssUrl').value.trim(); if (!u) return $('rssUrl').focus();
+  const b = $('rssAddBtn'); b.disabled = true; b.textContent = 'Adding…';
+  const r = await cmd('RSSADD ' + u);
+  b.textContent = 'Add'; b.disabled = false;
+  if (r[0] && r[0].startsWith('OK')) { $('rssUrl').value = ''; toast(`Added: ${r[0].slice(3)}`); }
+  else toast('Not added: ' + (r[0] || PET + ' is not answering').replace(/^ERR /, ''));
+  loadRss();
+}
+async function rssDel(url) {
+  const r = await cmd('RSSDEL ' + url);
+  if (!(r[0] && r[0].startsWith('OK'))) toast((r[0] || PET + ' is not answering').replace(/^ERR /, ''));
+  loadRss();
+}
 async function loadHomeZone() {
   const d = {};
   (await cmd('HOMEZONE')).forEach(l => { const i = l.indexOf('='); if (i > 0) d[l.slice(0, i)] = l.slice(i + 1); });
@@ -1504,8 +1632,13 @@ async function loadHomeZone() {
   if (document.activeElement !== $('hzOn')) $('hzOn').checked = on;
   if (document.activeElement !== $('hzSize')) $('hzSize').value = d.r;
   $('hzSizeRow').hidden = !on;
-  $('hzStatus').textContent = on ? `On: ${(+d.r >= 1000 ? +d.r / 1000 + ' km' : d.r + ' m')} around home.` : 'Off.';
+  hzSet = d.set === '1';
+  const now = {in: ` ${PET} is inside it now, so sightings here aren't recorded.`,
+               out: ` ${PET} is outside it now, so sightings here are recorded.`,
+               nofix: ` (No GPS position right now, so ${PET} can't tell whether this spot is inside it.)`}[d.here] || '';
+  $('hzStatus').textContent = on ? `On: ${(+d.r >= 1000 ? +d.r / 1000 + ' km' : d.r + ' m')} around home.${now}` : 'Off.';
 }
+let hzSet = false;
 function homeZoneDone(r, what) {
   if (r[0] && r[0].startsWith('OK')) {
     const n = +(r[0].split(' ')[1] || 0);
@@ -1515,7 +1648,14 @@ function homeZoneDone(r, what) {
 }
 async function homeZoneSet(on) {
   if (!on) { homeZoneDone(await cmd('HOMEZONESET off'), 'Home zone off.'); return; }
-  homeZoneDone(await cmd('HOMEZONESET on'), 'Home zone on.');
+  if (!hzSet) {   // never set: switching it on puts the circle around where he is now
+    if (!confirm('Switch on the home zone around where ' + PET + ' is now?\n\nDo this at home: the circle goes around this spot.')) {
+      $('hzOn').checked = false; return;
+    }
+    homeZoneDone(await cmd('HOMEZONESET here ' + $('hzSize').value), 'Home zone on.');
+    return;
+  }
+  homeZoneDone(await cmd('HOMEZONESET on'), 'Home zone on (around the home you set before).');
 }
 async function homeZoneHere() {
   if (!confirm('Set the home zone around where ' + PET + ' is now?\n\nDo this at home: the circle goes around this spot.')) return;
@@ -1653,10 +1793,65 @@ async function gardenUnlock(on) {
   if (r[0] !== 'OK') toast((r[0] || PET + ' is not answering').replace(/^ERR /, ''));
   loadGarden();
 }
+// ---- the Tadpole Pond
+let pdLast = '';
+async function loadPond() {
+  const r = await cmd('POND');
+  let p;
+  try { p = JSON.parse(r[0]); } catch (e) { return; }
+  const keep = el => document.activeElement === el;
+  $('pdLocked').hidden = p.unlocked;
+  $('pdLocked').textContent = `Opens when ${PET} reaches level ${p.unlock_level} (now level ${p.level}).`;
+  $('pdTestRow').hidden = p.level >= p.unlock_level;
+  if (!keep($('pdTest'))) $('pdTest').checked = p.unlocked && (p.forced || p.level < p.unlock_level);
+  $('pdOpen').hidden = !p.unlocked;
+  $('pdDaily').textContent = p.daily_pct + '%';
+  if (!keep($('prioGarden'))) $('prioGarden').checked = p.priority === 'garden';
+  if (!keep($('prioPond'))) $('prioPond').checked = p.priority === 'pond';
+  if (!p.unlocked) return;
+  $('pdScore').textContent = `${p.raised_species} of ${p.total} species raised · ${p.score.toLocaleString()} Pond points`;
+  $('pdScore').textContent += p.fed_today ? ` · ${p.fed_today} spare food eaten today` : '';
+  const b = p.slot, cap1 = t => t.charAt(0).toUpperCase() + t.slice(1);
+  let html;
+  if (!b || b.egg) {
+    html = `<div class="larva egg"><div class="lv-row"><div class="lv-text"><b>Spawn</b>
+      <div class="sub">Hatches with the next spare food, and only then do we find out what it is.</div></div>
+      <div class="pd-art">${pondArt('frog', 0)}</div></div></div>`;
+  } else {
+    const ticks = b.stages.slice(1).map(([at]) => `<span class="tick" style="left:${at}%"></span>`).join('');
+    const today = b.adult ? 'Grown up' : b.full_today ? `Full for today (up to ${b.limit_pct.toFixed(0)}%): grows again after midnight`
+      : `Can grow to ${b.limit_pct.toFixed(0)}% today`;
+    html = `<button class="larva${b.adult ? ' adult' : ''}" onclick="${b.adult ? `pondCollect('${b.species}')` : `window.open('/pond?sp=${b.species}', '_blank')`}">
+      <div class="lv-row"><div class="lv-text"><b data-nolang>${esc(b.name)}</b> <i class="sub" data-nolang>${esc(b.sci)}</i>
+        <div>${esc(cap1(b.adult ? 'grown up' : b.stage_words))}</div>
+        <div class="sub">${esc(b.rarity)}</div>
+        <div>Progress: <b>${b.adult ? 100 : b.pct.toFixed(0)}%</b></div></div>
+        <div class="pd-art">${pondArt(b.kind, b.adult ? 5 : b.stage)}</div></div>
+      ${b.adult ? '' : `<div class="pdbar">${ticks}<span class="fill" style="width:${b.pct}%"></span><span class="cap" style="left:${b.limit_pct}%"></span></div>`}
+      <div class="sub">${esc(today)} · Last fed ${lastFed(b.last_fed)} · <b>${b.adult ? 'tap to add to the Pond Collection' : 'tap for its card'}</b></div>
+      </button>`;
+  }
+  if (html !== pdLast) { pdLast = html; $('pdSlot').innerHTML = html; }
+}
+async function pondCollect(sp) {
+  window.open('/pond?sp=' + encodeURIComponent(sp), '_blank');     // its card (opened straight away, so the browser allows it)
+  const r = await cmd('PONDCOLLECT');
+  if (r[0] !== 'OK') toast((r[0] || PET + ' is not answering').replace(/^ERR /, ''));
+  pdLast = ''; loadPond();
+}
+async function pondUnlock(on) { await cmd('PONDTEST ' + (on ? 'on' : 'off')); loadPond(); }
+async function feedPriority(where, on) {
+  // the two boxes can't both be ticked: ticking one unticks the other
+  const r = await cmd('FEEDPRIORITY ' + (on ? where : 'none'));
+  if (r[0] !== 'OK') toast((r[0] || PET + ' is not answering').replace(/^ERR /, ''));
+  $('prioGarden').checked = on && where === 'garden';
+  $('prioPond').checked = on && where === 'pond';
+  loadPond();
+}
 async function gardenCountry(c) {
   const r = await cmd('GARDENCOUNTRY ' + c);
   if (r[0] !== 'OK') toast((r[0] || PET + ' is not answering').replace(/^ERR /, ''));
-  loadGarden();
+  loadGarden();  loadPond();
 }
 async function loadLair() {
   const d = {};
@@ -1773,10 +1968,10 @@ async function lairForget() {
   $('lairPlace').value = $('lairCountry').value = '';
   loadLair();
 }
-async function phoneSet(on) {
+function phoneSet(on) {
   // Ticking the phone switches the Dot's voice off; tick the Dot again to have both.
-  if (on && $('dotOn').checked) { $('dotOn').checked = false; await cmd('DOTSET enabled false'); }
-  await dotSet('phone', on);
+  if (on && $('dotOn').checked) { $('dotOn').checked = false; dotSet('enabled', false); }
+  dotSet('phone', on);
 }
 async function dotSay() {
   const t = $('dotSayText').value.trim();

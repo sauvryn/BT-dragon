@@ -24,7 +24,10 @@ from . import activity as actmod
 from . import sky as skymod
 from .landmarks import Landmarks
 from .greens import Greens, visit_words
+from .libraries import Libraries
 from .garden import Garden
+from .pond import Pond
+from . import pond as pondmod
 from . import mobilewifi
 from . import garden as gardenmod
 from . import garden_page
@@ -54,6 +57,8 @@ from .store import Store
 from .sysstats import SysStats
 from . import wifi as wifimod
 from . import wigle
+from . import rss as rssmod
+from .story import Story
 
 log = logging.getLogger("dragon")
 MAC_RE = re.compile(r"^[0-9A-F]{2}(:[0-9A-F]{2}){5}$")
@@ -87,6 +92,12 @@ class Dragon:
             self.store.put("code_names_tidied", True)
             if n:
                 log.info("folded %d code-named species into %s", n, UNBRANDED)
+        from .ble import CARE, CARE_KEY, is_care_label
+        if self.store.get("care_folded") != 1:          # once: personal care gadgets keep no name or maker
+            self._care_old = self.store.fold_care(is_care_label, CARE, CARE_KEY)
+            self.store.put("care_folded", 1)
+            if self._care_old:
+                log.info("folded %d life-list types into %s", len(self._care_old), CARE)
         if not self.store.get("types_renamed"):         # once: the diary says "type" now, not "species"
             self.store.db.execute("UPDATE events SET text='New type: ' || substr(text, 14) "
                                   "WHERE kind='species' AND text LIKE 'New species: %'")
@@ -117,6 +128,7 @@ class Dragon:
         self.baro = skymod.Barometer(self.store) if sky_cfg["barometer"] else None
         self.landmarks = Landmarks(self.store) if sky_cfg["landmarks"] else None
         self.greens = Greens(self.store) if sky_cfg.get("greens", True) else None
+        self.libraries = Libraries(self.store) if sky_cfg.get("libraries", True) else None
         self.baro_link = actmod.PressureLink(self.on_pressure)
         self.sun = skymod.Sunshine(self.store)
         self.light_link = actmod.LightLink(self.on_light)
@@ -126,6 +138,9 @@ class Dragon:
         self.store.diary = self.diary_files
         if self.diary_files:
             self.store.before_flush.append(self.diary_files.flush)   # its rows go when the database does
+        if getattr(self, "_care_old", None) and self.diary_files:
+            self.diary_files.replace_labels(self._care_old, CARE)
+        self._care_old = None
         from .ble import COMPANIES
         named = f"{len(COMPANIES)}+unbranded"
         if self.store.get("makers_named") != named:   # once per new company list
@@ -170,7 +185,11 @@ class Dragon:
         self._ach_at, self._ach = 0.0, None          # achievements: last counted, and the list
         self._clock_ok = (False, 0.0)
         self.upload_lock = asyncio.Lock()
-        self.started = time.time()
+        # how long he's been awake: timed on the Pi's own stopwatch (time.monotonic(), which counts
+        # from power-on and never jumps), not the wall clock. A Pi Zero has no clock battery: at
+        # power-on its clock starts from when it was last switched off, and only jumps to the real
+        # time once it reaches the internet, which made "Awake" count the whole night.
+        self.started = time.monotonic()
         # napping: as good as switched off (nothing runs, nothing is written to the card),
         # except the den, so he can be woken from it. It survives a restart or power cut.
         nap = self.store.get("napping")
@@ -178,6 +197,7 @@ class Dragon:
         self.nap_since = nap.get("since", 0) if isinstance(nap, dict) else 0
         # the Echo Dot: Harald's voice and light ring
         self.dot = DotLink(self)
+        self.story = Story(self)
         self.lair = Lair(self.store)                # home, as far as the weather is concerned
         self.lair.adopt_home_town(self.dot.s.get("home_town"), self.dot.s.get("home_lat"), self.dot.s.get("home_lon"))
         self.pet.on_say = self.dot.on_say
@@ -186,9 +206,14 @@ class Dragon:
         self.garden = Garden(self.store)
         self.garden.growth = lambda: self.pet.growth()          # (only if its knob is on)
         self.garden.on_event = self._garden_event
+        self.pond = Pond(self.store)
+        self.pond.growth = lambda: self.pet.growth()
+        self.pond.on_event = lambda kind, info: self._garden_news.append(("pond", (kind, info)))
+        self._pond_fed = 0.0
         # the library (Bookworm's book tracker): his hoard of literary treasures
         from .library import Library
         self.library = Library(self.store, self.data_dir)
+        self.rss = rssmod.Feeds(self.store)
         self.library.on_event = self._library_event
         self._lib_news = []
         # which English (British, American, Canadian) his screen and the Den are in, and the
@@ -346,11 +371,49 @@ class Dragon:
     GARDEN_FED_EVERY_S = 300     # "FED 12 FOOD TO THE BUTTERFLY GARDEN": at most every 5 minutes (with
                                  # a full belly, snacks go to the garden all the time)
 
+    def feed_priority(self):
+        """"garden", "pond" or "" (shared): the Den's "Priority for spare food" tick boxes."""
+        p = self.store.get("feed_priority") or ""
+        return p if p in ("garden", "pond") else ""
+
+    def _garden_eaters(self, level):
+        if not self.garden.unlocked(level):
+            return 0
+        return sum(1 for b in self.garden.s["slots"][: self.garden.slot_count(level)]
+                   if not b.get("empty") and not b.get("adult") and not self.garden.is_pupa(b))
+
     def _garden_feed(self, food):
-        if self.napping or not self.garden.unlocked(self.pet.level()):
+        """Spare food, between the Butterfly Garden and the Tadpole Pond. Shared: the pond is one
+        more mouth, alongside each egg and larva in the garden. With a priority ticked: all of it
+        goes there until it can't eat any more (the pond's daily limit, or every larva at its
+        pupation point), and the rest is shared elsewhere. Whatever one side can't eat goes to the
+        other either way."""
+        if self.napping:
             return
-        self.garden.feed(food, self.pet.level(), self._lair_code(), belly_low=self.pet.hunger < 30)
-        self._garden_fed += food           # said on his screen a moment later (see _garden_tick)
+        level, c = self.pet.level(), self.garden.country(self._lair_code())
+        g_open, p_eats = self.garden.unlocked(level), self.pond.eats(level)
+        if not g_open and not p_eats:
+            return
+        to_garden = lambda f: self.garden.feed(f, level, c) if g_open and f > 0 else 0.0   # noqa: E731
+        to_pond = lambda f: self.pond.feed(f, level, c) if p_eats and f > 0 else 0.0       # noqa: E731
+        first = self.feed_priority()
+        if first == "pond":
+            p = to_pond(food)
+            g = to_garden(food - p)
+        elif first == "garden":
+            g = to_garden(food)
+            p = to_pond(food - g)
+        else:
+            mouths = self._garden_eaters(level) + (1 if p_eats else 0)
+            share = food / mouths if mouths else 0.0
+            p = to_pond(share) if p_eats else 0.0
+            g = to_garden(food - (share if p_eats else 0.0))
+            left = food - p - g
+            if left > 1e-6:                  # one side full: the other may still eat it
+                p += to_pond(left)
+                g += to_garden(food - p - g)
+        self._garden_fed += g or 0.0       # said on his screen a moment later (see _garden_tick); only
+        self._pond_fed += p or 0.0         # what was eaten: pupae and waiting adults don't eat
 
     # ================================================================ the library
     def _library_event(self, kind, info):
@@ -445,7 +508,8 @@ class Dragon:
         now = time.time()
         if now < getattr(self.pet, "message_hold", 0):
             return
-        waiting = self._garden_news or (self._garden_fed >= 0.05 and now - self._garden_fed_said >= self.GARDEN_FED_EVERY_S)
+        fed = self._garden_fed + self._pond_fed
+        waiting = self._garden_news or (fed >= 0.05 and now - self._garden_fed_said >= self.GARDEN_FED_EVERY_S)
         if not waiting:
             self._garden_shown = None
             return
@@ -456,15 +520,28 @@ class Dragon:
                                             # place there's always one: then it waits 30 s at most)
         self._garden_shown = now
         if not self._garden_news:
-            if self._garden_fed >= 0.05 and time.time() - self._garden_fed_said >= self.GARDEN_FED_EVERY_S:
-                n = self._garden_fed
-                self._garden_fed, self._garden_fed_said = 0.0, time.time()
-                self.pet.say([f"FED {_n(n)} FOOD TO THE BUTTERFLY GARDEN", f"FED {_n(n)} FOOD TO THE GARDEN",
-                              f"+{_n(n)} FOOD TO THE GARDEN"], None, 10, speak=False)
+            if fed >= 0.05 and time.time() - self._garden_fed_said >= self.GARDEN_FED_EVERY_S:
+                n, m = self._garden_fed, self._pond_fed
+                self._garden_fed, self._pond_fed, self._garden_fed_said = 0.0, 0.0, time.time()
+                if n >= 0.05 and m >= 0.05:
+                    self.pet.say([f"FED {_n(n)} TO THE GARDEN, {_n(m)} TO THE POND",
+                                  f"+{_n(n + m)} FOOD TO THE GARDEN AND POND"], None, 10, speak=False)
+                elif m >= 0.05:
+                    self.pet.say([f"FED {_n(m)} FOOD TO THE TADPOLE POND", f"FED {_n(m)} FOOD TO THE POND",
+                                  f"+{_n(m)} FOOD TO THE POND"], None, 10, speak=False)
+                else:
+                    self.pet.say([f"FED {_n(n)} FOOD TO THE BUTTERFLY GARDEN", f"FED {_n(n)} FOOD TO THE GARDEN",
+                                  f"+{_n(n)} FOOD TO THE GARDEN"], None, 10, speak=False)
             return
         kind, info = self._garden_news.pop(0)
         if kind == "say":               # held back while "LEVEL UP!" was showing
             self.pet.say(*info)
+            return
+        if kind == "rss":
+            self._rss_said(*info)
+            return
+        if kind == "pond":
+            self._pond_said(*info)
             return
         if kind == "title":
             text = f"NEW BUTTERFLY GARDEN TITLE: {info['name'].upper()}!"
@@ -517,6 +594,54 @@ class Dragon:
             if info.get("habitat"):
                 line += f" A new habitat opened: {gardenmod.habitat_name(info['country'], info['habitat'])}."
             self.event("garden", f"{line} +{info.get('points', 0)} Butterfly Garden points.")
+
+    def _pond_said(self, kind, info):
+        """The Tadpole Pond's news: hatching, legs, leaving the water, grown up, collected."""
+        name, young, meta = info["name"], info["young"], info["meta"]
+        a, the = gardenmod.a_(name), gardenmod.the_(name)
+        The = the[0].upper() + the[1:]
+        if kind == "hatch":
+            self.pet._gain(0, 0, tuning.get("pond_hatch_joy"))
+            what = "tadpole" if young == "tadpole" else "larva"
+            self.pet.say([f"SPAWN HATCHED! {a.upper()} {what.upper()}", f"A {what.upper()} HATCHED IN THE POND!",
+                          f"A {what.upper()} HATCHED!"], "happy", 20, speak=False)
+            self.dot.news(f"The spawn hatched in the Tadpole Pond! It's {a} {what}.")
+            self.event("garden", f"The spawn hatched in the Tadpole Pond: {a} {what} ({info['rarity']})")
+        elif kind == "legs":
+            first_legs = "front" if info["kind"] in ("newt", "salamander") else "back"
+            words = (f"{first_legs} legs" if info.get("k") == 2 else "four legs")
+            self.pet.say([f"{the.upper()} {young.upper()} HAS {words.upper()}!", f"THE {young.upper()} HAS {words.upper()}!"],
+                         "happy", 20, speak=False)
+            self.event("garden", f"{The} {young} in the Tadpole Pond has {words}")
+        elif kind == "meta":
+            self.pet.say([f"{the.upper()} {young.upper()} IS NOW A {meta.upper()}!", f"NOW A {meta.upper()}!"],
+                         "happy", 20, speak=False)
+            self.dot.news(f"{The} {young} in the Tadpole Pond is now a {meta}, ready to leave the water!")
+            self.event("garden", f"{The} {young} in the Tadpole Pond became a {meta}")
+        elif kind == "adult":
+            j = tuning.get("pond_adult_joy")
+            leveled = self.pet._gain(0, tuning.get("pond_xp"), j)
+            one = (f"A NEW {gardenmod.bare(name)}" if info.get("new") else a).upper()
+            words = [f"{one} GREW UP IN THE POND!", f"{one} GREW UP!", f"{name.upper()} GREW UP!"]
+            if leveled:
+                self._garden_news.insert(0, ("say", (words, self.pet.face_for(j), 45)))
+            else:
+                self.pet.say(words, self.pet.face_for(j), 45)
+            one = f"a new {gardenmod.bare(name)}" if info.get("new") else a
+            self.event("garden", f"{one[0].upper() + one[1:]} grew up in the Tadpole Pond. Add it to the Pond Collection "
+                                 "from the Den.")
+        elif kind == "collect":
+            self.pet.say([f"{name.upper()} ADDED TO THE POND COLLECTION!", f"{name.upper()} COLLECTED!"], "happy", 20,
+                         speak=False)
+            self.event("garden", f"Added {'a new ' + gardenmod.bare(name) if info.get('new') else a} to the Pond "
+                                 f"Collection. +{info.get('points', 0)} Pond points.")
+
+    def pond_page_data(self, c=""):
+        c = c if c in gardenmod.COUNTRY_NAME else self.garden.country(self._lair_code())
+        d = self.pond.page_data(c, self.pet.name, gardenmod.data()["countries"][c].get("habitats", {}))
+        d.update(unlocked=self.pond.unlocked(self.pet.level()), unlock_level=pondmod.UNLOCK_LEVEL,
+                 country_name=gardenmod.COUNTRY_NAME[c], lang=self.lang())
+        return d
 
     def garden_page(self, c=""):
         c = c if c in gardenmod.COUNTRY_NAME else self.garden.country(self._lair_code())
@@ -949,6 +1074,40 @@ class Dragon:
         last = self.store.get("wigle_last_try") or 0
         return max(0.0, last + every - time.time(), self._quota_wait())
 
+    async def rss_loop(self):
+        """RSS feeds (see rss.py): each on the clock at its own interval (6:00, 6:20, 6:40...), while awake."""
+        while not self.stop.is_set():
+            due = self.rss.due()
+            if due and not self.napping and not self.simulate:
+                try:
+                    news = await asyncio.to_thread(self.rss.check, None, due)
+                except Exception as e:
+                    log.warning("rss: %s", e)
+                    news = []
+                self.rss_news(news)
+            await self._sleep(10)
+
+    def rss_news(self, news):
+        """New items: queued with the garden's news, so each gets its moment on his screen."""
+        for name, titles, more in news:
+            for t in reversed(titles):                # (oldest first: the newest is the last one left showing)
+                self._garden_news.append(("rss", (name, t, 0)))
+            if more:
+                self._garden_news.append(("rss", (name, None, more)))
+
+    def _rss_said(self, name, title, more):
+        if title is None:
+            self.pet.say([f"RSS {name} +{more} MORE", f"RSS +{more} MORE"], None, 20, speak=False)
+            if self.dot.s.get("say_rss", True):
+                self.dot.news(f"And {more} more new from {name}.", big=True)
+            self.event("rss", f"{more} more new from {name}")
+            return
+        self.pet.say(f"RSS {name} {title}", None, 30, speak=False)   # (as much of the title as fits)
+        if self.dot.s.get("say_rss", True):
+            end = "" if title[-1:] in ".!?" else "."
+            self.dot.news(f"New RSS for {name}. {title}{end}", big=True)     # (said with "Big moments" too)
+        self.event("rss", f"New RSS for {name}: {title}")
+
     async def offline_map_loop(self):
         """Once a day (when there's internet), the map tiles covering the lands claimed since
         last time, for the map page without a signal (see offlinemap.py)."""
@@ -1015,7 +1174,7 @@ class Dragon:
             "pals_near": pals_near, "pals_total": len(pals),
             "friends": self.friends.count(), "friends_near": len(self.friends.nearby(now)),
             "gps": self.gps.state(), "wigle_pending": self.store.pending_count(p["skip_nomap"], p["upload_hidden"]),
-            "awake": int(now - self.started), "uptime": self.vitals["uptime"], "temp": self.vitals["temp"], "cpu": self.vitals["cpu"],
+            "awake": int(time.monotonic() - self.started), "uptime": self.vitals["uptime"], "temp": self.vitals["temp"], "cpu": self.vitals["cpu"],
             "mem": self.vitals["mem"], "message": message.upper(),
             "card_saved": int(now - self.store.flushed_at), "card_saves": self.store.flushes,
             "journal": scores.view(scores.JOURNAL_TITLES, self.journal_score()),
@@ -1037,6 +1196,7 @@ class Dragon:
              "conquest": cq, "conquest_title": cq_title, "conquest_next": nxt[1] if nxt else "",
              "conquest_next_at": nxt[0] if nxt else 0,
              "stars": len(self.stars.known) if self.stars else 0, "stars_today": len(self.stars.today) if self.stars else 0,
+             "places_today": self.store.places_seen_since(time.mktime(datetime.date.today().timetuple())),
              "climbed_today": round(self.pet.climbed_today), "baro_link": self.baro_link.connected,
              "light_link": self.light_link.connected,
              "lux": round(self.sun.lux) if self.sun.lux is not None and time.time() - self.sun.ts < 60 else None,
@@ -1077,6 +1237,8 @@ class Dragon:
             self.landmarks.save()
         if self.greens:
             self.greens.save()
+        if self.libraries:
+            self.libraries.save()
         if self.baro:
             self.baro.save()
         self.store.put("ble_today", self.ble.export_state())
@@ -1197,7 +1359,9 @@ class Dragon:
                               for r in (self.store.landmarks_list(tuning.get("landmark_langs"))
                                         if self.landmarks else [])],
                 "greens": [{"name": g["name"], "kind": g["kind"], "seen": g["seen"], "rings": g["rings"]}
-                           for g in (self.store.greens_list() if self.greens else [])]}
+                           for g in (self.store.greens_list() if self.greens else [])],
+                "troves": [{"name": b["name"], "lat": b["lat"], "lon": b["lon"], "seen": b["seen"]}
+                           for b in (self.store.libraries_list() if self.libraries else [])]}
 
     def explore_open(self):
         """The map (lands, famous places, green spaces) and the stars: from level 5, when he's a
@@ -1206,21 +1370,64 @@ class Dragon:
         return self.pet.level() >= petmod.EXPLORE_LEVEL or bool(self.store.get("explore_unlocked"))
 
     def _look_around(self, fix):
-        """Famous places: ask Wikipedia about each new realm, then point out what's near."""
-        if not self.landmarks or fix.get("acc", 99) > 100 or not self.explore_open():
+        """Famous places: ask Wikipedia about each new realm, then point out what's near. And
+        libraries (treasure troves, from OpenStreetMap): a library that's also a famous place is
+        announced once, in the library's words (see libraries.py)."""
+        if fix.get("acc", 99) > 100 or not self.explore_open():
             return
-        realm = self.landmarks.wanted(fix)
-        if realm and (self.home_ssid or self.simulate):
-            asyncio.ensure_future(self.landmarks.fetch(realm))
-        for lm, first in self.landmarks.near(fix):
-            self.pet.landmark(lm["title"], first)
+        online = self.home_ssid or self.simulate
+        if self.libraries:
+            realm = self.libraries.wanted(fix)
+            if realm and online:
+                asyncio.ensure_future(self.libraries.fetch(realm))
+        if self.landmarks:
+            realm = self.landmarks.wanted(fix)
+            if realm and online:
+                asyncio.ensure_future(self.landmarks.fetch(realm))
+            for lm, first in self.landmarks.near(fix):
+                lib = self.libraries.matching(lm) if self.libraries else None
+                if lib is not None:
+                    if not self.libraries.visited_today(lib):
+                        lib, lib_first = self.libraries.visit(lib)
+                        self._trove(lib, lib_first, lm, first)
+                    elif first:                  # (counted as a library earlier today: the landmark quietly)
+                        self._conquered(f"{self.pet.name} saw {lm['title']} for the first time!",
+                                        conquest.points("landmark"), "landmark")
+                    continue
+                self._landmark(lm, first)
+        if self.libraries:
+            langs = tuning.get("landmark_langs")
+            for lib in self.libraries.near(fix):
+                if self.landmarks and self.libraries.famous(lib, langs):
+                    continue                     # a famous one: announced with the landmarks, from farther away
+                lib, first = self.libraries.visit(lib)
+                self._trove(lib, first)
+
+    def _trove(self, lib, first, lm=None, lm_first=False):
+        """A library: "NEW TROVE! ..." the first time, "TREASURE TROVE! ..." on later days. `lm`: the
+        famous place it also is (its Conquest points too, and "where is that landmark?" means it)."""
+        self.pet.trove(lib["name"], first)
+        self.dot.adventure("trove", name=lib["name"], first=first)
+        if lm is not None:
             self.dot.saw_landmark(lm)
-            self.dot.adventure("landmark", title=lm["title"], first=first)
-            if first:
+            if lm_first:
                 self._conquered(f"{self.pet.name} saw {lm['title']} for the first time!", conquest.points("landmark"),
                                 "landmark")
-            else:
-                self.event("landmark", f"{self.pet.name} saw {lm['title']}")
+        if first:
+            self._conquered(f"{self.pet.name} found a new treasure trove: {lib['name']}!", conquest.points("trove"),
+                            "trove")
+        else:
+            self.event("trove", f"{self.pet.name} visited a treasure trove: {lib['name']}")
+
+    def _landmark(self, lm, first):
+        self.pet.landmark(lm["title"], first)
+        self.dot.saw_landmark(lm)
+        self.dot.adventure("landmark", title=lm["title"], first=first)
+        if first:
+            self._conquered(f"{self.pet.name} saw {lm['title']} for the first time!", conquest.points("landmark"),
+                            "landmark")
+        else:
+            self.event("landmark", f"{self.pet.name} saw {lm['title']}")
 
     def _green_tick(self, fix):
         """Parks and woods: ask OpenStreetMap about each new realm, then notice when we're in one."""
@@ -1395,14 +1602,21 @@ class Dragon:
         locks = {}
         if not self.explore_open():
             why = f"Opens at level {petmod.EXPLORE_LEVEL}, when {self.pet.name} becomes a child."
-            locks.update(lands=why, places=why, nature=why, stars=why)
+            locks.update(lands=why, places=why, nature=why, troves=why, stars=why)
         if not self.garden.unlocked(self.pet.level()):
             locks["garden"] = f"The Butterfly Garden opens at level {gardenmod.UNLOCK_LEVEL}."
+        if not self.pond.unlocked(self.pet.level()):
+            locks["pond"] = f"The Tadpole Pond opens at level {pondmod.UNLOCK_LEVEL}."
         return ach.page_data(self.pet.name, self.store, self.achievement_list(), locks)
 
     def journal_data(self):
         from . import journal
         return journal.page_data(self.pet.name, self.store.species_list())
+
+    def wifi_journal_data(self):
+        from . import wifijournal
+        rows = self.store.db.execute("SELECT ssid, first_seen FROM aps").fetchall()
+        return wifijournal.page_data(self.pet.name, [(r[0], r[1]) for r in rows])
 
     def _aurora_lines(self):
         """For the Den: the Kp each kind of sighting needs at the Lair, and the latest reading."""
@@ -1808,6 +2022,30 @@ class Dragon:
             return [f"{g['id']}|{g['name'].replace('|', '/')}|{g['kind']}|{int(g['first_seen'] or 0)}|"
                     f"{g['visits'] or 0}|{g['walks'] or 0}|{g['runs'] or 0}|{g['rides'] or 0}"
                     for g in self.store.greens_list()] + ["END"]
+        if cmd == "POND":  # the Tadpole Pond, as JSON
+            v = self.pond.view(self.pet.level(), self.garden.country(self._lair_code()))
+            v["priority"] = self.feed_priority()
+            return [json.dumps(v), "END"]
+        if cmd == "PONDCOLLECT":
+            err = self.pond.collect()
+            return [f"ERR {err}" if err else "OK"]
+        if cmd == "PONDTEST":  # on / off: "Unlock now (prototype testing)"
+            if arg.strip().lower() == "on":
+                self.pond.unlock_now(self.pet.level())
+            else:
+                self.pond.lock_again()
+            return ["OK"]
+        if cmd == "FEEDPRIORITY":  # garden / pond / none
+            v = arg.strip().lower()
+            if v not in ("garden", "pond", "none", ""):
+                return ["ERR say garden, pond or none"]
+            self.store.put("feed_priority", "" if v in ("none", "") else v)
+            return ["OK"]
+        if cmd == "TROVES":  # libraries: id|name|first_seen (0 = not yet)|visits
+            if not self.libraries:
+                return ["END"]
+            return [f"{b['id']}|{b['name'].replace('|', '/')}|{int(b['first_seen'] or 0)}|{b['visits'] or 0}"
+                    for b in self.store.libraries_list()] + ["END"]
         if cmd == "LAIR":  # place=, country=, found=, announce=, complete=, now=, then END
             lr = self.lair
             found, reading = lr.summary()
@@ -1862,8 +2100,11 @@ class Dragon:
             return [f"ERR {err}" if err else "OK"]
         if cmd == "HOMEZONE":  # on=, r=, set=, sizes=
             z = self.home_zone.state()
+            fix = self.gps.current()
+            # here=: is he inside it right now? (a check that it's around home: never where the middle is)
+            here = "nofix" if not fix else "in" if self.home_zone.inside(fix["lat"], fix["lon"]) else "out"
             return [f"on={1 if z['on'] else 0}", f"r={z['r']}", f"set={1 if z['set'] else 0}",
-                    "sizes=" + ",".join(map(str, HOME_SIZES)), "END"]
+                    f"here={here if z['on'] else 'off'}", "sizes=" + ",".join(map(str, HOME_SIZES)), "END"]
         if cmd == "HOMEZONESET":  # off / on (around the place set before) / here [meters]
             a = arg.strip().lower().split()
             if a[:1] == ["off"]:
@@ -1893,6 +2134,9 @@ class Dragon:
             self.store.forget_lands()
             self.store.forget_landmarks_seen()
             self.store.forget_greens_seen()
+            self.store.forget_libraries_seen()
+            if self.libraries:
+                self.libraries.today = set()
             self.offline_map.forget()               # (the offline map shows where he's been, too)
             self.event("land", "Forgot the map of claimed lands (and the Conquest points they earned)")
             self.conquest_score(fresh=True)
@@ -1975,6 +2219,21 @@ class Dragon:
             self.dot._seq += 1
             await self.dot.sh(f"echo '{self.dot._seq} {name}' > /data/local/tmp/harald/once", 10)
             return ["OK"]
+        if cmd == "RSS":  # the feeds: feeds=[{url, name, last, last_ts, error}]
+            return ["feeds=" + json.dumps(self.rss.view()), f"max={rssmod.MAX_FEEDS}",
+                    f"minutes={tuning.get('rss_minutes'):g}", "END"]
+        if cmd == "RSSADD":  # a feed's address
+            try:
+                name = await asyncio.to_thread(self.rss.add, arg)
+            except ValueError as e:
+                return [f"ERR {e}"]
+            return [f"OK {name}"]
+        if cmd == "RSSEVERY":  # minutes, then a feed's address
+            parts = arg.split(None, 1)
+            err = self.rss.set_every(parts[1].strip(), parts[0]) if len(parts) == 2 else "say the minutes, then the feed"
+            return [f"ERR {err}" if err else "OK"]
+        if cmd == "RSSDEL":  # a feed's address
+            return ["OK" if self.rss.remove(arg.strip()) else "ERR not on the list"]
         if cmd == "ASK":  # a question in writing: the answer comes back (and is spoken, if the Dot is there)
             text = arg.strip()[:200]
             if not text:
@@ -2128,6 +2387,7 @@ class Dragon:
         if self.napping:
             return "OK already napping"
         log.info("going for a nap")
+        self.story.stop()                       # (where he'd got to is kept)
         self.event("sleep", f"{self.pet.name} went for a nap")
         try:
             await asyncio.wait_for(self.dot.release(), 10)   # the ring goes dark, the Dot quiet
@@ -2163,7 +2423,7 @@ class Dragon:
         # the time asleep counts like time switched off: the meters catch up (once the clock
         # is known to be right) and the Dot gives a welcome-back recap
         self._mono_start, self._caught_up, self._from_nap = time.monotonic(), False, True
-        self.started = time.time()
+        self.started = time.monotonic()
         from .pet import away_words
         self.event("wake", f"{self.pet.name} woke up from a nap" + (f" ({away_words(away).lower()})" if away >= 60 else ""))
         self.pet.say(["YAWN! HELLO!"], "happy", 20)
@@ -2353,7 +2613,7 @@ class Dragon:
         else:
             self.event("wake", f"{self.pet.name} woke up")
         tasks = [self.pet_loop(), self.display_loop(), self.wigle_loop(), self.activity_loop(), serve_all(self),
-                 self.offline_map_loop()]
+                 self.offline_map_loop(), self.rss_loop()]
         a = self.cfg["activity"]
         if a["enabled"] and not self.simulate:
             host = a["steps_host"]

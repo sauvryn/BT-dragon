@@ -151,15 +151,6 @@ def _twinkles(d, phase):
         d.line([(x, y - 2), (x, y + 2)], fill=B)
 
 
-def _eye_sad(d, cx, cy, side):
-    _ell(d, cx - 4, cy - 4, cx + 4, cy + 6, fill=B)
-    d.rectangle([cx - 2, cy - 2, cx - 1, cy - 1], fill=P)
-    # brows tilt up toward the middle
-    inner = cx + (4 if side < 0 else -4)
-    outer = cx - (5 if side < 0 else -5)
-    d.line([(outer, cy - 6), (inner, cy - 9)], fill=B, width=2)
-
-
 def _blush(d):
     for x in (19, 69):
         for i in range(3):
@@ -281,7 +272,7 @@ def _cloud(d, phase):
 def draw_dragon(d: ImageDraw.ImageDraw, ox, oy, mood="content", phase=0, belly=None):
     """Draw Harald with his top-left corner at (ox, oy).
 
-    For everyday moods (happy, content, bored, lonely, sleepy) the eyes show his JOY and
+    For everyday moods (happy, content, bored, sleepy) the eyes show his JOY and
     `belly` ("hungry" or "stuffed") swaps the mouth, so he can look happy-but-hungry.
     """
     # Draw on a translated proxy so all coordinates above stay local.
@@ -310,7 +301,8 @@ def draw_dragon(d: ImageDraw.ImageDraw, ox, oy, mood="content", phase=0, belly=N
         "happy": (lambda: (_eye_happy(t, L, EY), _eye_happy(t, R, EY)), lambda: (_mouth_grin(t), _blush(t))),
         "content": (lambda: (_eye_open(t, L, EY, phase), _eye_open(t, R, EY, phase)), lambda: _mouth_smile(t)),
         "bored": (lambda: (_eye_half(t, L, EY), _eye_half(t, R, EY)), lambda: _mouth_flat(t)),
-        "lonely": (lambda: (_eye_sad(t, L, EY, -1), _eye_sad(t, R, EY, 1)), lambda: _mouth_frown(t)),
+        # "lonely" is no longer used (at worst he's bored): a friend's old version may still send it
+        "lonely": (lambda: (_eye_half(t, L, EY), _eye_half(t, R, EY)), lambda: _mouth_flat(t)),
         "sleepy": (lambda: (_eye_half(t, L, EY), _eye_half(t, R, EY)), lambda: _mouth_o(t)),
     }
     if m in everyday:
@@ -336,9 +328,9 @@ def draw_dragon(d: ImageDraw.ImageDraw, ox, oy, mood="content", phase=0, belly=N
     elif m == "stuffed":
         _eye_closed(t, L, EY); _eye_closed(t, R, EY); _mouth_wavy(t); _blush(t)
     elif m == "hungry":
-        _eye_sad(t, L, EY, -1); _eye_sad(t, R, EY, 1); _mouth_o(t); _drool(t)
+        _eye_half(t, L, EY); _eye_half(t, R, EY); _mouth_o(t); _drool(t)
     elif m == "famished":
-        _eye_sad(t, L, EY, -1); _eye_sad(t, R, EY, 1); _mouth_frown(t); _sweat(t)
+        _eye_half(t, L, EY); _eye_half(t, R, EY); _mouth_flat(t); _sweat(t)     # bored and famished, never sad
     elif m == "adventure":  # out walking together
         _eye_happy(t, L, EY); _eye_happy(t, R, EY); _mouth_grin(t, tongue=True); _speed_lines(t, phase)
     elif m == "riding":     # in a vehicle: wind in his face

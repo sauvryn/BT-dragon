@@ -36,7 +36,7 @@ from .fonts import draw_text, text_width
 log = logging.getLogger("art")
 
 W, H = 96, 86
-EVERYDAY = ("happy", "content", "bored", "lonely", "sleepy")
+EVERYDAY = ("happy", "content", "bored", "sleepy")
 BELLIES = ("hungry", "stuffed")
 NAME_RE = re.compile(r"^(?P<mood>[a-z]+)(?:-(?P<belly>hungry|stuffed))?(?:_(?P<frame>1))?\.png$")
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -66,7 +66,7 @@ def drawn_screen(kind, phase=1):
 
 MOOD_NOTES = {
     "content": "the everyday face", "happy": "good mood", "bored": "nothing happening for a while",
-    "lonely": "no gadgets around for a long time", "sleepy": "late, or tired", "asleep": "sleeping and napping",
+    "sleepy": "late, or tired", "asleep": "sleeping and napping",
     "eating": "a Bluetooth snack", "treat": "a Wi-Fi treat", "stuffed": "belly full", "hungry": "belly low",
     "famished": "belly empty", "excited": "something new", "ecstatic": "a big joy boost",
     "proud": "level up", "alarmed": "an unknown tracker following you", "uploading": "sending to WiGLE",
@@ -239,6 +239,8 @@ class ArtSet:
         self.refresh()
         rows = []
         for mood in MOODS:
+            if mood == "lonely":         # (no longer shown: at worst he's bored, never sad)
+                continue
             for belly in (None,) + (BELLIES if mood in EVERYDAY else ()):
                 for frame in (0, 1):
                     name = f"{mood}{'-' + belly if belly else ''}{'_1' if frame else ''}.png"

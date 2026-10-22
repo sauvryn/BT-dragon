@@ -104,6 +104,28 @@ const ICONS = {
   house: '<path d="M10 30L32 10l22 20"/><path d="M16 26v22h32V26"/><path d="M27 48V36h10v12"/>',
   chip: '<rect x="18" y="16" width="28" height="28" rx="3"/><path d="M24 16V9M32 16V9M40 16V9M24 51v-7M32 51v-7M40 51v-7M18 24h-7M18 36h-7M53 24h-7M53 36h-7"/>',
   question: '<path d="M24 22a8 8 0 1 1 12 7c-3 2-4 3-4 7"/><circle cx="32" cy="44" r="1.5"/>',
+  care: '<path d="M32 48C14 36 10 26 16 18c5-6 12-4 16 2 4-6 11-8 16-2 6 8 2 18-16 30z"/><path d="M32 22v14M25 29h14"/>',
+  brush: '<rect x="28" y="22" width="8" height="30" rx="3"/><path d="M28 22V8h8v14M28 12h8M28 16h8"/>',
+  bulb: '<path d="M22 26a10 10 0 1 1 20 0c0 6-5 8-5 14H27c0-6-5-8-5-14z"/><path d="M27 44h10M28 48h8"/>',
+  tv: '<rect x="8" y="12" width="48" height="30" rx="3"/><path d="M24 50h16M32 42v8"/>',
+  lock: '<rect x="18" y="26" width="28" height="22" rx="3"/><path d="M24 26v-6a8 8 0 0 1 16 0v6"/><circle cx="32" cy="37" r="3"/>',
+  paw: '<ellipse cx="32" cy="38" rx="10" ry="8"/><circle cx="18" cy="26" r="4"/><circle cx="26" cy="18" r="4"/><circle cx="38" cy="18" r="4"/><circle cx="46" cy="26" r="4"/>',
+  car: '<path d="M10 36l5-12c1-3 3-4 6-4h22c3 0 5 1 6 4l5 12v8H10z"/><path d="M10 36h44"/><circle cx="20" cy="44" r="4"/><circle cx="44" cy="44" r="4"/>',
+  camera: '<rect x="8" y="18" width="48" height="30" rx="4"/><path d="M22 18l4-6h12l4 6"/><circle cx="32" cy="33" r="9"/>',
+  bike: '<circle cx="16" cy="38" r="10"/><circle cx="48" cy="38" r="10"/><path d="M16 38l10-16h14l8 16M26 22l6 16h-16M40 22l-2-6h-6"/>',
+  helmet: '<path d="M10 38a22 22 0 0 1 44 0v6H10z"/><path d="M32 16v10M10 38h24v6"/>',
+  plug: '<rect x="20" y="22" width="24" height="18" rx="3"/><path d="M26 22V12M38 22V12M32 40v12"/>',
+  sun: '<circle cx="32" cy="28" r="9"/><path d="M32 8v6M32 42v6M12 28h6M46 28h6M18 14l4 4M42 38l4 4M46 14l-4 4M22 38l-4 4"/>',
+  gamepad: '<path d="M16 20h32a10 10 0 0 1 9 14l-3 8a5 5 0 0 1-9 0l-2-5H21l-2 5a5 5 0 0 1-9 0l-3-8a10 10 0 0 1 9-14z"/><path d="M20 28v6M17 31h6"/><circle cx="42" cy="29" r="1.5"/><circle cx="46" cy="33" r="1.5"/>',
+  printer: '<rect x="10" y="22" width="44" height="18" rx="3"/><path d="M20 22V10h24v12M20 34h24v14H20z"/>',
+  // the Wi-Fi Journal
+  wifi: '<path d="M10 24a32 32 0 0 1 44 0M17 31a22 22 0 0 1 30 0M24 38a12 12 0 0 1 16 0"/><circle cx="32" cy="45" r="2"/>',
+  router: '<rect x="10" y="30" width="44" height="14" rx="3"/><path d="M18 30l-4-16M46 30l4-16M18 37h4M26 37h4"/>',
+  guest: '<circle cx="24" cy="20" r="6"/><circle cx="42" cy="22" r="5"/><path d="M12 46c0-8 5-14 12-14s12 6 12 14M34 46c0-6 3-11 8-11s8 5 8 11"/>',
+  office: '<rect x="14" y="10" width="36" height="40" rx="2"/><path d="M22 18h6M36 18h6M22 26h6M36 26h6M22 34h6M36 34h6M28 50v-8h8v8"/>',
+  mesh: '<circle cx="32" cy="14" r="5"/><circle cx="14" cy="42" r="5"/><circle cx="50" cy="42" r="5"/><path d="M29 18l-12 20M35 18l12 20M19 42h26"/>',
+  gear: '<circle cx="32" cy="28" r="7"/><path d="M32 8v8M32 40v8M12 28h8M44 28h8M18 14l6 6M40 36l6 6M46 14l-6 6M24 36l-6 6"/>',
+  bus: '<rect x="12" y="8" width="40" height="38" rx="5"/><path d="M12 30h40M12 18h40"/><circle cx="20" cy="38" r="2"/><circle cx="44" cy="38" r="2"/><path d="M18 46v4M46 46v4"/>',
   // the sky
   jet: '<path d="M32 6c3 0 4 4 4 8v8l18 10v5l-18-5v10l6 5v4l-10-3-10 3v-4l6-5V32l-18 5v-5l18-10v-8c0-4 1-8 4-8z"/>',
   heavy: '<path d="M32 4c4 0 5 5 5 9v8l20 11v6l-20-6v11l7 5v4l-12-3-12 3v-4l7-5V32L7 38v-6l20-11v-8c0-4 1-9 5-9z"/><path d="M14 30v-4M50 30v-4"/>',
@@ -180,7 +202,8 @@ function openCard(id, from) {
   const list = (m.list || []);
   const mine = item.found === false ? `<p class="empty">Not found yet.</p>`
     : `<h3 style="margin:0;font-size:14px">${DATA.kind === 'stars' ? 'Stars found' : 'Found'}</h3>
-       ${m.first ? `<p class="sub" style="margin:2px 0">First found ${esc(new Date(m.first * 1000).toLocaleDateString())}${m.count ? ` · eaten ${m.count}×` : ''}</p>` : ''}
+       ${m.first ? `<p class="sub" style="margin:2px 0">First found ${esc(new Date(m.first * 1000).toLocaleDateString())}${m.count ? (m.what ? ` · ${m.count.toLocaleString()} ${esc(m.what)}` : ` · eaten ${m.count}×`) : ''}</p>` : ''}
+       ${m.note ? `<p class="sub" style="margin:2px 0">${esc(m.note)}</p>` : ''}
        ${list.length ? `<ul data-nolang>${list.map(x => `<li class="${x.bold ? 'bold' : ''}">${x.bold ? '<b>' : ''}${esc(x.label)}${x.bold ? '</b>' : ''}<span>${esc(x.sub)}${x.bold ? ' · in view now' : ''}</span></li>`).join('')}</ul>` : ''}`;
   $('sheetBox').innerHTML = `<div class="top"><div class="art">${art(item)}</div>
       <div><h2 id="cardTitle" data-nolang>${esc(c.title)}</h2><div class="sub">${c.rarity ? `<span class="chip ${esc(c.rarity)}">${esc(c.rarity)}</span> ` : ''}${esc(c.group || '')}</div></div>

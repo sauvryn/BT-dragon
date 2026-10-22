@@ -1,0 +1,2811 @@
+{
+ "gb": [
+  {
+   "id": "common-frog",
+   "name": "Common Frog",
+   "sci": "Rana temporaria",
+   "kind": "frog",
+   "family": "Ranidae (true frogs)",
+   "rarity": "Common",
+   "months": [
+    0,
+    1,
+    2,
+    3
+   ],
+   "size": "Males up to 9 cm, females up to 13 cm",
+   "food": "Tadpoles: algae and water fleas. Adults: slugs, snails and other invertebrates",
+   "when": "Spawn from January (earliest in south-west England) to April",
+   "status": "Common and widespread, but thought to be declining; protected from sale",
+   "habitats": [
+    "freshwater",
+    "towns",
+    "grassland",
+    "heath",
+    "farmland",
+    "wetland",
+    "woodland"
+   ],
+   "life": "Tadpoles hatch 2 to 4 weeks after spawning, grow back legs and then front legs, and leave the water as froglets in early summer (as late as September in some ponds).",
+   "facts": [
+    "A clump of spawn can hold up to 2,000 eggs, each in a jelly capsule about 1 cm across.",
+    "Colours vary a lot: yellow, pink, red, orange and even black frogs are often reported.",
+    "Older tadpoles are faintly speckled with gold, which tells them apart from the black tadpoles of the common toad.",
+    "In winter some shelter in the mud at the bottom of ponds; others hide under logs, stones or compost heaps."
+   ],
+   "learn": [
+    [
+     "Amphibian and Reptile Conservation: Common frog",
+     "https://www.arc-trust.org/common-frog"
+    ],
+    [
+     "The Wildlife Trusts: Common frog",
+     "https://www.wildlifetrusts.org/wildlife-explorer/amphibians/common-frog"
+    ],
+    [
+     "Froglife: Common Frog",
+     "https://www.froglife.org/info-advice/amphibians-and-reptiles/common-frog-2/"
+    ]
+   ],
+   "src": [],
+   "garden": "a wildlife pond with shallow, sloping edges and no fish",
+   "unv": [],
+   "young": "tadpole",
+   "meta": "froglet"
+  },
+  {
+   "id": "common-toad",
+   "name": "Common Toad",
+   "sci": "Bufo bufo",
+   "kind": "toad",
+   "family": "Bufonidae (true toads)",
+   "rarity": "Common",
+   "months": [
+    1,
+    2,
+    3
+   ],
+   "size": "Males up to 8 cm, females up to 13 cm",
+   "food": "Adults: slugs, snails, ants, beetles, spiders and other invertebrates",
+   "when": "Migrates to its pond on the first warm, damp evenings of spring, a little later than common frogs",
+   "status": "Widespread in Britain but declining, especially in the south; a UK Priority Species; absent from Ireland",
+   "habitats": [
+    "freshwater",
+    "woodland",
+    "grassland",
+    "heath",
+    "farmland",
+    "wetland",
+    "towns"
+   ],
+   "life": "Tadpoles hatch 2 to 4 weeks after spawning; toadlets leave the water in large numbers in early summer, usually after rain.",
+   "facts": [
+    "Lays its spawn in long strings with two rows of eggs, wound round water plants.",
+    "Many walk back to the same pond their ancestors used, every spring.",
+    "Toxins in the skin of adults and tadpoles put predators off, so toad tadpoles can survive in ponds with fish.",
+    "Roads are a big danger: volunteers on 'toad patrols' help them cross on migration nights."
+   ],
+   "learn": [
+    [
+     "Amphibian and Reptile Conservation: Common toad",
+     "https://www.arc-trust.org/common-toad"
+    ],
+    [
+     "The Wildlife Trusts: Common toad",
+     "https://www.wildlifetrusts.org/wildlife-explorer/amphibians/common-toad"
+    ],
+    [
+     "Froglife: Common Toad",
+     "https://www.froglife.org/who-we-are/common-toad-2/"
+    ]
+   ],
+   "src": [],
+   "garden": "a wildlife pond with shallow, sloping edges and no fish",
+   "unv": [],
+   "young": "tadpole",
+   "meta": "toadlet"
+  },
+  {
+   "id": "smooth-newt",
+   "name": "Smooth Newt",
+   "sci": "Lissotriton vulgaris",
+   "kind": "newt",
+   "family": "Salamandridae (newts)",
+   "rarity": "Common",
+   "months": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "size": "7 to 11 cm",
+   "food": "On land: insects, caterpillars, worms and slugs. In water: small crustaceans, snails and tadpoles",
+   "when": "In ponds from February to June",
+   "status": "The UK's most widespread newt; protected from sale",
+   "habitats": [
+    "freshwater",
+    "towns",
+    "grassland",
+    "woodland",
+    "farmland",
+    "wetland",
+    "heath",
+    "coast"
+   ],
+   "life": "Larvae grow their front legs first and breathe with feathery gills; the young leave the water in late summer once the gills are gone.",
+   "facts": [
+    "A female folds each egg inside the leaf of a water plant, one at a time.",
+    "Also called the common newt: the one you're most likely to find in a garden pond.",
+    "Its yellow or orange belly has neat black spots, and so does its throat (a palmate newt's throat is plain).",
+    "In the breeding season the males grow a wavy crest along the back and tail."
+   ],
+   "learn": [
+    [
+     "Amphibian and Reptile Conservation: Smooth newt",
+     "https://www.arc-trust.org/smooth-newt"
+    ],
+    [
+     "The Wildlife Trusts: Smooth newt",
+     "https://www.wildlifetrusts.org/wildlife-explorer/amphibians/smooth-newt"
+    ]
+   ],
+   "src": [],
+   "garden": "a wildlife pond with shallow, sloping edges and no fish",
+   "unv": [],
+   "young": "larva",
+   "meta": "eft"
+  },
+  {
+   "id": "palmate-newt",
+   "name": "Palmate Newt",
+   "sci": "Lissotriton helveticus",
+   "kind": "newt",
+   "family": "Salamandridae (newts)",
+   "rarity": "Uncommon",
+   "months": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "size": "7 to 9 cm: the UK's smallest newt",
+   "food": "Invertebrates, including frog tadpoles",
+   "when": "In ponds in spring",
+   "status": "Widespread across most of Britain; protected from sale",
+   "habitats": [
+    "heath",
+    "freshwater",
+    "wetland",
+    "woodland",
+    "farmland"
+   ],
+   "life": "Eggs are laid singly on leaves of water plants; the larvae grow front legs first and leave the water in summer once their gills are gone.",
+   "facts": [
+    "Named after the black webbing on the males' back feet in the breeding season.",
+    "Breeding males also have a thin filament at the tip of the tail.",
+    "It likes shallow pools on acid soils: heaths in the south and west, moors and bogs in the north.",
+    "Its throat is plain pink or yellow, without the spots of the smooth newt."
+   ],
+   "learn": [
+    [
+     "Amphibian and Reptile Conservation: Palmate newt",
+     "https://www.arc-trust.org/palmate-newt"
+    ],
+    [
+     "The Wildlife Trusts: Palmate newt",
+     "https://www.wildlifetrusts.org/wildlife-explorer/amphibians/palmate-newt"
+    ]
+   ],
+   "src": [],
+   "garden": "a wildlife pond with shallow, sloping edges and no fish",
+   "unv": [
+    "when"
+   ],
+   "young": "larva",
+   "meta": "eft"
+  },
+  {
+   "id": "great-crested-newt",
+   "name": "Great Crested Newt",
+   "sci": "Triturus cristatus",
+   "kind": "newt",
+   "family": "Salamandridae (newts)",
+   "rarity": "Uncommon",
+   "months": [
+    2,
+    3,
+    4,
+    5
+   ],
+   "size": "Up to 17 cm: the UK's largest newt",
+   "food": "Invertebrates",
+   "when": "Breeds from March to June",
+   "status": "Widespread in lowland England and Wales; strictly protected by law, eggs included; absent from Ireland",
+   "habitats": [
+    "freshwater",
+    "grassland",
+    "farmland",
+    "wetland"
+   ],
+   "life": "Each female lays about 200 eggs, wrapping each one in the leaf of a water plant; the larvae are mottled with black spots and have a fine filament at the tip of the tail.",
+   "facts": [
+    "The pattern of spots on its orange belly is unique to each newt, like a fingerprint.",
+    "In spring the males grow a tall, jagged crest and dance for the females, arching the back and waving the tail.",
+    "Its dark, warty skin makes it look like a mini dinosaur.",
+    "It's against the law to catch, harm or disturb one, or to damage its pond."
+   ],
+   "learn": [
+    [
+     "Amphibian and Reptile Conservation: Great crested newt",
+     "https://www.arc-trust.org/great-crested-newt"
+    ],
+    [
+     "The Wildlife Trusts: Great crested newt",
+     "https://www.wildlifetrusts.org/wildlife-explorer/amphibians/great-crested-newt"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [],
+   "young": "larva",
+   "meta": "eft"
+  },
+  {
+   "id": "natterjack",
+   "name": "Natterjack Toad",
+   "sci": "Epidalea calamita",
+   "kind": "toad",
+   "family": "Bufonidae (true toads)",
+   "rarity": "Rare",
+   "months": [
+    3,
+    4,
+    5,
+    6
+   ],
+   "size": "6 to 8 cm",
+   "food": "Invertebrates",
+   "when": "Breeds from April to July",
+   "status": "Very rare: about 60 sites in Britain; strictly protected by law",
+   "habitats": [
+    "coast",
+    "heath",
+    "wetland"
+   ],
+   "life": "Spawn goes into warm, shallow pools that may dry up, so the tadpoles grow fast: toadlets can develop from spawn in 6 to 8 weeks.",
+   "facts": [
+    "A thin yellow stripe runs down the middle of its back.",
+    "With its short legs it runs rather than hops.",
+    "The males sing together on warm spring nights, and their rasping chorus can be heard up to a mile away.",
+    "Its spawn strings hold a single row of eggs, up to 7,500 in one clutch."
+   ],
+   "learn": [
+    [
+     "Amphibian and Reptile Conservation: Natterjack toad",
+     "https://www.arc-trust.org/natterjack-toad"
+    ],
+    [
+     "The Wildlife Trusts: Natterjack toad",
+     "https://www.wildlifetrusts.org/wildlife-explorer/amphibians/natterjack-toad"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [
+    "food"
+   ],
+   "young": "tadpole",
+   "meta": "toadlet"
+  },
+  {
+   "id": "pool-frog",
+   "name": "Pool Frog",
+   "sci": "Pelophylax lessonae",
+   "kind": "frog",
+   "family": "Ranidae (true frogs)",
+   "rarity": "Rare",
+   "months": [
+    4,
+    5
+   ],
+   "size": "Up to 6 cm",
+   "food": "Invertebrates",
+   "when": "Breeds in May and June, once the nights turn warm",
+   "status": "England's rarest amphibian; fully protected by law",
+   "habitats": [
+    "freshwater",
+    "wetland"
+   ],
+   "life": "Its spawn rafts are smaller than the common frog's, with eggs brown on top and yellowish underneath.",
+   "facts": [
+    "It died out in the wild in England in 1995, and was brought back to Norfolk with frogs from Sweden.",
+    "The males call loudly with a pair of balloon-like vocal sacs, one each side of the mouth.",
+    "Like its green frog relatives, it basks in the sun even on the hottest days.",
+    "Most of England's pool frogs are brown with dark blotches and a pale, often yellow, stripe down the back."
+   ],
+   "learn": [
+    [
+     "Amphibian and Reptile Conservation: Northern pool frog",
+     "https://www.arc-trust.org/pool-frog"
+    ],
+    [
+     "Amphibian and Reptile Conservation: England's rarest frog returns to Norfolk",
+     "https://www.arc-trust.org/pool-frog-norfolk-more-info"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [
+    "food",
+    "life"
+   ],
+   "young": "tadpole",
+   "meta": "froglet"
+  }
+ ],
+ "ie": [
+  {
+   "id": "common-frog",
+   "name": "Common Frog",
+   "sci": "Rana temporaria",
+   "kind": "frog",
+   "family": "Ranidae (true frogs)",
+   "rarity": "Common",
+   "months": [
+    0,
+    1,
+    2,
+    3
+   ],
+   "size": "Males up to 9 cm, females up to 13 cm",
+   "food": "Tadpoles: algae and water fleas. Adults: slugs, snails and other invertebrates",
+   "when": "Spawn from January (earliest in south-west England) to April",
+   "status": "Found in every county: Ireland's most widespread amphibian",
+   "habitats": [
+    "freshwater",
+    "towns",
+    "grassland",
+    "heath",
+    "farmland",
+    "wetland",
+    "woodland"
+   ],
+   "life": "Tadpoles hatch after 3 to 4 weeks, and turn into froglets about 10 weeks later; they're ready to breed at 2 to 3 years old.",
+   "facts": [
+    "A female can lay up to 4,000 eggs, and the jelly round each one keeps it up to 10°C warmer than the water.",
+    "Ireland's frogs are partly native: some survived the last ice age in an ice-free refuge in the south-west.",
+    "Males have a 'nuptial pad' on each front foot, to hold on to a female.",
+    "Older tadpoles are faintly speckled with gold."
+   ],
+   "learn": [
+    [
+     "Herpetological Society of Ireland: Common Frog",
+     "https://thehsi.org/native-reptiles-and-amphibians/common-frog/"
+    ],
+    [
+     "Amphibian and Reptile Conservation: Common frog",
+     "https://www.arc-trust.org/common-frog"
+    ],
+    [
+     "The Wildlife Trusts: Common frog",
+     "https://www.wildlifetrusts.org/wildlife-explorer/amphibians/common-frog"
+    ],
+    [
+     "Froglife: Common Frog",
+     "https://www.froglife.org/info-advice/amphibians-and-reptiles/common-frog-2/"
+    ]
+   ],
+   "src": [],
+   "garden": "a wildlife pond with shallow, sloping edges and no fish",
+   "unv": [],
+   "young": "tadpole",
+   "meta": "froglet"
+  },
+  {
+   "id": "smooth-newt",
+   "name": "Smooth Newt",
+   "sci": "Lissotriton vulgaris",
+   "kind": "newt",
+   "family": "Salamandridae (newts)",
+   "rarity": "Uncommon",
+   "months": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "size": "7 to 11 cm",
+   "food": "On land: insects, caterpillars, worms and slugs. In water: small crustaceans, snails and tadpoles",
+   "when": "In ponds from February to June",
+   "status": "Ireland's only newt: its only tailed amphibian",
+   "habitats": [
+    "freshwater",
+    "towns",
+    "grassland",
+    "woodland",
+    "farmland",
+    "wetland",
+    "heath",
+    "coast"
+   ],
+   "life": "Larvae grow their front legs first and breathe with feathery gills; the young leave the water in late summer once the gills are gone.",
+   "facts": [
+    "It's Ireland's only newt, and the only amphibian with a tail found in Ireland.",
+    "A female lays up to 300 eggs, folding each one inside a leaf of a water plant.",
+    "Its larvae grow front legs before back legs, the opposite of the common frog's tadpoles.",
+    "The young, called efts, leave the water looking like small adults, and take 2 to 3 years to grow up."
+   ],
+   "learn": [
+    [
+     "Herpetological Society of Ireland: Smooth Newt",
+     "https://thehsi.org/native-reptiles-and-amphibians/smooth-newt/"
+    ],
+    [
+     "Amphibian and Reptile Conservation: Smooth newt",
+     "https://www.arc-trust.org/smooth-newt"
+    ]
+   ],
+   "src": [
+    [
+     "Irish Wildlife Trust: Smooth Newt Survey",
+     "https://iwt.ie/what-we-do/citizen-science/smooth-newt-survey/"
+    ]
+   ],
+   "garden": "a wildlife pond with shallow, sloping edges and no fish",
+   "unv": [],
+   "young": "larva",
+   "meta": "eft"
+  },
+  {
+   "id": "natterjack",
+   "name": "Natterjack Toad",
+   "sci": "Epidalea calamita",
+   "kind": "toad",
+   "family": "Bufonidae (true toads)",
+   "rarity": "Rare",
+   "months": [
+    3,
+    4,
+    5,
+    6
+   ],
+   "size": "6 to 8 cm",
+   "food": "Invertebrates",
+   "when": "Breeds from April to July",
+   "status": "Ireland's rarest amphibian: naturally only on a handful of coastal sites in Kerry, with a few introduced populations",
+   "habitats": [
+    "coast",
+    "heath",
+    "wetland"
+   ],
+   "life": "Spawn goes into warm, shallow pools that may dry up, so the tadpoles grow fast: toadlets can develop from spawn in 6 to 8 weeks.",
+   "facts": [
+    "Ireland's only toad, and its most endangered native amphibian.",
+    "A yellow line runs the length of its back, which the common frog doesn't have.",
+    "Its short legs mean it can't hop like a frog.",
+    "Unlike the common frog, it staggers its breeding: some toads breed early in the season, others later."
+   ],
+   "learn": [
+    [
+     "Herpetological Society of Ireland: Natterjack Toad",
+     "https://thehsi.org/native-reptiles-and-amphibians/natterjack-toad/"
+    ],
+    [
+     "Amphibian and Reptile Conservation: Natterjack toad",
+     "https://www.arc-trust.org/natterjack-toad"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [
+    "food"
+   ],
+   "young": "tadpole",
+   "meta": "toadlet"
+  }
+ ],
+ "us": [
+  {
+   "id": "american-bullfrog",
+   "name": "American Bullfrog",
+   "sci": "Lithobates catesbeianus",
+   "kind": "frog",
+   "family": "Ranidae (true frogs)",
+   "rarity": "Common",
+   "months": [
+    4,
+    5,
+    6,
+    7
+   ],
+   "size": "9 to 20 cm (3.5 to 8 in): the largest frog in North America",
+   "food": "Insects, crayfish, snails, small fish, other amphibians, and even small birds and mammals",
+   "when": "Breeds from late spring through summer",
+   "status": "Native to the eastern and central United States; invasive where it has been introduced in the West",
+   "habitats": [
+    "freshwater",
+    "wetland"
+   ],
+   "life": "Tadpoles are large and may take 1 to 3 years to become frogs: often two winters in the water.",
+   "facts": [
+    "The male's deep call sounds like 'jug-o-rum'.",
+    "A female can lay up to 20,000 eggs in a floating, jelly-like mass.",
+    "Males have yellow throats, females white.",
+    "Grabbed by a predator, it lets out a loud, piercing scream."
+   ],
+   "learn": [
+    [
+     "National Park Service: American Bullfrogs Fast Facts",
+     "https://www.nps.gov/articles/000/american-bullfrogs-fast-facts.htm"
+    ],
+    [
+     "Savannah River Ecology Laboratory (University of Georgia): Bullfrog",
+     "https://srelherp.uga.edu/frogs-and-toads/bullfrog/"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [],
+   "young": "tadpole",
+   "meta": "froglet"
+  },
+  {
+   "id": "green-frog",
+   "name": "Green Frog",
+   "sci": "Lithobates clamitans",
+   "kind": "frog",
+   "family": "Ranidae (true frogs)",
+   "rarity": "Common",
+   "months": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+   ],
+   "size": "Up to 7.5 cm (3 in)",
+   "food": "Tadpoles: algae and detritus. Adults: insects, spiders, worms, crayfish, slugs and small frogs",
+   "when": "Breeds from March to September",
+   "status": "Common; not of immediate conservation concern",
+   "habitats": [
+    "freshwater",
+    "wetland",
+    "woodland"
+   ],
+   "life": "Females lay 1,000 to 7,000 eggs in floating sheets; the tadpoles turn into frogs in about 3 months.",
+   "facts": [
+    "Its call is a twangy 'plunk', like a loose banjo string.",
+    "Often bronze rather than green, so it's also called the bronze frog.",
+    "Ridges running from the eyes down the back tell it apart from a young bullfrog.",
+    "Males defend territories with calls, posturing and wrestling."
+   ],
+   "learn": [
+    [
+     "Savannah River Ecology Laboratory (University of Georgia): Green / Bronze Frog",
+     "https://srelherp.uga.edu/frogs-and-toads/green-bronze-frog/"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [],
+   "young": "tadpole",
+   "meta": "froglet"
+  },
+  {
+   "id": "northern-leopard-frog",
+   "name": "Northern Leopard Frog",
+   "sci": "Lithobates pipiens",
+   "kind": "frog",
+   "family": "Ranidae (true frogs)",
+   "rarity": "Common",
+   "months": [
+    3,
+    4,
+    5
+   ],
+   "size": "5 to 9 cm (2 to 3.5 in)",
+   "food": "Invertebrates",
+   "when": "Males start calling in late April",
+   "status": "Once the most widespread frog in North America, now declining in many places",
+   "habitats": [
+    "grassland",
+    "wetland",
+    "freshwater",
+    "farmland"
+   ],
+   "life": "A female can lay more than 6,000 eggs; the young frogs leave the water by early August to feed on land.",
+   "facts": [
+    "Named for its round, light-edged spots, like a leopard's.",
+    "In summer it may wander 1 to 2 miles from water into wet meadows and grassland.",
+    "Its call is a long, deep snore that ends in chuckles.",
+    "Minnesota has spotless leopard frogs too: the 'Burnsi' colour form."
+   ],
+   "learn": [
+    [
+     "Minnesota DNR: Northern leopard frog",
+     "https://www.dnr.state.mn.us/reptiles_amphibians/frogs_toads/truefrogs/northernleopard.html"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [
+    "food"
+   ],
+   "young": "tadpole",
+   "meta": "froglet"
+  },
+  {
+   "id": "wood-frog",
+   "name": "Wood Frog",
+   "sci": "Lithobates sylvaticus",
+   "kind": "frog",
+   "family": "Ranidae (true frogs)",
+   "rarity": "Uncommon",
+   "months": [
+    1,
+    2,
+    3
+   ],
+   "size": "3.7 to 7 cm (1.5 to 2.75 in)",
+   "food": "Invertebrates",
+   "when": "Breeds in late winter or early spring, sometimes before the ice has melted",
+   "status": "Widespread and secure",
+   "habitats": [
+    "woodland",
+    "wetland",
+    "freshwater",
+    "heath"
+   ],
+   "life": "Lays its eggs in pools that dry up by midsummer, so the tadpoles have to hurry: 40 to 90 days to become frogs.",
+   "facts": [
+    "It survives being frozen: its liver makes so much sugar that its cells aren't damaged, while its heart stops and it stops breathing.",
+    "It lives farther north than any other amphibian in the Western Hemisphere, above the Arctic Circle.",
+    "Its call sounds like a duck's quack.",
+    "A dark mask runs from its snout through each eye."
+   ],
+   "learn": [
+    [
+     "Savannah River Ecology Laboratory (University of Georgia): Wood Frog",
+     "https://srelherp.uga.edu/frogs-and-toads/wood-frog/"
+    ],
+    [
+     "National Park Service: Tiny Masters of Arctic Survival",
+     "https://www.nps.gov/kova/learn/nature/wood-frog.htm"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [
+    "food"
+   ],
+   "young": "tadpole",
+   "meta": "froglet"
+  },
+  {
+   "id": "spring-peeper",
+   "name": "Spring Peeper",
+   "sci": "Pseudacris crucifer",
+   "kind": "frog",
+   "family": "Hylidae (treefrogs and chorus frogs)",
+   "rarity": "Common",
+   "months": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "size": "Rarely over 2.5 cm (1 in)",
+   "food": "Small invertebrates",
+   "when": "Breeds in late winter and early spring",
+   "status": "Abundant and widespread",
+   "habitats": [
+    "woodland",
+    "wetland",
+    "freshwater",
+    "towns"
+   ],
+   "life": "Breeds in shallow, fish-free wetlands: marshes, seasonal ponds and ditches.",
+   "facts": [
+    "Named for the X on its back, though it's more often an imperfect X.",
+    "Its high-pitched 'peeep', rising at the end, is one of the first sounds of spring.",
+    "Much of its body can survive freezing in winter.",
+    "It copes with some towns and suburbs, if there are trees and fish-free ponds."
+   ],
+   "learn": [
+    [
+     "Savannah River Ecology Laboratory (University of Georgia): Spring Peeper",
+     "https://srelherp.uga.edu/frogs-and-toads/spring-peeper/"
+    ]
+   ],
+   "src": [],
+   "garden": "a wildlife pond with shallow, sloping edges and no fish",
+   "unv": [
+    "food",
+    "life"
+   ],
+   "young": "tadpole",
+   "meta": "froglet"
+  },
+  {
+   "id": "gray-treefrog",
+   "name": "Gray Treefrog",
+   "sci": "Hyla versicolor",
+   "kind": "frog",
+   "family": "Hylidae (treefrogs and chorus frogs)",
+   "rarity": "Uncommon",
+   "months": [
+    3,
+    4,
+    5,
+    6,
+    7
+   ],
+   "size": "3.2 to 6 cm (1.25 to 2.25 in)",
+   "food": "Tadpoles: algae and detritus. Adults: insects, spiders, snails and slugs",
+   "when": "Calls from late April to early August",
+   "status": "Widespread, with a large population",
+   "habitats": [
+    "woodland",
+    "towns",
+    "wetland",
+    "farmland"
+   ],
+   "life": "Eggs hatch in 3 to 7 days, and the tadpoles turn into frogs in 45 to 65 days.",
+   "facts": [
+    "It changes colour, green, gray or brown, with temperature and activity.",
+    "It spends the winter in trees and survives freezing by making glycerol.",
+    "Sticky pads on its toes help it climb.",
+    "Bright yellow or orange under its legs may startle predators."
+   ],
+   "learn": [
+    [
+     "Smithsonian's National Zoo: Gray tree frog",
+     "https://nationalzoo.si.edu/animals/gray-tree-frog"
+    ]
+   ],
+   "src": [],
+   "garden": "trees and a fish-free pond",
+   "unv": [],
+   "young": "tadpole",
+   "meta": "froglet"
+  },
+  {
+   "id": "pacific-treefrog",
+   "name": "Pacific Treefrog",
+   "sci": "Pseudacris regilla",
+   "kind": "frog",
+   "family": "Hylidae (treefrogs and chorus frogs)",
+   "rarity": "Common",
+   "months": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "size": "Under 5 cm (2 in)",
+   "food": "Invertebrates",
+   "when": "Calls year-round except in the driest and coldest weather",
+   "status": "Secure: the most widespread frog in Washington",
+   "habitats": [
+    "freshwater",
+    "wetland",
+    "woodland",
+    "grassland",
+    "towns",
+    "heath"
+   ],
+   "life": "Lays small, loose packets of 9 to 70 eggs on plants in still water; the tadpoles grow to about 5 cm before they change.",
+   "facts": [
+    "Also called the Pacific chorus frog; its call is a two-part 'rib-it'.",
+    "Its choruses can be heard from a long way off.",
+    "It has toe pads on its fingers and toes for climbing.",
+    "Usually green or brown, but gray, red and copper ones turn up too."
+   ],
+   "learn": [
+    [
+     "Washington Department of Fish and Wildlife: Pacific treefrog",
+     "https://wdfw.wa.gov/species-habitats/species/pseudacris-regilla"
+    ]
+   ],
+   "src": [],
+   "garden": "a wildlife pond with shallow, sloping edges and no fish",
+   "unv": [
+    "food",
+    "when"
+   ],
+   "young": "tadpole",
+   "meta": "froglet"
+  },
+  {
+   "id": "american-toad",
+   "name": "American Toad",
+   "sci": "Anaxyrus americanus",
+   "kind": "toad",
+   "family": "Bufonidae (true toads)",
+   "rarity": "Common",
+   "months": [
+    2,
+    3,
+    4,
+    5,
+    6
+   ],
+   "size": "5 to 9 cm (2 to 3.5 in)",
+   "food": "Tadpoles: algae and detritus. Adults: ants, beetles, moths and earthworms",
+   "when": "Breeds from March to July in most of its range",
+   "status": "Least Concern: widespread and tolerant of disturbed land",
+   "habitats": [
+    "woodland",
+    "grassland",
+    "towns",
+    "farmland",
+    "freshwater"
+   ],
+   "life": "Its eggs hatch in 3 to 12 days, and the tadpoles become toadlets in 1 to 2 months.",
+   "facts": [
+    "Lays 2,000 to 20,000 eggs in long double strings.",
+    "Its tadpoles often swim in dense schools for safety.",
+    "The male's call is a long, musical trill that can last 30 seconds.",
+    "Its skin and even its eggs contain toxins."
+   ],
+   "learn": [
+    [
+     "Savannah River Ecology Laboratory (University of Georgia): American Toad",
+     "https://srelherp.uga.edu/frogs-and-toads/american-toad/"
+    ]
+   ],
+   "src": [],
+   "garden": "a shallow, fish-free pond and some leaf litter",
+   "unv": [],
+   "young": "tadpole",
+   "meta": "toadlet"
+  },
+  {
+   "id": "fowlers-toad",
+   "name": "Fowler's Toad",
+   "sci": "Anaxyrus fowleri",
+   "kind": "toad",
+   "family": "Bufonidae (true toads)",
+   "rarity": "Uncommon",
+   "months": [
+    3,
+    4,
+    5
+   ],
+   "size": "5 to 7.5 cm (2 to 3 in)",
+   "food": "Small invertebrates",
+   "when": "Breeds in spring and early summer, after heavy rain",
+   "status": "Common across most of its range",
+   "habitats": [
+    "woodland",
+    "freshwater",
+    "coast",
+    "wetland"
+   ],
+   "life": "Lays long strings of eggs, sometimes more than 25,000; they hatch within days, and the tadpoles change in about two months.",
+   "facts": [
+    "Its call is a short, nasal bleat, like a sheep.",
+    "It has at least three warts in each dark spot on its back (an American toad has one or two).",
+    "It's mostly out on warm, humid summer nights.",
+    "It hybridizes with the American toad where the two live together."
+   ],
+   "learn": [
+    [
+     "Savannah River Ecology Laboratory (University of Georgia): Fowler's Toad",
+     "https://srelherp.uga.edu/frogs-and-toads/fowlers-toad/"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [],
+   "young": "tadpole",
+   "meta": "toadlet"
+  },
+  {
+   "id": "western-toad",
+   "name": "Western Toad",
+   "sci": "Anaxyrus boreas",
+   "kind": "toad",
+   "family": "Bufonidae (true toads)",
+   "rarity": "Uncommon",
+   "months": [
+    3,
+    4,
+    5,
+    6
+   ],
+   "size": "5 to 13 cm (2 to 5 in)",
+   "food": "Tadpoles: algae and detritus. Adults: mostly insects, and worms",
+   "when": "Breeds from mid-April at low elevations, later higher up",
+   "status": "Locally common, with declines in some places",
+   "habitats": [
+    "woodland",
+    "grassland",
+    "freshwater",
+    "wetland",
+    "heath"
+   ],
+   "life": "A female lays about 12,000 eggs in long strings; the tadpoles school with their brothers and sisters and change in about two months.",
+   "facts": [
+    "Newly changed toadlets leave their pond together for one to two weeks.",
+    "A single car can kill thousands of toadlets crossing a road.",
+    "Its parotoid glands, behind the eyes, make a poison that puts predators off.",
+    "Grabbed, it gives a 'release call'."
+   ],
+   "learn": [
+    [
+     "Washington Department of Fish and Wildlife: Western toad",
+     "https://wdfw.wa.gov/species-habitats/species/anaxyrus-boreas"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [],
+   "young": "tadpole",
+   "meta": "toadlet"
+  },
+  {
+   "id": "pickerel-frog",
+   "name": "Pickerel Frog",
+   "sci": "Lithobates palustris",
+   "kind": "frog",
+   "family": "Ranidae (true frogs)",
+   "rarity": "Uncommon",
+   "months": [
+    2,
+    3,
+    4
+   ],
+   "size": "4.5 to 7.5 cm",
+   "food": "Tadpoles: plants. Adults: mostly invertebrates",
+   "when": "Breeds from late March to early May",
+   "status": "Stable across most of its range",
+   "habitats": [
+    "freshwater",
+    "wetland",
+    "woodland"
+   ],
+   "life": "Lays balls of 700 to 3,000 eggs on underwater plants; the tadpoles take about 87 to 95 days to become frogs.",
+   "facts": [
+    "Two rows of square dark spots run down its back (a leopard frog's are round).",
+    "Its skin secretions are toxic to predators and can irritate human skin.",
+    "Bright yellow or orange under its hind legs may startle a predator.",
+    "Its call is a low, nasal snore."
+   ],
+   "learn": [
+    [
+     "Savannah River Ecology Laboratory (University of Georgia): Pickerel Frog",
+     "https://srelherp.uga.edu/frogs-and-toads/pickerel-frog/"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [],
+   "young": "tadpole",
+   "meta": "froglet"
+  },
+  {
+   "id": "eastern-newt",
+   "name": "Eastern Newt",
+   "sci": "Notophthalmus viridescens",
+   "kind": "newt",
+   "family": "Salamandridae (newts)",
+   "rarity": "Common",
+   "months": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "size": "7 to 12.5 cm (2.5 to 5 in)",
+   "food": "Invertebrates at every stage, including mosquito larvae",
+   "when": "Breeds in late winter and early spring",
+   "status": "Widespread, but threatened locally by habitat loss and disease",
+   "habitats": [
+    "freshwater",
+    "woodland",
+    "wetland"
+   ],
+   "life": "Larvae live in water for 2 to 5 months, then turn into land-living efts, which become aquatic adults after 2 to 3 years.",
+   "facts": [
+    "Its young spend years on land as a bright orange red eft, whose colour warns that its skin is toxic.",
+    "A female lays 200 to 400 eggs one at a time on water plants.",
+    "Adults turn yellowish-green but keep the red, black-ringed spots.",
+    "It can live 12 to 15 years."
+   ],
+   "learn": [
+    [
+     "Smithsonian's National Zoo: Eastern newt",
+     "https://nationalzoo.si.edu/animals/eastern-newt"
+    ],
+    [
+     "New York State DEC: Eastern (Red-Spotted) Newt",
+     "https://dec.ny.gov/nature/animals-fish-plants/amphibians-reptiles/eastern-red-spotted-newt"
+    ],
+    [
+     "Savannah River Ecology Laboratory (University of Georgia): Red-spotted Newt",
+     "https://srelherp.uga.edu/salamanders/red-spotted-newt/"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [],
+   "young": "larva",
+   "meta": "eft"
+  },
+  {
+   "id": "rough-skinned-newt",
+   "name": "Rough-skinned Newt",
+   "sci": "Taricha granulosa",
+   "kind": "newt",
+   "family": "Salamandridae (newts)",
+   "rarity": "Uncommon",
+   "months": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "size": "11 to 18 cm (4.3 to 7 in) long",
+   "food": "Invertebrates",
+   "when": "Courtship mostly in March and April at low elevations; after the snow melts higher up",
+   "status": "Common, with no widespread declines",
+   "habitats": [
+    "woodland",
+    "freshwater",
+    "wetland"
+   ],
+   "life": "Females lay their eggs one at a time and hide them in water plants; newts are the last salamanders to breed and to hatch each year.",
+   "facts": [
+    "Its skin is full of a strong poison, tetrodotoxin, that few predators survive (the common garter snake is the exception).",
+    "Threatened, it bends its head back towards its tail to show its bright orange belly.",
+    "It's the only salamander in Washington that hides its eggs in plants.",
+    "Wash your hands after touching one, and keep it away from small children."
+   ],
+   "learn": [
+    [
+     "Washington Department of Fish and Wildlife: Rough-skinned newt",
+     "https://wdfw.wa.gov/species-habitats/species/taricha-granulosa"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [
+    "food"
+   ],
+   "young": "larva",
+   "meta": "eft"
+  },
+  {
+   "id": "spotted-salamander",
+   "name": "Spotted Salamander",
+   "sci": "Ambystoma maculatum",
+   "kind": "salamander",
+   "family": "Ambystomatidae (mole salamanders)",
+   "rarity": "Uncommon",
+   "months": [
+    0,
+    1,
+    2,
+    3
+   ],
+   "size": "15 to 24 cm (6 to 9.5 in)",
+   "food": "Invertebrates",
+   "when": "Walks to its breeding pool on rainy nights in winter and early spring",
+   "status": "Common across most of its range",
+   "habitats": [
+    "woodland",
+    "wetland",
+    "freshwater"
+   ],
+   "life": "Lays clumps of up to 200 eggs in pools without fish; they hatch in 4 to 8 weeks, and the larvae change in 2 to 4 months.",
+   "facts": [
+    "Algae living in its egg masses make oxygen for the growing embryos.",
+    "It spends most of its life underground and is rarely seen outside the breeding season.",
+    "It can live about 20 years.",
+    "It needs temporary pools: fish would eat its eggs and larvae."
+   ],
+   "learn": [
+    [
+     "Savannah River Ecology Laboratory (University of Georgia): Spotted Salamander",
+     "https://srelherp.uga.edu/salamanders/spotted-salamander/"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [
+    "food"
+   ],
+   "young": "larva",
+   "meta": "juvenile"
+  },
+  {
+   "id": "jefferson-salamander",
+   "name": "Jefferson Salamander",
+   "sci": "Ambystoma jeffersonianum",
+   "kind": "salamander",
+   "family": "Ambystomatidae (mole salamanders)",
+   "rarity": "Rare",
+   "months": [
+    2,
+    3
+   ],
+   "size": "12 to 20 cm, half of it tail",
+   "food": "Insects and worms",
+   "when": "Moves to its pond on the first warm, rainy nights of spring (late March or early April)",
+   "status": "Of conservation concern in parts of its range",
+   "habitats": [
+    "woodland",
+    "freshwater",
+    "wetland"
+   ],
+   "life": "Lays clumps of eggs on underwater plants in woodland ponds; the larvae lose their gills by midsummer and leave for the forest.",
+   "facts": [
+    "It can live up to 30 years.",
+    "It spends the winter below the frost line in rodent burrows or cracks in rock.",
+    "It may have blue flecks on its sides and legs.",
+    "It needs clean ponds that don't dry up in summer."
+   ],
+   "learn": [
+    [
+     "Government of Ontario: Jefferson salamander",
+     "https://www.ontario.ca/page/jefferson-salamander"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [
+    "status"
+   ],
+   "young": "larva",
+   "meta": "juvenile"
+  },
+  {
+   "id": "two-lined-salamander",
+   "name": "Northern Two-lined Salamander",
+   "sci": "Eurycea bislineata",
+   "kind": "salamander",
+   "family": "Plethodontidae (lungless salamanders)",
+   "rarity": "Uncommon",
+   "months": [
+    3,
+    4,
+    5
+   ],
+   "size": "About 8 cm, half of it tail",
+   "food": "Insects and other invertebrates",
+   "when": "Breeds in autumn or spring; lays its eggs in spring",
+   "status": "Least Concern; no sign of widespread declines",
+   "habitats": [
+    "freshwater",
+    "woodland"
+   ],
+   "life": "Lays 20 to 50 eggs under submerged rocks, and the female often stays with them until they hatch, 1 to 2 months later; the larvae can take up to three years to grow up.",
+   "facts": [
+    "A lungless salamander, which dries out quickly, so it stays close to its stream.",
+    "A yellowish stripe down its back is edged by two black lines.",
+    "Its short, stocky legs suit fast-flowing water.",
+    "In summer it may wander a few hundred metres from its stream to hunt, and many are killed on roads."
+   ],
+   "learn": [
+    [
+     "Ontario Nature: Northern Two-lined Salamander",
+     "https://ontarionature.org/programs/community-science/reptile-amphibian-atlas/northern-two-lined-salamander/"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [],
+   "young": "larva",
+   "meta": "juvenile"
+  },
+  {
+   "id": "southern-leopard-frog",
+   "name": "Southern Leopard Frog",
+   "sci": "Lithobates sphenocephalus",
+   "kind": "frog",
+   "family": "Ranidae (true frogs)",
+   "rarity": "Common",
+   "months": [
+    11,
+    0,
+    1,
+    2,
+    3
+   ],
+   "size": "5 to 9 cm (2 to 3.5 in)",
+   "food": "Invertebrates",
+   "when": "Breeds mainly in winter and spring, sometimes again in autumn",
+   "status": "Common and widespread in the Southeast",
+   "habitats": [
+    "freshwater",
+    "wetland",
+    "grassland",
+    "coast"
+   ],
+   "life": "Breeds in almost any shallow freshwater, especially wetlands without fish.",
+   "facts": [
+    "Heavy winter rain can set off a burst of breeding.",
+    "Often seen crossing roads in large numbers on rainy nights.",
+    "Its call is a guttural, chuckling croak, like a low laugh.",
+    "It can live far from water and even tolerates slightly salty water."
+   ],
+   "learn": [
+    [
+     "Savannah River Ecology Laboratory (University of Georgia): Southern Leopard Frog",
+     "https://srelherp.uga.edu/frogs-and-toads/southern-leopard-frog/"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [
+    "food",
+    "life"
+   ],
+   "young": "tadpole",
+   "meta": "froglet"
+  },
+  {
+   "id": "green-treefrog",
+   "name": "Green Treefrog",
+   "sci": "Hyla cinerea",
+   "kind": "frog",
+   "family": "Hylidae (treefrogs and chorus frogs)",
+   "rarity": "Uncommon",
+   "months": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+   ],
+   "size": "3.2 to 5.7 cm (1.25 to 2.25 in)",
+   "food": "Insects",
+   "when": "Breeds from March to October",
+   "status": "Least Concern: common, with stable populations",
+   "habitats": [
+    "wetland",
+    "freshwater",
+    "towns"
+   ],
+   "life": "Males call from water plants and branches up to 5 m above weedy ponds and swamps.",
+   "facts": [
+    "On warm, rainy nights it hunts the insects drawn to porch lights.",
+    "Bright green, often with a pale stripe along each side.",
+    "Its call is a loud, nasal 'reeenk, reeenk'.",
+    "It has spread into new areas with potted plants and pine straw."
+   ],
+   "learn": [
+    [
+     "Savannah River Ecology Laboratory (University of Georgia): Green Treefrog",
+     "https://srelherp.uga.edu/frogs-and-toads/green-treefrog/"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [
+    "life"
+   ],
+   "young": "tadpole",
+   "meta": "froglet"
+  },
+  {
+   "id": "copes-gray-treefrog",
+   "name": "Cope's Gray Treefrog",
+   "sci": "Hyla chrysoscelis",
+   "kind": "frog",
+   "family": "Hylidae (treefrogs and chorus frogs)",
+   "rarity": "Uncommon",
+   "months": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+   ],
+   "size": "3.2 to 5.1 cm (1.25 to 2 in)",
+   "food": "Small invertebrates",
+   "when": "Breeds from March to August, peaking in early summer",
+   "status": "Widespread and abundant",
+   "habitats": [
+    "woodland",
+    "wetland",
+    "freshwater",
+    "towns"
+   ],
+   "life": "Breeds in fish-free wetlands such as woodland pools.",
+   "facts": [
+    "It looks exactly like the gray treefrog: the two are told apart by their calls, Cope's being faster and buzzier.",
+    "It has two sets of chromosomes; the gray treefrog has four.",
+    "It changes from mottled gray to light green.",
+    "Wash your hands after holding one: its skin can irritate eyes and cuts."
+   ],
+   "learn": [
+    [
+     "Savannah River Ecology Laboratory (University of Georgia): Cope's Gray Treefrog",
+     "https://srelherp.uga.edu/frogs-and-toads/copes-gray-treefrog/"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [
+    "life"
+   ],
+   "young": "tadpole",
+   "meta": "froglet"
+  },
+  {
+   "id": "cricket-frog",
+   "name": "Northern Cricket Frog",
+   "sci": "Acris crepitans",
+   "kind": "frog",
+   "family": "Hylidae (treefrogs and chorus frogs)",
+   "rarity": "Uncommon",
+   "months": [
+    3,
+    4,
+    5,
+    6,
+    7
+   ],
+   "size": "1.6 to 3.5 cm",
+   "food": "Insects",
+   "when": "Breeds in spring and summer",
+   "status": "Common in the Southeast, declining in parts of the Midwest",
+   "habitats": [
+    "freshwater",
+    "wetland"
+   ],
+   "life": "Lives along the edges of shallow, weedy ponds, lakes and slow streams.",
+   "facts": [
+    "Its call sounds like marbles clicking together.",
+    "A small, warty frog without toe pads: it hardly ever climbs.",
+    "Males fight over territories in the breeding season.",
+    "A jagged stripe on its thigh tells it from the southern cricket frog."
+   ],
+   "learn": [
+    [
+     "Savannah River Ecology Laboratory (University of Georgia): Northern Cricket Frog",
+     "https://srelherp.uga.edu/frogs-and-toads/northern-cricket-frog/"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [
+    "when",
+    "life"
+   ],
+   "young": "tadpole",
+   "meta": "froglet"
+  },
+  {
+   "id": "eastern-spadefoot",
+   "name": "Eastern Spadefoot",
+   "sci": "Scaphiopus holbrookii",
+   "kind": "toad",
+   "family": "Scaphiopodidae (American spadefoots)",
+   "rarity": "Rare",
+   "months": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11
+   ],
+   "size": "4 to 8 cm (1.6 to 3.1 in)",
+   "food": "Invertebrates",
+   "when": "Comes up to breed after heavy rain, at almost any time of year",
+   "status": "Locally common in the Southeast; of concern farther north",
+   "habitats": [
+    "grassland",
+    "towns",
+    "farmland",
+    "freshwater"
+   ],
+   "life": "Lays up to 2,500 eggs in temporary pools and puddles; the tadpoles can become toadlets in as little as 28 days.",
+   "facts": [
+    "It spends most of the year underground, digging with a hard, dark spade on each hind foot.",
+    "Its call is a low, nasal 'waaah', made while floating on the water.",
+    "Some people say it smells like peanut butter.",
+    "Handling one can make some people sneeze and wheeze."
+   ],
+   "learn": [
+    [
+     "Savannah River Ecology Laboratory (University of Georgia): Eastern Spadefoot Toad",
+     "https://srelherp.uga.edu/frogs-and-toads/eastern-spadefoot-toad/"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [
+    "food"
+   ],
+   "young": "tadpole",
+   "meta": "toadlet"
+  },
+  {
+   "id": "oak-toad",
+   "name": "Oak Toad",
+   "sci": "Anaxyrus quercicus",
+   "kind": "toad",
+   "family": "Bufonidae (true toads)",
+   "rarity": "Rare",
+   "months": [
+    3,
+    4,
+    5,
+    6,
+    7
+   ],
+   "size": "About 4.4 cm (1.75 in): the smallest toad in North America",
+   "food": "Small invertebrates",
+   "when": "Breeds in shallow pools after heavy rain",
+   "status": "Generally common in pine forests, but vulnerable to their loss",
+   "habitats": [
+    "woodland",
+    "grassland"
+   ],
+   "life": "Breeds in shallow, fish-free pools formed by heavy rain.",
+   "facts": [
+    "Unlike most toads, it's active by day.",
+    "Its call is a high-pitched chirp from a vocal sac that balloons out.",
+    "A light stripe runs down the middle of its back.",
+    "It lives in sandy pine forests of the southeastern Coastal Plain."
+   ],
+   "learn": [
+    [
+     "Savannah River Ecology Laboratory (University of Georgia): Oak Toad",
+     "https://srelherp.uga.edu/frogs-and-toads/oak-toad/"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [
+    "when",
+    "food",
+    "life"
+   ],
+   "young": "tadpole",
+   "meta": "toadlet"
+  },
+  {
+   "id": "california-red-legged-frog",
+   "name": "California Red-legged Frog",
+   "sci": "Rana draytonii",
+   "kind": "frog",
+   "family": "Ranidae (true frogs)",
+   "rarity": "Rare",
+   "months": [
+    10,
+    11,
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "size": "Up to 13.8 cm (5.4 in): the largest native frog in the western United States",
+   "food": "Tadpoles: algae. Adults: insects and other invertebrates; big ones eat treefrogs and mice",
+   "when": "Breeds from November to May, mostly during or after heavy rain",
+   "status": "Threatened (US Endangered Species Act, 1996); gone from 70% of its former range",
+   "habitats": [
+    "freshwater",
+    "wetland",
+    "grassland"
+   ],
+   "life": "Each egg mass holds 300 to 4,000 eggs, and fewer than 1% survive the tadpole stage.",
+   "facts": [
+    "Mark Twain's 'Celebrated Jumping Frog of Calaveras County' is thought to be this frog.",
+    "Named for the red of its belly and hind legs.",
+    "It has been brought back to the Santa Monica Mountains, where it now breeds on its own again.",
+    "Non-native bullfrogs, crayfish and fish are among its biggest threats."
+   ],
+   "learn": [
+    [
+     "U.S. Fish and Wildlife Service: California Red-legged Frog",
+     "https://www.fws.gov/species/california-red-legged-frog-rana-draytonii"
+    ],
+    [
+     "National Park Service: California Red-Legged Frogs",
+     "https://www.nps.gov/samo/learn/nature/redleggedfrogs.htm"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [
+    "life"
+   ],
+   "young": "tadpole",
+   "meta": "froglet"
+  },
+  {
+   "id": "california-newt",
+   "name": "California Newt",
+   "sci": "Taricha torosa",
+   "kind": "newt",
+   "family": "Salamandridae (newts)",
+   "rarity": "Rare",
+   "months": [
+    10,
+    11,
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+   ],
+   "size": "7 to 9 cm (2.75 to 3.5 in) snout to vent",
+   "food": "Larvae: small water invertebrates. Adults: worms, snails, slugs, insects, and amphibian eggs",
+   "when": "Lays eggs from November to July",
+   "status": "A California Species of Special Concern",
+   "habitats": [
+    "woodland",
+    "grassland",
+    "freshwater",
+    "heath"
+   ],
+   "life": "Lays balls of 7 to 47 eggs that hatch in 14 to 52 days; the larvae spend several months in the water and leave at the end of summer.",
+   "facts": [
+    "Its skin makes tetrodotoxin, the same poison as a pufferfish's.",
+    "It's found only in California, along the coast from Mendocino to San Diego County.",
+    "Pale yellow to orange underneath, with rough, grainy skin.",
+    "The young leave their pond and aren't thought to return to water until they breed."
+   ],
+   "learn": [
+    [
+     "National Park Service: California Newt",
+     "https://www.nps.gov/samo/learn/nature/californianewt.htm"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [],
+   "young": "larva",
+   "meta": "eft"
+  },
+  {
+   "id": "eastern-tiger-salamander",
+   "name": "Eastern Tiger Salamander",
+   "sci": "Ambystoma tigrinum",
+   "kind": "salamander",
+   "family": "Ambystomatidae (mole salamanders)",
+   "rarity": "Uncommon",
+   "months": [
+    0,
+    1,
+    2,
+    3
+   ],
+   "size": "Up to about 20 cm (8 in)",
+   "food": "Invertebrates",
+   "when": "Breeds in open, grassy ponds",
+   "status": "Widespread, but less common in the Southeast",
+   "habitats": [
+    "grassland",
+    "freshwater",
+    "wetland",
+    "woodland"
+   ],
+   "life": "The larvae grow astonishingly fast, reaching 13 to 15 cm in a couple of months before they change.",
+   "facts": [
+    "One of the largest land salamanders.",
+    "Usually black with yellow spots, blotches or bars.",
+    "It's more often found as eggs or larvae than as an adult.",
+    "In the Southeast it seems never to keep its gills as an adult."
+   ],
+   "learn": [
+    [
+     "Savannah River Ecology Laboratory (University of Georgia): Tiger Salamander",
+     "https://srelherp.uga.edu/salamanders/tiger-salamander/"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [
+    "when",
+    "food"
+   ],
+   "young": "larva",
+   "meta": "juvenile"
+  },
+  {
+   "id": "marbled-salamander",
+   "name": "Marbled Salamander",
+   "sci": "Ambystoma opacum",
+   "kind": "salamander",
+   "family": "Ambystomatidae (mole salamanders)",
+   "rarity": "Rare",
+   "months": [
+    8,
+    9,
+    10
+   ],
+   "size": "9 to 10.7 cm (3.5 to 4.25 in)",
+   "food": "Invertebrates",
+   "when": "Breeds in autumn (September and October), unlike most mole salamanders",
+   "status": "Common, but threatened by habitat loss",
+   "habitats": [
+    "woodland",
+    "wetland",
+    "freshwater"
+   ],
+   "life": "Lays 30 to 100 eggs in a dry hollow; the female stays with them until rain fills it, and the larvae take 2 to 9 months to change.",
+   "facts": [
+    "If no rain comes, its eggs can wait through the winter until spring.",
+    "Like many salamanders, it has poison glands in its tail.",
+    "It spends most of its life underground.",
+    "It needs fish-free, temporary pools."
+   ],
+   "learn": [
+    [
+     "Savannah River Ecology Laboratory (University of Georgia): Marbled Salamander",
+     "https://srelherp.uga.edu/salamanders/marbled-salamander/"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [
+    "food"
+   ],
+   "young": "larva",
+   "meta": "juvenile"
+  },
+  {
+   "id": "northern-dusky-salamander",
+   "name": "Northern Dusky Salamander",
+   "sci": "Desmognathus fuscus",
+   "kind": "salamander",
+   "family": "Plethodontidae (lungless salamanders)",
+   "rarity": "Uncommon",
+   "months": [
+    5,
+    6,
+    7
+   ],
+   "size": "6.4 to 12.7 cm (2.5 to 5 in)",
+   "food": "Invertebrates",
+   "when": "Lays its eggs under streamside debris",
+   "status": "Common",
+   "habitats": [
+    "freshwater",
+    "woodland"
+   ],
+   "life": "Its eggs are laid on land beside a stream, and the larvae finish growing in the water.",
+   "facts": [
+    "It hides under logs and rocks by day and moves along stream banks at night.",
+    "It usually has 6 to 8 pairs of golden spots on its back.",
+    "A lungless salamander, living in and near cool streams.",
+    "Males court females by rubbing them with a gland on the chin."
+   ],
+   "learn": [
+    [
+     "Savannah River Ecology Laboratory (University of Georgia): Northern / Spotted Dusky Salamander",
+     "https://srelherp.uga.edu/salamanders/northern-spotted-dusky-salamander/"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [
+    "when",
+    "food"
+   ],
+   "young": "larva",
+   "meta": "juvenile"
+  }
+ ],
+ "ca": [
+  {
+   "id": "wood-frog",
+   "name": "Wood Frog",
+   "sci": "Lithobates sylvaticus",
+   "kind": "frog",
+   "family": "Ranidae (true frogs)",
+   "rarity": "Common",
+   "months": [
+    1,
+    2,
+    3
+   ],
+   "size": "3.7 to 7 cm (1.5 to 2.75 in)",
+   "food": "Invertebrates",
+   "when": "Breeds in late winter or early spring, sometimes before the ice has melted",
+   "status": "Widespread and secure",
+   "habitats": [
+    "woodland",
+    "wetland",
+    "freshwater",
+    "heath"
+   ],
+   "life": "Lays its eggs in pools that dry up by midsummer, so the tadpoles have to hurry: 40 to 90 days to become frogs.",
+   "facts": [
+    "It survives being frozen: its liver makes so much sugar that its cells aren't damaged, while its heart stops and it stops breathing.",
+    "It lives farther north than any other amphibian in the Western Hemisphere, above the Arctic Circle.",
+    "Its call sounds like a duck's quack.",
+    "A dark mask runs from its snout through each eye."
+   ],
+   "learn": [
+    [
+     "Savannah River Ecology Laboratory (University of Georgia): Wood Frog",
+     "https://srelherp.uga.edu/frogs-and-toads/wood-frog/"
+    ],
+    [
+     "National Park Service: Tiny Masters of Arctic Survival",
+     "https://www.nps.gov/kova/learn/nature/wood-frog.htm"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [
+    "food"
+   ],
+   "young": "tadpole",
+   "meta": "froglet"
+  },
+  {
+   "id": "spring-peeper",
+   "name": "Spring Peeper",
+   "sci": "Pseudacris crucifer",
+   "kind": "frog",
+   "family": "Hylidae (treefrogs and chorus frogs)",
+   "rarity": "Common",
+   "months": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "size": "Rarely over 2.5 cm (1 in)",
+   "food": "Small invertebrates",
+   "when": "Breeds in late winter and early spring",
+   "status": "Abundant and widespread",
+   "habitats": [
+    "woodland",
+    "wetland",
+    "freshwater",
+    "towns"
+   ],
+   "life": "Breeds in shallow, fish-free wetlands: marshes, seasonal ponds and ditches.",
+   "facts": [
+    "Named for the X on its back, though it's more often an imperfect X.",
+    "Its high-pitched 'peeep', rising at the end, is one of the first sounds of spring.",
+    "Much of its body can survive freezing in winter.",
+    "It copes with some towns and suburbs, if there are trees and fish-free ponds."
+   ],
+   "learn": [
+    [
+     "Savannah River Ecology Laboratory (University of Georgia): Spring Peeper",
+     "https://srelherp.uga.edu/frogs-and-toads/spring-peeper/"
+    ]
+   ],
+   "src": [],
+   "garden": "a wildlife pond with shallow, sloping edges and no fish",
+   "unv": [
+    "food",
+    "life"
+   ],
+   "young": "tadpole",
+   "meta": "froglet"
+  },
+  {
+   "id": "northern-leopard-frog",
+   "name": "Northern Leopard Frog",
+   "sci": "Lithobates pipiens",
+   "kind": "frog",
+   "family": "Ranidae (true frogs)",
+   "rarity": "Common",
+   "months": [
+    3,
+    4,
+    5
+   ],
+   "size": "5 to 9 cm (2 to 3.5 in)",
+   "food": "Invertebrates",
+   "when": "Males start calling in late April",
+   "status": "Once the most widespread frog in North America, now declining in many places",
+   "habitats": [
+    "grassland",
+    "wetland",
+    "freshwater",
+    "farmland"
+   ],
+   "life": "A female can lay more than 6,000 eggs; the young frogs leave the water by early August to feed on land.",
+   "facts": [
+    "Named for its round, light-edged spots, like a leopard's.",
+    "In summer it may wander 1 to 2 miles from water into wet meadows and grassland.",
+    "Its call is a long, deep snore that ends in chuckles.",
+    "Minnesota has spotless leopard frogs too: the 'Burnsi' colour form."
+   ],
+   "learn": [
+    [
+     "Minnesota DNR: Northern leopard frog",
+     "https://www.dnr.state.mn.us/reptiles_amphibians/frogs_toads/truefrogs/northernleopard.html"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [
+    "food"
+   ],
+   "young": "tadpole",
+   "meta": "froglet"
+  },
+  {
+   "id": "green-frog",
+   "name": "Green Frog",
+   "sci": "Lithobates clamitans",
+   "kind": "frog",
+   "family": "Ranidae (true frogs)",
+   "rarity": "Common",
+   "months": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+   ],
+   "size": "Up to 7.5 cm (3 in)",
+   "food": "Tadpoles: algae and detritus. Adults: insects, spiders, worms, crayfish, slugs and small frogs",
+   "when": "Breeds from March to September",
+   "status": "Common; not of immediate conservation concern",
+   "habitats": [
+    "freshwater",
+    "wetland",
+    "woodland"
+   ],
+   "life": "Females lay 1,000 to 7,000 eggs in floating sheets; the tadpoles turn into frogs in about 3 months.",
+   "facts": [
+    "Its call is a twangy 'plunk', like a loose banjo string.",
+    "Often bronze rather than green, so it's also called the bronze frog.",
+    "Ridges running from the eyes down the back tell it apart from a young bullfrog.",
+    "Males defend territories with calls, posturing and wrestling."
+   ],
+   "learn": [
+    [
+     "Savannah River Ecology Laboratory (University of Georgia): Green / Bronze Frog",
+     "https://srelherp.uga.edu/frogs-and-toads/green-bronze-frog/"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [],
+   "young": "tadpole",
+   "meta": "froglet"
+  },
+  {
+   "id": "american-toad",
+   "name": "American Toad",
+   "sci": "Anaxyrus americanus",
+   "kind": "toad",
+   "family": "Bufonidae (true toads)",
+   "rarity": "Common",
+   "months": [
+    2,
+    3,
+    4,
+    5,
+    6
+   ],
+   "size": "5 to 9 cm (2 to 3.5 in)",
+   "food": "Tadpoles: algae and detritus. Adults: ants, beetles, moths and earthworms",
+   "when": "Breeds from March to July in most of its range",
+   "status": "Least Concern: widespread and tolerant of disturbed land",
+   "habitats": [
+    "woodland",
+    "grassland",
+    "towns",
+    "farmland",
+    "freshwater"
+   ],
+   "life": "Its eggs hatch in 3 to 12 days, and the tadpoles become toadlets in 1 to 2 months.",
+   "facts": [
+    "Lays 2,000 to 20,000 eggs in long double strings.",
+    "Its tadpoles often swim in dense schools for safety.",
+    "The male's call is a long, musical trill that can last 30 seconds.",
+    "Its skin and even its eggs contain toxins."
+   ],
+   "learn": [
+    [
+     "Savannah River Ecology Laboratory (University of Georgia): American Toad",
+     "https://srelherp.uga.edu/frogs-and-toads/american-toad/"
+    ]
+   ],
+   "src": [],
+   "garden": "a shallow, fish-free pond and some leaf litter",
+   "unv": [],
+   "young": "tadpole",
+   "meta": "toadlet"
+  },
+  {
+   "id": "boreal-chorus-frog",
+   "name": "Boreal Chorus Frog",
+   "sci": "Pseudacris maculata",
+   "kind": "frog",
+   "family": "Hylidae (treefrogs and chorus frogs)",
+   "rarity": "Common",
+   "months": [
+    2,
+    3,
+    4
+   ],
+   "size": "About 3 cm",
+   "food": "Small invertebrates",
+   "when": "Breeds very early in spring, often before the ice has melted",
+   "status": "Least Concern; not believed to be in significant decline",
+   "habitats": [
+    "woodland",
+    "wetland",
+    "freshwater",
+    "grassland"
+   ],
+   "life": "Lays 150 to 800 eggs in small clusters; they hatch within a few weeks, and the tadpoles change in about two months.",
+   "facts": [
+    "Its call sounds like a fingernail run along the teeth of a comb.",
+    "It can survive being frozen.",
+    "One of the first frogs out in spring, calling day and night.",
+    "Until 1989 it was thought to be the same species as the western chorus frog."
+   ],
+   "learn": [
+    [
+     "Ontario Nature: Boreal Chorus Frog",
+     "https://ontarionature.org/programs/community-science/reptile-amphibian-atlas/boreal-chorus-frog/"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [
+    "when"
+   ],
+   "young": "tadpole",
+   "meta": "froglet"
+  },
+  {
+   "id": "blue-spotted-salamander",
+   "name": "Blue-spotted Salamander",
+   "sci": "Ambystoma laterale",
+   "kind": "salamander",
+   "family": "Ambystomatidae (mole salamanders)",
+   "rarity": "Common",
+   "months": [
+    2,
+    3,
+    4
+   ],
+   "size": "Up to 14 cm",
+   "food": "Insects, spiders, worms and other invertebrates",
+   "when": "Breeds in early spring in woodland ponds and swamps",
+   "status": "Not at risk; a Specially Protected Amphibian in Ontario",
+   "habitats": [
+    "woodland",
+    "wetland",
+    "freshwater"
+   ],
+   "life": "Lays 200 to 500 eggs in small clusters on water plants; they hatch in 3 to 4 weeks and the larvae change by midsummer.",
+   "facts": [
+    "Black or gray-brown with bluish-white spots.",
+    "Some hybrid females have three, four or five sets of chromosomes.",
+    "Some of those hybrids have young that are clones of their mother.",
+    "It spends the winter underground in the forest."
+   ],
+   "learn": [
+    [
+     "Ontario Nature: Blue-spotted Salamander",
+     "https://ontarionature.org/programs/community-science/reptile-amphibian-atlas/blue-spotted-salamander/"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [
+    "when"
+   ],
+   "young": "larva",
+   "meta": "juvenile"
+  },
+  {
+   "id": "eastern-newt",
+   "name": "Eastern Newt",
+   "sci": "Notophthalmus viridescens",
+   "kind": "newt",
+   "family": "Salamandridae (newts)",
+   "rarity": "Common",
+   "months": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "size": "7 to 12.5 cm (2.5 to 5 in)",
+   "food": "Invertebrates at every stage, including mosquito larvae",
+   "when": "Breeds in late winter and early spring",
+   "status": "Widespread, but threatened locally by habitat loss and disease",
+   "habitats": [
+    "freshwater",
+    "woodland",
+    "wetland"
+   ],
+   "life": "Larvae live in water for 2 to 5 months, then turn into land-living efts, which become aquatic adults after 2 to 3 years.",
+   "facts": [
+    "Its young spend years on land as a bright orange red eft, whose colour warns that its skin is toxic.",
+    "A female lays 200 to 400 eggs one at a time on water plants.",
+    "Adults turn yellowish-green but keep the red, black-ringed spots.",
+    "It can live 12 to 15 years."
+   ],
+   "learn": [
+    [
+     "Smithsonian's National Zoo: Eastern newt",
+     "https://nationalzoo.si.edu/animals/eastern-newt"
+    ],
+    [
+     "New York State DEC: Eastern (Red-Spotted) Newt",
+     "https://dec.ny.gov/nature/animals-fish-plants/amphibians-reptiles/eastern-red-spotted-newt"
+    ],
+    [
+     "Savannah River Ecology Laboratory (University of Georgia): Red-spotted Newt",
+     "https://srelherp.uga.edu/salamanders/red-spotted-newt/"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [],
+   "young": "larva",
+   "meta": "eft"
+  },
+  {
+   "id": "american-bullfrog",
+   "name": "American Bullfrog",
+   "sci": "Lithobates catesbeianus",
+   "kind": "frog",
+   "family": "Ranidae (true frogs)",
+   "rarity": "Uncommon",
+   "months": [
+    4,
+    5,
+    6,
+    7
+   ],
+   "size": "9 to 20 cm (3.5 to 8 in): the largest frog in North America",
+   "food": "Insects, crayfish, snails, small fish, other amphibians, and even small birds and mammals",
+   "when": "Breeds from late spring through summer",
+   "status": "Native in eastern Canada; introduced (and a problem) in British Columbia",
+   "habitats": [
+    "freshwater",
+    "wetland"
+   ],
+   "life": "Tadpoles are large and may take 1 to 3 years to become frogs: often two winters in the water.",
+   "facts": [
+    "The male's deep call sounds like 'jug-o-rum'.",
+    "A female can lay up to 20,000 eggs in a floating, jelly-like mass.",
+    "Males have yellow throats, females white.",
+    "Grabbed by a predator, it lets out a loud, piercing scream."
+   ],
+   "learn": [
+    [
+     "National Park Service: American Bullfrogs Fast Facts",
+     "https://www.nps.gov/articles/000/american-bullfrogs-fast-facts.htm"
+    ],
+    [
+     "Savannah River Ecology Laboratory (University of Georgia): Bullfrog",
+     "https://srelherp.uga.edu/frogs-and-toads/bullfrog/"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [
+    "status"
+   ],
+   "young": "tadpole",
+   "meta": "froglet"
+  },
+  {
+   "id": "gray-treefrog",
+   "name": "Gray Treefrog",
+   "sci": "Hyla versicolor",
+   "kind": "frog",
+   "family": "Hylidae (treefrogs and chorus frogs)",
+   "rarity": "Uncommon",
+   "months": [
+    3,
+    4,
+    5,
+    6,
+    7
+   ],
+   "size": "3.2 to 6 cm (1.25 to 2.25 in)",
+   "food": "Tadpoles: algae and detritus. Adults: insects, spiders, snails and slugs",
+   "when": "Calls from late April to early August",
+   "status": "Widespread, with a large population",
+   "habitats": [
+    "woodland",
+    "towns",
+    "wetland",
+    "farmland"
+   ],
+   "life": "Eggs hatch in 3 to 7 days, and the tadpoles turn into frogs in 45 to 65 days.",
+   "facts": [
+    "It changes colour, green, gray or brown, with temperature and activity.",
+    "It spends the winter in trees and survives freezing by making glycerol.",
+    "Sticky pads on its toes help it climb.",
+    "Bright yellow or orange under its legs may startle predators."
+   ],
+   "learn": [
+    [
+     "Smithsonian's National Zoo: Gray tree frog",
+     "https://nationalzoo.si.edu/animals/gray-tree-frog"
+    ]
+   ],
+   "src": [],
+   "garden": "trees and a fish-free pond",
+   "unv": [],
+   "young": "tadpole",
+   "meta": "froglet"
+  },
+  {
+   "id": "mink-frog",
+   "name": "Mink Frog",
+   "sci": "Lithobates septentrionalis",
+   "kind": "frog",
+   "family": "Ranidae (true frogs)",
+   "rarity": "Uncommon",
+   "months": [
+    4,
+    5,
+    6
+   ],
+   "size": "Up to 7 cm",
+   "food": "Small invertebrates among water plants",
+   "when": "Breeds from late spring to midsummer",
+   "status": "Least Concern; thought to be stable",
+   "habitats": [
+    "freshwater",
+    "wetland"
+   ],
+   "life": "Lays a ball of 500 to 2,000 eggs on water plants; the tadpoles take one to two years to become frogs.",
+   "facts": [
+    "It gives off a musky smell, like a mink.",
+    "Its call is a quick series of croaks, like a hammer tapping on wood; a big chorus sounds like popcorn popping.",
+    "It lives in big, cold, weedy ponds, lakes and bogs, and spends the winter underwater.",
+    "It looks very like a green frog, but its belly is yellowish and its legs unbanded."
+   ],
+   "learn": [
+    [
+     "Ontario Nature: Mink Frog",
+     "https://ontarionature.org/programs/community-science/reptile-amphibian-atlas/mink-frog/"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [],
+   "young": "tadpole",
+   "meta": "froglet"
+  },
+  {
+   "id": "pickerel-frog",
+   "name": "Pickerel Frog",
+   "sci": "Lithobates palustris",
+   "kind": "frog",
+   "family": "Ranidae (true frogs)",
+   "rarity": "Uncommon",
+   "months": [
+    2,
+    3,
+    4
+   ],
+   "size": "4.5 to 7.5 cm",
+   "food": "Tadpoles: plants. Adults: mostly invertebrates",
+   "when": "Breeds from late March to early May",
+   "status": "Stable across most of its range",
+   "habitats": [
+    "freshwater",
+    "wetland",
+    "woodland"
+   ],
+   "life": "Lays balls of 700 to 3,000 eggs on underwater plants; the tadpoles take about 87 to 95 days to become frogs.",
+   "facts": [
+    "Two rows of square dark spots run down its back (a leopard frog's are round).",
+    "Its skin secretions are toxic to predators and can irritate human skin.",
+    "Bright yellow or orange under its hind legs may startle a predator.",
+    "Its call is a low, nasal snore."
+   ],
+   "learn": [
+    [
+     "Savannah River Ecology Laboratory (University of Georgia): Pickerel Frog",
+     "https://srelherp.uga.edu/frogs-and-toads/pickerel-frog/"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [],
+   "young": "tadpole",
+   "meta": "froglet"
+  },
+  {
+   "id": "pacific-treefrog",
+   "name": "Pacific Treefrog",
+   "sci": "Pseudacris regilla",
+   "kind": "frog",
+   "family": "Hylidae (treefrogs and chorus frogs)",
+   "rarity": "Uncommon",
+   "months": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "size": "Under 5 cm (2 in)",
+   "food": "Invertebrates",
+   "when": "Calls year-round except in the driest and coldest weather",
+   "status": "Yellow-listed (secure) in British Columbia",
+   "habitats": [
+    "freshwater",
+    "wetland",
+    "woodland",
+    "grassland",
+    "towns",
+    "heath"
+   ],
+   "life": "Lays small, loose packets of 9 to 70 eggs on plants in still water; the tadpoles grow to about 5 cm before they change.",
+   "facts": [
+    "Also called the Pacific chorus frog; its call is a two-part 'rib-it'.",
+    "Its choruses can be heard from a long way off.",
+    "It has toe pads on its fingers and toes for climbing.",
+    "Usually green or brown, but gray, red and copper ones turn up too."
+   ],
+   "learn": [
+    [
+     "Washington Department of Fish and Wildlife: Pacific treefrog",
+     "https://wdfw.wa.gov/species-habitats/species/pseudacris-regilla"
+    ],
+    [
+     "Province of British Columbia: Frogs & Toads",
+     "https://www2.gov.bc.ca/gov/content/environment/plants-animals-ecosystems/wildlife/wildlife-conservation/amphibians-reptiles/amphibians-in-b-c/frogs-toads"
+    ]
+   ],
+   "src": [],
+   "garden": "a wildlife pond with shallow, sloping edges and no fish",
+   "unv": [
+    "food",
+    "when"
+   ],
+   "young": "tadpole",
+   "meta": "froglet"
+  },
+  {
+   "id": "western-chorus-frog",
+   "name": "Western Chorus Frog",
+   "sci": "Pseudacris triseriata",
+   "kind": "frog",
+   "family": "Hylidae (treefrogs and chorus frogs)",
+   "rarity": "Uncommon",
+   "months": [
+    2,
+    3
+   ],
+   "size": "About 3 cm",
+   "food": "Small invertebrates",
+   "when": "Calls from mid-March, mostly in April, sometimes while there's still ice",
+   "status": "The Great Lakes–St. Lawrence population is Threatened (Species at Risk Act)",
+   "habitats": [
+    "wetland",
+    "grassland",
+    "woodland",
+    "freshwater"
+   ],
+   "life": "Lays 400 to 1,500 eggs in loose masses; they hatch within a few weeks, and the tadpoles change by early or midsummer.",
+   "facts": [
+    "Its call sounds like running a fingernail along the teeth of a comb.",
+    "It can survive being frozen.",
+    "It has declined by 37% in Quebec since the 1950s, mainly through habitat loss.",
+    "Three dark stripes run down its back."
+   ],
+   "learn": [
+    [
+     "Ontario Nature: Western Chorus Frog",
+     "https://ontarionature.org/programs/community-science/reptile-amphibian-atlas/western-chorus-frog/"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [],
+   "young": "tadpole",
+   "meta": "froglet"
+  },
+  {
+   "id": "canadian-toad",
+   "name": "Canadian Toad",
+   "sci": "Anaxyrus hemiophrys",
+   "kind": "toad",
+   "family": "Bufonidae (true toads)",
+   "rarity": "Uncommon",
+   "months": [
+    4,
+    5
+   ],
+   "size": "5 to 9 cm (2 to 3.5 in)",
+   "food": "Invertebrates",
+   "when": "Breeds in May and June",
+   "status": "'May Be At Risk' in Alberta",
+   "habitats": [
+    "grassland",
+    "wetland",
+    "freshwater"
+   ],
+   "life": "Lays up to 20,000 eggs in shallow water; they hatch in about a week, and the tadpoles become toads in 6 weeks.",
+   "facts": [
+    "Hundreds may spend the winter together in mounds, in burrows below the frost line.",
+    "A hard bump (a 'boss') between its eyes tells it from the American toad.",
+    "It's more at home in water than most toads, around prairie wetlands.",
+    "Its trill is like an American toad's, but lower and shorter."
+   ],
+   "learn": [
+    [
+     "Minnesota DNR: Canadian toad",
+     "https://dnr.state.mn.us/reptiles_amphibians/frogs_toads/toads/canadian.html"
+    ],
+    [
+     "Government of Alberta: Amphibian species at risk",
+     "https://www.alberta.ca/amphibian-species-at-risk"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [
+    "food"
+   ],
+   "young": "tadpole",
+   "meta": "toadlet"
+  },
+  {
+   "id": "western-toad",
+   "name": "Western Toad",
+   "sci": "Anaxyrus boreas",
+   "kind": "toad",
+   "family": "Bufonidae (true toads)",
+   "rarity": "Uncommon",
+   "months": [
+    3,
+    4,
+    5,
+    6
+   ],
+   "size": "5 to 13 cm (2 to 5 in)",
+   "food": "Tadpoles: algae and detritus. Adults: mostly insects, and worms",
+   "when": "Breeds from mid-April at low elevations, later higher up",
+   "status": "Yellow-listed in British Columbia; declines in some places",
+   "habitats": [
+    "woodland",
+    "grassland",
+    "freshwater",
+    "wetland",
+    "heath"
+   ],
+   "life": "A female lays about 12,000 eggs in long strings; the tadpoles school with their brothers and sisters and change in about two months.",
+   "facts": [
+    "Newly changed toadlets leave their pond together for one to two weeks.",
+    "A single car can kill thousands of toadlets crossing a road.",
+    "Its parotoid glands, behind the eyes, make a poison that puts predators off.",
+    "Grabbed, it gives a 'release call'."
+   ],
+   "learn": [
+    [
+     "Washington Department of Fish and Wildlife: Western toad",
+     "https://wdfw.wa.gov/species-habitats/species/anaxyrus-boreas"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [],
+   "young": "tadpole",
+   "meta": "toadlet"
+  },
+  {
+   "id": "rough-skinned-newt",
+   "name": "Rough-skinned Newt",
+   "sci": "Taricha granulosa",
+   "kind": "newt",
+   "family": "Salamandridae (newts)",
+   "rarity": "Uncommon",
+   "months": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ],
+   "size": "11 to 18 cm (4.3 to 7 in) long",
+   "food": "Invertebrates",
+   "when": "Courtship mostly in March and April at low elevations; after the snow melts higher up",
+   "status": "Common, with no widespread declines",
+   "habitats": [
+    "woodland",
+    "freshwater",
+    "wetland"
+   ],
+   "life": "Females lay their eggs one at a time and hide them in water plants; newts are the last salamanders to breed and to hatch each year.",
+   "facts": [
+    "Its skin is full of a strong poison, tetrodotoxin, that few predators survive (the common garter snake is the exception).",
+    "Threatened, it bends its head back towards its tail to show its bright orange belly.",
+    "It's the only salamander in Washington that hides its eggs in plants.",
+    "Wash your hands after touching one, and keep it away from small children."
+   ],
+   "learn": [
+    [
+     "Washington Department of Fish and Wildlife: Rough-skinned newt",
+     "https://wdfw.wa.gov/species-habitats/species/taricha-granulosa"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [
+    "food"
+   ],
+   "young": "larva",
+   "meta": "eft"
+  },
+  {
+   "id": "spotted-salamander",
+   "name": "Spotted Salamander",
+   "sci": "Ambystoma maculatum",
+   "kind": "salamander",
+   "family": "Ambystomatidae (mole salamanders)",
+   "rarity": "Uncommon",
+   "months": [
+    0,
+    1,
+    2,
+    3
+   ],
+   "size": "15 to 24 cm (6 to 9.5 in)",
+   "food": "Invertebrates",
+   "when": "Walks to its breeding pool on rainy nights in winter and early spring",
+   "status": "Common across most of its range",
+   "habitats": [
+    "woodland",
+    "wetland",
+    "freshwater"
+   ],
+   "life": "Lays clumps of up to 200 eggs in pools without fish; they hatch in 4 to 8 weeks, and the larvae change in 2 to 4 months.",
+   "facts": [
+    "Algae living in its egg masses make oxygen for the growing embryos.",
+    "It spends most of its life underground and is rarely seen outside the breeding season.",
+    "It can live about 20 years.",
+    "It needs temporary pools: fish would eat its eggs and larvae."
+   ],
+   "learn": [
+    [
+     "Savannah River Ecology Laboratory (University of Georgia): Spotted Salamander",
+     "https://srelherp.uga.edu/salamanders/spotted-salamander/"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [
+    "food"
+   ],
+   "young": "larva",
+   "meta": "juvenile"
+  },
+  {
+   "id": "long-toed-salamander",
+   "name": "Long-toed Salamander",
+   "sci": "Ambystoma macrodactylum",
+   "kind": "salamander",
+   "family": "Ambystomatidae (mole salamanders)",
+   "rarity": "Uncommon",
+   "months": [
+    1,
+    2,
+    3,
+    4
+   ],
+   "size": "Larvae change at about 7 cm",
+   "food": "Invertebrates",
+   "when": "May be the earliest-breeding amphibian in British Columbia, crossing snow to its pond",
+   "status": "Secure (Yellow-listed) in British Columbia",
+   "habitats": [
+    "woodland",
+    "freshwater",
+    "heath",
+    "wetland"
+   ],
+   "life": "Lays up to 400 eggs, singly or in small clusters; they hatch in 2 to 3 weeks, and at high elevations the larvae may spend the winter in the pond.",
+   "facts": [
+    "A yellow-green or orange-green stripe with ragged edges runs down its back.",
+    "It lays its eggs before the ice has fully melted.",
+    "It lives 6 to 10 years.",
+    "When it changes, it absorbs its gills and tail fins and starts breathing with lungs."
+   ],
+   "learn": [
+    [
+     "B.C. Reptiles & Amphibians: Long-toed Salamander",
+     "https://bcreptilesandamphibians.ca/long-toed-salamander/"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [
+    "when",
+    "food"
+   ],
+   "young": "larva",
+   "meta": "juvenile"
+  },
+  {
+   "id": "western-tiger-salamander",
+   "name": "Western Tiger Salamander",
+   "sci": "Ambystoma mavortium",
+   "kind": "salamander",
+   "family": "Ambystomatidae (mole salamanders)",
+   "rarity": "Uncommon",
+   "months": [
+    3,
+    4,
+    5
+   ],
+   "size": "15 to 20 cm, sometimes over 30 cm",
+   "food": "Invertebrates and other larvae",
+   "when": "Comes up from underground on warm spring rains",
+   "status": "Southern Mountain population Endangered (Species at Risk Act)",
+   "habitats": [
+    "grassland",
+    "freshwater",
+    "wetland"
+   ],
+   "life": "Lays 100 to 5,000 eggs in clusters; they hatch in 2 to 3 weeks, and most larvae change in late summer.",
+   "facts": [
+    "Some larvae never leave the water: they grow up keeping their gills.",
+    "When food is short, some larvae grow big mouths and teeth and eat other larvae.",
+    "Larvae seem to avoid eating their own brothers and sisters, perhaps by smell.",
+    "It can live more than 25 years."
+   ],
+   "learn": [
+    [
+     "B.C. Reptiles & Amphibians: Western Tiger Salamander",
+     "https://bcreptilesandamphibians.ca/western-tiger-salamander/"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [
+    "when"
+   ],
+   "young": "larva",
+   "meta": "juvenile"
+  },
+  {
+   "id": "two-lined-salamander",
+   "name": "Northern Two-lined Salamander",
+   "sci": "Eurycea bislineata",
+   "kind": "salamander",
+   "family": "Plethodontidae (lungless salamanders)",
+   "rarity": "Uncommon",
+   "months": [
+    3,
+    4,
+    5
+   ],
+   "size": "About 8 cm, half of it tail",
+   "food": "Insects and other invertebrates",
+   "when": "Breeds in autumn or spring; lays its eggs in spring",
+   "status": "Least Concern; no sign of widespread declines",
+   "habitats": [
+    "freshwater",
+    "woodland"
+   ],
+   "life": "Lays 20 to 50 eggs under submerged rocks, and the female often stays with them until they hatch, 1 to 2 months later; the larvae can take up to three years to grow up.",
+   "facts": [
+    "A lungless salamander, which dries out quickly, so it stays close to its stream.",
+    "A yellowish stripe down its back is edged by two black lines.",
+    "Its short, stocky legs suit fast-flowing water.",
+    "In summer it may wander a few hundred metres from its stream to hunt, and many are killed on roads."
+   ],
+   "learn": [
+    [
+     "Ontario Nature: Northern Two-lined Salamander",
+     "https://ontarionature.org/programs/community-science/reptile-amphibian-atlas/northern-two-lined-salamander/"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [],
+   "young": "larva",
+   "meta": "juvenile"
+  },
+  {
+   "id": "fowlers-toad",
+   "name": "Fowler's Toad",
+   "sci": "Anaxyrus fowleri",
+   "kind": "toad",
+   "family": "Bufonidae (true toads)",
+   "rarity": "Rare",
+   "months": [
+    3,
+    4,
+    5
+   ],
+   "size": "5 to 7.5 cm (2 to 3 in)",
+   "food": "Small invertebrates",
+   "when": "Breeds in spring and early summer, after heavy rain",
+   "status": "Endangered: in Canada only on three peninsulas on the north shore of Lake Erie",
+   "habitats": [
+    "woodland",
+    "freshwater",
+    "coast",
+    "wetland"
+   ],
+   "life": "Lays long strings of eggs, sometimes more than 25,000; they hatch within days, and the tadpoles change in about two months.",
+   "facts": [
+    "Its call is a short, nasal bleat, like a sheep.",
+    "It has at least three warts in each dark spot on its back (an American toad has one or two).",
+    "It's mostly out on warm, humid summer nights.",
+    "It hybridizes with the American toad where the two live together."
+   ],
+   "learn": [
+    [
+     "Savannah River Ecology Laboratory (University of Georgia): Fowler's Toad",
+     "https://srelherp.uga.edu/frogs-and-toads/fowlers-toad/"
+    ],
+    [
+     "Government of Canada: Recovery Strategy for the Fowler's Toad",
+     "https://www.canada.ca/en/environment-climate-change/services/species-risk-public-registry/recovery-strategies/fowlers-toad-2019.html"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [],
+   "young": "tadpole",
+   "meta": "toadlet"
+  },
+  {
+   "id": "jefferson-salamander",
+   "name": "Jefferson Salamander",
+   "sci": "Ambystoma jeffersonianum",
+   "kind": "salamander",
+   "family": "Ambystomatidae (mole salamanders)",
+   "rarity": "Rare",
+   "months": [
+    2,
+    3
+   ],
+   "size": "12 to 20 cm, half of it tail",
+   "food": "Insects and worms",
+   "when": "Moves to its pond on the first warm, rainy nights of spring (late March or early April)",
+   "status": "Endangered in Canada",
+   "habitats": [
+    "woodland",
+    "freshwater",
+    "wetland"
+   ],
+   "life": "Lays clumps of eggs on underwater plants in woodland ponds; the larvae lose their gills by midsummer and leave for the forest.",
+   "facts": [
+    "It can live up to 30 years.",
+    "It spends the winter below the frost line in rodent burrows or cracks in rock.",
+    "It may have blue flecks on its sides and legs.",
+    "It needs clean ponds that don't dry up in summer."
+   ],
+   "learn": [
+    [
+     "Government of Ontario: Jefferson salamander",
+     "https://www.ontario.ca/page/jefferson-salamander"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [],
+   "young": "larva",
+   "meta": "juvenile"
+  },
+  {
+   "id": "great-basin-spadefoot",
+   "name": "Great Basin Spadefoot",
+   "sci": "Spea intermontana",
+   "kind": "toad",
+   "family": "Scaphiopodidae (American spadefoots)",
+   "rarity": "Rare",
+   "months": [
+    3,
+    4,
+    5,
+    6
+   ],
+   "size": "4 to 6 cm",
+   "food": "Invertebrates",
+   "when": "Breeds from April to July",
+   "status": "Threatened (Species at Risk Act)",
+   "habitats": [
+    "grassland",
+    "heath",
+    "freshwater"
+   ],
+   "life": "Breeds in temporary and permanent ponds; its tadpoles are gray and round with gold flecks.",
+   "facts": [
+    "It digs into the ground with a sharp-edged dark spade on each hind foot.",
+    "It shelters in burrows by day and through dry spells.",
+    "In Canada it lives only in the dry valleys of south-central British Columbia.",
+    "Its eyes have vertical pupils."
+   ],
+   "learn": [
+    [
+     "Government of Canada: Recovery Strategy for the Great Basin Spadefoot",
+     "https://www.canada.ca/en/environment-climate-change/services/species-risk-public-registry/recovery-strategies/great-basin-spadefoot-spea-intermontana-2017.html"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [
+    "food",
+    "life"
+   ],
+   "young": "tadpole",
+   "meta": "toadlet"
+  },
+  {
+   "id": "coastal-tailed-frog",
+   "name": "Coastal Tailed Frog",
+   "sci": "Ascaphus truei",
+   "kind": "frog",
+   "family": "Ascaphidae (tailed frogs)",
+   "rarity": "Rare",
+   "months": [
+    6,
+    7
+   ],
+   "size": "2.5 to 5 cm (1 to 2 in)",
+   "food": "Invertebrates",
+   "when": "Lives in cold, fast mountain streams",
+   "status": "Special Concern in Canada; Blue-listed in British Columbia",
+   "habitats": [
+    "freshwater",
+    "woodland",
+    "heath"
+   ],
+   "life": "Its tadpoles cling to rocks in fast water with a round, sucker-like mouth, and can take up to 4 years to change.",
+   "facts": [
+    "The male's 'tail' is really an organ for mating.",
+    "It has no voice.",
+    "It can live up to 20 years, one of the longest-lived frogs.",
+    "Its closest living relatives are in New Zealand."
+   ],
+   "learn": [
+    [
+     "National Park Service: Tailed Frog",
+     "https://www.nps.gov/articles/000/tailed-frog.htm"
+    ],
+    [
+     "Province of British Columbia: Frogs & Toads",
+     "https://www2.gov.bc.ca/gov/content/environment/plants-animals-ecosystems/wildlife/wildlife-conservation/amphibians-reptiles/amphibians-in-b-c/frogs-toads"
+    ]
+   ],
+   "src": [],
+   "garden": null,
+   "unv": [
+    "when",
+    "food"
+   ],
+   "young": "tadpole",
+   "meta": "froglet"
+  }
+ ]
+}

@@ -106,6 +106,11 @@
   .rd-flow blockquote { margin: 0 0 .75em 1.2em; }
   .rd-flow pre { white-space: pre-wrap; }
   .rd-toc-panel { position: absolute; inset: 0; background: var(--stone); overflow: auto; padding: 16px 24px; display: flex; flex-direction: column; gap: 8px; }
+  .st-group { display: flex; flex-direction: column; gap: 6px; margin: 4px 0; color: var(--ink); font-size: 14px; }
+  .st-opt { flex-direction: row; align-items: flex-start; gap: 8px; color: var(--ink); font-size: 14px; }
+  .st-opt input { margin-top: 3px; flex: none; }
+  .storybar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; border: 1px solid var(--rune); border-radius: 8px;
+              padding: 6px 10px; margin: 10px 0 0; }
   @media (prefers-reduced-motion: reduce) { .rd-mark.ticked { animation: none; } }
 </style>
 <script src="/lang.js"></script>
@@ -123,6 +128,8 @@
       "unlocking the word-hoard" (wordhord onleac).</p>
     <p class="note" id="note"></p>
     <p class="sub" id="napNote" hidden></p>
+    <div class="sub storybar" id="storyBar" hidden><span id="storyBarText"></span>
+      <button type="button" class="danger" onclick="storyStop()">Stop</button></div>
     <p class="sub warn" id="openWarn" hidden>The Den password is off, so anyone on this network could download the e-books on
       the shelf. You can set one in the Den, under Care and Accessibility.</p>
   </header>
@@ -207,11 +214,33 @@
     <button type="button" class="ghost" id="rd-close">Close</button>
     <span class="rd-title" id="rd-title" data-nolang></span>
     <button type="button" class="ghost" id="rd-toc" aria-label="Contents" title="Contents"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg></button>
+    <button type="button" class="ghost" id="rd-story" aria-label="Read me a story" title="Read me a story"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg></button>
     <button type="button" class="ghost" id="rd-smaller" aria-label="Smaller text">A−</button>
     <button type="button" class="ghost" id="rd-bigger" aria-label="Larger text">A+</button>
   </div>
   <div class="rd-stage"><label class="rd-mark" id="rd-mark-wrap" hidden><input type="checkbox" id="rd-mark"> Marked as read</label><div class="rd-flow" id="rd-flow" data-nolang></div>
-    <div class="rd-toc-panel" id="rd-toc-panel" hidden><h3>Contents</h3><div id="rd-toc-list" data-nolang></div></div></div>
+    <div class="rd-toc-panel" id="rd-toc-panel" hidden><h3>Contents</h3><div id="rd-toc-list" data-nolang></div></div>
+    <div class="rd-toc-panel" id="rd-story-panel" hidden><h3>Read me a story</h3>
+      <p class="sub" id="st-status" aria-live="polite"></p>
+      <div class="st-group" role="radiogroup" aria-label="Read it through"><b>Read it through</b>
+        <label class="st-opt"><input type="radio" name="st-voice" value="dot"> <span>The Echo Dot <span class="sub" id="st-dot-note"></span></span></label>
+        <label class="st-opt"><input type="radio" name="st-voice" value="phone"> <span>The phone's voice <span class="sub" id="st-phone-note"></span></span></label></div>
+      <div class="st-group" role="radiogroup" aria-label="What to read"><b>What to read</b>
+        <label class="st-opt"><input type="radio" name="st-scope" value="page"> <span>This page <span class="sub">(from its first sentence to the end of its last)</span></span></label>
+        <label class="st-opt"><input type="radio" name="st-scope" value="chapter" checked> <span>This chapter <span class="sub">(from this page to the chapter's end)</span></span></label>
+        <label class="st-opt"><input type="radio" name="st-scope" value="book"> <span>The whole book <span class="sub">(from this page to the end, leaving out the index, notes and the like)</span></span></label></div>
+      <label class="st-group">Stop after <select id="st-minutes"><option value="0">When it's finished</option>
+        <option value="5">5 minutes</option><option value="10">10 minutes</option><option value="15">15 minutes</option>
+        <option value="20">20 minutes</option><option value="30">30 minutes</option><option value="45">45 minutes</option>
+        <option value="60">1 hour</option><option value="90">1½ hours</option><option value="120">2 hours</option></select></label>
+      <div class="actions"><button type="button" class="primary" id="st-start">Start reading</button>
+        <button type="button" class="danger" id="st-stop" hidden>Stop</button>
+        <button type="button" id="st-goto" hidden>Go to where <span class="pn" data-nolang></span> stopped reading</button>
+        <button type="button" class="ghost" id="st-close">Back to the book</button></div>
+      <p class="sub">The page you're on is where it starts. Footnote markers, notes and page numbers are left out, so the
+        story flows. Once it's started, the phone can be locked or put away: <span class="pn" data-nolang></span> reads on by
+        itself, through quiet hours too, and stops at the end of a sentence. Listening doesn't count towards the pages
+        you've read: only reading on screen does.</p></div></div>
   <div class="rd-bot">
     <button type="button" id="rd-prev" aria-label="Previous page">‹</button>
     <span class="mono rd-where" id="rd-where" aria-live="polite"></span>
@@ -253,7 +282,7 @@ async function load() {
 
 function bookCard(b) {
   const isP = b.mode === 'pages', frozen = b.status === 'frozen';
-  const where = isP ? `Page ${num(b.progress)} of ${num(b.pages)}` : `${fmtPct(b.progress)} · ${num(b.pages)} pages`;
+  const where = isP ? `Page ${num(b.progress)} of ${num(b.pages)}` : `tracking by % · ${num(b.pages)} pages`;   // (the % is shown just before)
   const today = b.loggedAt && new Date(b.loggedAt * 1000).toDateString() === new Date().toDateString();
   return `<div class="card${frozen ? ' frozen' : ''}" id="bk-${b.id}"><div class="bk">${cover(b)}
     <div class="meta"><b>${esc(b.title)}</b><span class="sub">${esc(b.author || 'Unknown author')}</span>
@@ -283,6 +312,7 @@ function render() {
   $('score').textContent = num(L.score); $('ttl').textContent = L.title;
   $('nextTtl').textContent = L.next_title ? `(${num(L.next_title[0] - L.score)} to ${L.next_title[1]})` : '';
   renderShelf();
+  storyBar();
   $('curCount').textContent = `${L.reading.length} of ${L.max}`;
   $('cur').innerHTML = L.reading.length ? L.reading.map(bookCard).join('')
     : `<p class="empty">No books on the go. Find the book you're reading below and start it.</p>`;
@@ -976,7 +1006,7 @@ function rdMarkPieces(ks) { const R = RD; ks.forEach(k => { R.read.add(k); R.man
 function rdFlush() {
   const R = RD; if (!R) return;
   const t = Date.now(), dt = Math.min(5, (t - R.last) / 1000); R.last = t;
-  if (!R.auto || R.loading || document.hidden || !$('rd-toc-panel').hidden || dt <= 0 || R.viewed.has(R.page)) return;
+  if (!R.auto || R.loading || document.hidden || !$('rd-toc-panel').hidden || !$('rd-story-panel').hidden || dt <= 0 || R.viewed.has(R.page)) return;
   if (!rdOnScreen(R, R.page).length) return;
   R.screenT[R.page] = (R.screenT[R.page] || 0) + dt;
   if (R.screenT[R.page] >= rdScreenNeed(R) - 1e-6) { const was = rdBoxChecked(R, R.page); rdViewScreen(R.page, false); if (!was) R.justTicked = true; }
@@ -1091,12 +1121,214 @@ document.addEventListener('keydown', e => {
   if (!RD || $('reader').hidden) return;
   if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); rdNext(); }
   else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); rdPrev(); }
-  else if (e.key === 'Escape') { e.preventDefault(); if (!$('rd-toc-panel').hidden) $('rd-toc').click(); else closeReader(); }
+  else if (e.key === 'Escape') { e.preventDefault(); if (!$('rd-story-panel').hidden) storyClose(); else if (!$('rd-toc-panel').hidden) $('rd-toc').click(); else closeReader(); }
 });
 document.addEventListener('visibilitychange', () => { if (!RD) return; if (document.hidden) { rdFlush(); rdPersist(); } else RD.last = Date.now(); });
 let rdResizeT;
 window.addEventListener('resize', () => { if (!RD) return; clearTimeout(rdResizeT); rdResizeT = setTimeout(() => { const R = RD; if (!R || R.loading) return; rdLayout(rdAnchor()); }, 200); });
 window.addEventListener('pagehide', () => { if (RD) { rdFlush(); rdPersist(); } });
+// ======================================================================== "Read me a story"
+// The words to read are gathered here, where the book is already open and laid out, and sent to the Pi, which
+// reads them out through the Echo Dot or the phone's voice by itself (see story.py). Each sentence carries its
+// section and piece, so the reader can come back to where Harald stopped.
+const ST_SKIP_TYPES = /(^|\s)(footnotes?|endnotes?|rearnotes?|noteref|annoref|pagebreak|page-?list|annotation|biblioref|glossref|backlink|note)(\s|$)/i;
+const ST_SKIP_ROLES = /doc-(noteref|footnote|endnotes?|pagebreak|biblioref|glossref|backlink|pagelist)/i;
+const ST_SKIP_TAGS = new Set(['aside', 'table', 'figure', 'figcaption', 'nav', 'rt', 'rp', 'math', 'svg', 'img', 'image', 'audio', 'video', 'script', 'style']);
+const ST_BLOCKS = new Set(['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li', 'dt', 'dd', 'blockquote', 'pre', 'div', 'section', 'article',
+                           'header', 'footer', 'main', 'body']);
+const stTag = el => (el.localName || el.nodeName || '').toLowerCase();
+function stSkipped(el) {      // an element whose words aren't read: notes and their markers, page numbers, tables, captions
+  const t = stTag(el);
+  if (ST_SKIP_TAGS.has(t)) return true;
+  if (ST_SKIP_TYPES.test(epubType(el)) || ST_SKIP_ROLES.test((el.getAttribute && el.getAttribute('role')) || '')) return true;
+  const id = (el.getAttribute && el.getAttribute('id')) || '';
+  if (/^(bwx-)?(p|pg|page)[-_]?[0-9ivxlc]+$/i.test(id) && (el.textContent || '').trim().length < 8) return true;     // a page number
+  const txt = (el.textContent || '').trim();
+  if (t === 'sup' && txt.length <= 6) return true;                                  // a note's number
+  if (t === 'a' && /^[\[(]?[0-9*†‡§¶a-z]{1,4}[\])]?$/i.test(txt) && (el.getAttribute('href') || el.getAttribute('data-bw-href'))) return true;
+  return false;
+}
+// The innermost blocks (paragraphs, headings, list items...) with their readable text nodes.
+function stBlocks(root) {
+  const out = [];
+  const walk = el => {
+    if (stSkipped(el)) return;
+    const kids = [...el.children];
+    if (ST_BLOCKS.has(stTag(el)) && !kids.some(c => ST_BLOCKS.has(stTag(c)) && !stSkipped(c) && c.textContent.trim())) {
+      const nodes = [];
+      const tw = el.ownerDocument.createTreeWalker(el, 1 | 4, {acceptNode: n => n.nodeType === 1 ? (stSkipped(n) ? 2 : 3) : 1});
+      let n; while ((n = tw.nextNode())) if (n.nodeType === 3) nodes.push(n);
+      if (nodes.some(x => x.data.trim())) out.push({el, nodes, head: /^h[1-6]$/.test(stTag(el))});
+      return;
+    }
+    kids.forEach(walk);
+  };
+  walk(root);
+  return out;
+}
+// Sentences of one block: [{t, node, off}] with where each starts (for "this page").
+function stSentences(b) {
+  let text = '', map = [];
+  b.nodes.forEach(n => { map.push([text.length, n]); text += n.data; });
+  const segs = [];
+  if (typeof Intl !== 'undefined' && Intl.Segmenter) {
+    for (const s of new Intl.Segmenter(undefined, {granularity: 'sentence'}).segment(text)) segs.push([s.index, s.segment]);
+  } else {
+    const re = /[^.!?…]+(?:[.!?…]+["'’”)\]]*|$)\s*/g; let m;
+    while ((m = re.exec(text)) && m[0]) segs.push([m.index, m[0]]);
+  }
+  return segs.map(([i, seg]) => {
+    const lead = seg.length - seg.trimStart().length, at = i + lead;
+    let e = map[0]; for (const x of map) { if (x[0] <= at) e = x; else break; }
+    return {t: seg.replace(/\s+/g, ' ').trim(), node: e[1], off: Math.min(e[1].data.length, at - e[0])};
+  }).filter(x => /[\p{L}\p{N}]/u.test(x.t));
+}
+// The piece (bw-pm marker) each block falls in: the last marker before it.
+// (or, for the section's first block, the first marker inside it)
+function stPieceOf(markers, el, kOf) {
+  let k = null;
+  for (const m of markers) {
+    const rel = m.compareDocumentPosition(el), mk = kOf ? kOf(m) : +m.dataset.k;
+    if (rel & Node.DOCUMENT_POSITION_CONTAINS) { if (k == null) k = mk; break; }
+    if (rel & Node.DOCUMENT_POSITION_FOLLOWING) k = mk; else break;
+  }
+  return k;
+}
+function stPageOf(R, node, off) {
+  const flow = $('rd-flow'), fr = flow.getBoundingClientRect(), rg = document.createRange();
+  try { rg.setStart(node, off); rg.setEnd(node, Math.min(node.data.length, off + 1)); } catch (e) { return null; }
+  const r = [...rg.getClientRects()][0] || rg.getBoundingClientRect(); if (!r || (!r.width && !r.height)) return null;
+  return Math.max(0, Math.floor((r.left - fr.left + flow.scrollLeft + 2) / R.step));
+}
+// The chapter ends where the next contents entry starts: another section, or a heading further on in this one
+// (after where the reading starts).
+function stChapterEnd(R, startEl) {
+  if (!R.m.toc.length) return {ch: R.ch + 1, frag: null};
+  const FOLLOWS = Node.DOCUMENT_POSITION_FOLLOWING;
+  let end = {ch: R.m.chapters.length, frag: null};
+  for (const t of R.m.toc) {
+    const [h, frag] = t.href.split('#'), ci = R.m.chapters.findIndex(c => c.href === h);
+    if (ci < 0) continue;
+    if (ci === R.ch) {
+      if (!frag || !startEl) continue;
+      const el = document.getElementById('bwx-' + frag);
+      if (!el || !$('rd-flow').contains(el) || el === startEl || !(startEl.compareDocumentPosition(el) & FOLLOWS)) continue;
+      if (startEl.contains(el)) continue;
+      if (end.ch > R.ch || (end.frag && (el.compareDocumentPosition(end.frag) & FOLLOWS))) end = {ch: R.ch, frag: el};
+    } else if (ci > R.ch && end.ch > R.ch && ci < end.ch) end = {ch: ci, frag: null};
+  }
+  return end;
+}
+async function stGather(scope) {
+  const R = RD, items = [], FOLLOWS = Node.DOCUMENT_POSITION_FOLLOWING;
+  const flow = $('rd-flow'), markers = [...flow.querySelectorAll('.bw-pm')];
+  // this section, from the first sentence that starts on this page
+  const blocks = stBlocks(flow).map(b => ({...b, ss: stSentences(b)}));
+  let startEl = null;
+  for (const b of blocks) {
+    for (const x of b.ss) { const pg = stPageOf(R, x.node, x.off); if (pg != null && pg >= R.page) { startEl = b.el; break; } }
+    if (startEl) break;
+  }
+  if (!startEl) return items;
+  const end = scope === 'chapter' ? stChapterEnd(R, startEl) : null;
+  let started = false;
+  for (const b of blocks) {
+    if (end && end.frag && (end.frag === b.el || b.el.contains(end.frag) || (end.frag.compareDocumentPosition(b.el) & FOLLOWS))) return items;
+    if (!started && b.el !== startEl) continue;
+    const k = stPieceOf(markers, b.el) ?? R.m.chapters[R.ch].start;
+    for (let i = 0; i < b.ss.length; i++) {
+      const x = b.ss[i], pg = stPageOf(R, x.node, x.off);
+      if (!started) { if (pg == null || pg < R.page) continue; started = true; }
+      if (scope === 'page' && pg != null && pg > R.page) return items;
+      items.push({t: x.t, p: i === b.ss.length - 1, h: b.head, ch: R.ch, k});
+    }
+  }
+  if (scope === 'page') return items;
+  // the sections after it: to the chapter's end, or every section of the book's own text
+  const last = scope === 'chapter' ? Math.min(end.ch, R.m.chapters.length) : R.m.chapters.length;
+  for (let c = R.ch + 1; c < last; c++) {
+    const ch = R.m.chapters[c];
+    if (scope === 'book' && !ch.main) continue;
+    $('st-status').textContent = `Getting the words ready… (${c - R.ch} of ${last - R.ch - 1})`;
+    const html = await R.z.text(ch.href).catch(() => '');
+    if (!html) continue;
+    const body = chapterBody(parseHTML(html)); cleanBody(body); insertMarkers(body, ch);
+    const mk = [...body.getElementsByTagName('span')].filter(e => e.getAttribute('class') === 'bw-pm');
+    for (const b of stBlocks(body)) {
+      const k = stPieceOf(mk, b.el, e => +e.getAttribute('data-k')) ?? ch.start;
+      const ss = stSentences(b);
+      ss.forEach((x, i) => items.push({t: x.t, p: i === ss.length - 1, h: b.head, ch: c, k}));
+    }
+  }
+  return items;
+}
+let ST = null;
+const stVoice = () => (document.querySelector('input[name="st-voice"]:checked') || {}).value;
+const stScope = () => (document.querySelector('input[name="st-scope"]:checked') || {}).value || 'chapter';
+function stLeft(s) {
+  if (!s.ends_at) return '';
+  const m = Math.max(0, Math.round((s.ends_at - Date.now() / 1000) / 60));
+  return m < 1 ? ' · stopping at the end of this sentence' : ` · stops in ${m} min`;
+}
+function storyText(s) {
+  const name = (L && L.name) || 'Harald';
+  return `${name} is reading ${s.title ? '“' + s.title + '”' : 'a book'} out loud${s.label ? ' (' + s.label + ')' : ''} through ${s.voice === 'dot' ? 'the Echo Dot' : 'the phone'}${stLeft(s)}.`;
+}
+function storyBar() {
+  const s = L && L.story; $('storyBar').hidden = !(s && s.active);
+  if (s && s.active) $('storyBarText').textContent = storyText(s);
+}
+async function storyPost(d) {
+  try { const j = await (await fetch('/api/library/story', {method: 'POST', body: JSON.stringify(d)})).json(); if (L) L.story = j.story; return j; }
+  catch (e) { return {ok: false, error: 'not answering'}; }
+}
+async function storyStop() { await storyPost({action: 'stop'}); storyBar(); if (ST) stPanel(); }
+async function stPanel() {
+  const R = RD; if (!R) return;
+  const j = await storyPost({action: 'state'}), s = j.story || {voices: {}, last: {}};
+  const name = (L && L.name) || 'Harald';
+  document.querySelectorAll('#rd-story-panel .pn').forEach(e => e.textContent = name);
+  const v = s.voices || {};
+  $('st-dot-note').textContent = v.dot ? '' : '(not connected right now)';
+  $('st-phone-note').textContent = v.phone ? '' : '(start the phone voice in Termux first: see the Den, Voice and light ring)';
+  document.querySelectorAll('input[name="st-voice"]').forEach(i => { i.disabled = !v[i.value]; });
+  if (!stVoice() || !v[stVoice()]) { const ok = ['dot', 'phone'].find(x => v[x]); document.querySelectorAll('input[name="st-voice"]').forEach(i => i.checked = i.value === ok); }
+  $('st-status').textContent = s.active ? storyText(s) : (!v.dot && !v.phone ? `${name} has no voice right now: connect the Echo Dot, or start the phone's voice.` : '');
+  $('st-stop').hidden = !s.active;
+  $('st-start').disabled = !(v.dot || v.phone) || !!(L && L.napping);
+  const last = (s.last || {})[R.m.id];
+  $('st-goto').hidden = !last || last.k == null;
+  ST = {last};
+}
+async function stStart() {
+  const R = RD; if (!R || R.loading) return;
+  const voice = stVoice(); if (!voice) return toast('Choose the Echo Dot or the phone first.');
+  const scope = stScope(); $('st-start').disabled = true; $('st-status').textContent = 'Getting the words ready…';
+  let items = [];
+  try { items = await stGather(scope); } catch (e) { items = []; }
+  if (!items.length) { $('st-start').disabled = false; $('st-status').textContent = 'There are no words to read here.'; return; }
+  const t = [...R.m.toc].reverse().find(x => x.href.split('#')[0] === R.m.chapters[R.ch].href);
+  const label = scope === 'page' ? 'this page' : scope === 'chapter' ? (t && t.label ? t.label : 'this chapter') : 'the whole book';
+  $('st-status').textContent = 'Sending…';
+  const j = await storyPost({action: 'start', book: R.m.id, title: R.m.title, label, voice, minutes: +$('st-minutes').value, items});
+  if (!j.ok) { toast(`Not started: ${j.error || 'no answer'}`); $('st-start').disabled = false; return stPanel(); }
+  toast(`${(L && L.name) || 'Harald'} is reading. You can lock the phone now.`);
+  stPanel();
+}
+function storyClose() { $('rd-story-panel').hidden = true; if (RD) { RD.last = Date.now(); rdMarkBox(); } }
+$('rd-story').onclick = () => {
+  const R = RD; if (!R) return; const P = $('rd-story-panel');
+  if (!P.hidden) return storyClose();
+  rdFlush(); $('rd-toc-panel').hidden = true; P.hidden = false; $('rd-mark-wrap').hidden = true; stPanel();
+};
+$('st-close').onclick = storyClose;
+$('st-start').onclick = stStart;
+$('st-stop').onclick = storyStop;
+$('st-goto').onclick = async () => {
+  const R = RD; if (!R || !ST || !ST.last) return;
+  storyClose(); await loadChapter(Math.min(ST.last.ch, R.m.chapters.length - 1), {k: ST.last.k, off: 0});
+};
+setInterval(() => { if (L && L.story && L.story.active && !document.hidden) load(); }, 30000);
 if (navigator.webdriver) window.RD_DEBUG = () => RD && {sessionNew: RD.sessionNew, read: [...RD.read], manual: [...RD.manual], ch: RD.ch, page: RD.page, pages: RD.pages, viewed: [...RD.viewed]};   // (for automated tests)
 $('epubAdd').onclick = () => $('epubFile').click();
 $('epubFile').onchange = e => { importEpubs(e.target.files); e.target.value = ''; };

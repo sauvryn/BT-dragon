@@ -3,7 +3,7 @@ Harald's body and feelings: two separate meters.
 
   FOOD (hunger)  0 = famished .. 100 = stuffed. Drops 1 point every 90 seconds, so a full
                  belly lasts about 2.5 hours (hunger_minutes in the config file).
-  JOY            0 = sad .. 100 = happy. Drops 1 point every 10 minutes.
+  JOY            0 = bored .. 100 = happy. Drops 1 point every 10 minutes.
 
 They're independent, so he can be hungry and happy (a long walk through a quiet park)
 or stuffed and bored (a day at home next to the same old devices). Food fills FOOD and
@@ -135,7 +135,8 @@ def hunger_word(h):
 
 
 def joy_word(j):
-    return "SAD" if j < 15 else "BORED" if j < 35 else "HAPPY" if j > 70 else "CONTENT"
+    # (at worst bored, never sad: a dragon that seems depressed could upset someone)
+    return "BORED" if j < 35 else "HAPPY" if j > 70 else "CONTENT"
 
 
 class Pet:
@@ -458,6 +459,14 @@ class Pet:
             t = title.upper()
             self.say([f"LOOK! {t}!", f"{t}!"], self.face_for(joy), 30)
 
+    def trove(self, name, first):
+        """A library: "NEW TROVE! CENTRAL LIBRARY!" the first time, "TREASURE TROVE! ..." later."""
+        joy = tuning.get("trove_joy") if first else tuning.get("trove_again_joy")
+        xp = tuning.get("trove_xp") if first else 0
+        if not self._gain(0, xp, joy):
+            n = name.upper()
+            self.say([f"NEW TROVE! {n}!" if first else f"TREASURE TROVE! {n}!", f"{n}!"], self.face_for(joy), 30)
+
     def green_found(self, name):
         if not self._gain(0, tuning.get("green_xp"), tuning.get("green_joy")):
             n = name.upper()
@@ -612,8 +621,7 @@ class Pet:
             h, j = hunger_word(self.hunger), joy_word(self.joy)
             extra = {
                 "FAMISHED": "TAKE ME SOMEWHERE BUSY",
-                "SAD": "A WALK WOULD CHEER ME UP",
-                "BORED": "LET'S GO EXPLORING?",
+                "BORED": "A WALK WOULD CHEER ME UP" if self.joy < 15 else "LET'S GO EXPLORING?",
             }
             tip = extra.get(h) or extra.get(j) or f"{len(devices_in_range)} DEVICES NEARBY"
             # the longest that fits the screen: "FAMISHED AND HAPPY. TAKE ME SOMEWHERE BUSY" doesn't
@@ -640,7 +648,7 @@ class Pet:
         if 1 <= hour < 6 and self.joy < 70:
             return "sleepy"
         j = joy_word(self.joy)
-        return {"SAD": "lonely", "BORED": "bored", "CONTENT": "content", "HAPPY": "happy"}[j]
+        return {"BORED": "bored", "CONTENT": "content", "HAPPY": "happy"}[j]
 
     def belly(self):
         h = hunger_word(self.hunger)

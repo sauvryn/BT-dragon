@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tadpole Pond</title>
+<style>
+  :root { --stone: #1d1c1a; --stone2: #282623; --stone3: #312e2a; --line: #3d3a35; --ink: #ece6da; --dim: #a69f92;
+          --rune: #d9a441; --moss: #7fa36b; --blood: #e8735c; --ice: #8fc7e8; --rare: #c58bd8; }
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html, body { margin: 0; background: var(--stone); color: var(--ink);
+               font: 16px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 0 16px 48px; }
+  header { padding: 14px 0 10px; border-bottom: 3px double var(--line); }
+  h1 { margin: 0; font-size: 14px; letter-spacing: 3px; text-transform: uppercase; color: var(--dim); font-weight: 600; }
+  .pts { font-family: ui-monospace, Menlo, Consolas, monospace; color: var(--rune); font-size: 18px; margin-top: 2px; }
+  h2 { font-size: 13px; letter-spacing: 2px; text-transform: uppercase; color: var(--rune); margin: 0 0 10px; font-weight: 700; }
+  h3 { margin: 14px 0 6px; font-size: 16px; }
+  .box { background: var(--stone2); border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-top: 16px; }
+  .counter { display: inline-block; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; background: var(--stone);
+             border: 1px solid var(--line); border-radius: 10px; padding: 4px 10px; line-height: 1.5; }
+  .sub { color: var(--dim); font-size: 14px; }
+  a { color: var(--rune); }
+  button { background: transparent; color: var(--ink); border: 1px solid var(--rune); border-radius: 8px;
+           padding: 8px 14px; font: inherit; font-size: 15px; cursor: pointer; }
+  button.primary { background: var(--rune); color: #1d1c1a; font-weight: 600; }
+  button.ghost { border-color: var(--line); }
+  input, select { background: var(--stone); color: var(--ink); border: 1px solid var(--line); border-radius: 10px;
+                  padding: 10px 12px; font: inherit; font-size: 15px; min-width: 0; width: 100%; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 4px; background: var(--stone); border: 1px solid var(--line); border-radius: 12px;
+          padding: 5px; margin: 12px 0; }
+  .tabs button { flex: 1 1 40%; border: 0; border-radius: 8px; color: var(--dim); font-weight: 600; font-size: 14px; padding: 9px 6px; }
+  .tabs button.on { background: var(--stone3); color: var(--ink); }
+  .tabs .n { font-family: ui-monospace, Menlo, Consolas, monospace; font-weight: 400; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; }
+  .tile { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+          min-height: 140px; padding: 10px 6px; border: 1px dashed var(--line); border-radius: 12px; background: transparent;
+          text-align: center; color: var(--ink); }
+  .tile.raised { border-style: solid; background: var(--stone3); }
+  .tile .q { font-size: 30px; font-weight: 700; color: var(--dim); line-height: 1; }
+  .tile .nm { font-size: 13.5px; font-weight: 600; line-height: 1.2; }
+  .tile .art { width: 100%; height: auto; max-height: 64px; }
+  .tile .mark { position: absolute; top: 6px; right: 8px; font-size: 12px; }
+  .tile .seen { position: absolute; top: 6px; left: 8px; font-size: 11px; color: var(--moss); }
+  .pill { display: inline-block; font-size: 12px; font-weight: 600; border-radius: 999px; padding: 2px 9px; }
+  .pill.Common { color: var(--moss); background: color-mix(in srgb, var(--moss) 16%, transparent); }
+  .pill.Uncommon { color: var(--rune); background: color-mix(in srgb, var(--rune) 16%, transparent); }
+  .pill.Rare { color: var(--rare); background: color-mix(in srgb, var(--rare) 16%, transparent); }
+  .hab { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-top: 10px; background: var(--stone2); }
+  .hab.locked { border-style: dashed; color: var(--dim); }
+  .hab h3 { margin: 0 0 4px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .chips button { padding: 4px 10px; font-size: 13px; border-color: var(--line); }
+  .overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, .65); display: flex; align-items: flex-start; justify-content: center;
+             padding: 24px 12px; z-index: 10; overflow: auto; }
+  .card { background: var(--stone2); border: 1px solid var(--line); border-radius: 14px; padding: 18px; width: 100%; max-width: 560px; }
+  .card .top { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+  .card .top h2 { color: var(--ink); text-transform: none; letter-spacing: 0; font-size: 22px; margin: 0; }
+  .card .bigart { margin: 8px auto 6px; max-width: 320px; }
+  .card .bigart svg { display: block; width: 100%; height: auto; }
+  .stages { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin: 6px 0 12px; }
+  .stages button { border-radius: 999px; padding: 5px 12px; font-size: 13.5px; border-color: var(--line); font-weight: 600; }
+  .stages button.on { background: var(--rune); color: #1d1c1a; border-color: var(--rune); }
+  .seenbox { background: var(--stone); border-radius: 12px; padding: 12px; margin: 6px 0 12px; }
+  .seenbox button { width: 100%; margin-top: 8px; }
+  dl.kv { display: grid; grid-template-columns: 7.5em 1fr; gap: 8px 14px; margin: 10px 0; font-size: 15px; }
+  dl.kv dt { color: var(--dim); }
+  dl.kv dd { margin: 0; }
+  ul.facts { margin: 4px 0 0; padding-left: 20px; }
+  ul.facts li { margin: 4px 0; }
+  ul.links { margin: 4px 0 0; padding-left: 20px; }
+  ul.links li { margin: 4px 0; }
+  .learn { border-top: 1px solid var(--line); margin-top: 14px; padding-top: 8px; }
+  .note { background: var(--stone); border-left: 3px solid var(--rune); border-radius: 6px; padding: 8px 12px; margin: 10px 0; font-size: 14px; }
+  .raisedlist div { border-top: 1px solid var(--line); padding: 6px 0; font-size: 14px; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .row .grow { flex: 1; min-width: 160px; }
+</style>
+<script src="/lang.js"></script>
+<script src="/auth.js"></script>
+<script src="/pond-art.js"></script>
+<link rel="stylesheet" href="/theme.css">
+</head>
+<body>
+<main>
+  <header>
+    <h1 id="title" data-nolang>Harald's Tadpole Pond</h1>
+    <div class="pts" id="pts">0 points</div>
+  </header>
+
+  <section class="box" id="collView">
+    <h2>Species collection</h2>
+    <div class="counter" id="counter"></div>
+    <p class="sub">Each amphibian raised in <span class="pn" data-nolang>Harald</span>'s Tadpole Pond joins the collection.
+      Tap any species to read its card and to mark if you've seen it in the wild. 🌿 marks species whose eggs are laid
+      this month.</p>
+    <p class="sub" id="locked" hidden></p>
+    <input type="search" id="q" placeholder="Search by name or scientific name" aria-label="Search">
+    <div class="tabs" id="tabs" role="tablist"></div>
+    <div class="grid" id="grid" data-nolang></div>
+    <div class="row" style="margin-top:14px">
+      <button class="primary" id="habBtn">See Habitats</button>
+      <label class="sub grow" style="display:flex; gap:8px; align-items:center">Country
+        <select id="country" style="width:auto"><option value="gb">United Kingdom</option><option value="ie">Ireland</option>
+          <option value="us">United States</option><option value="ca">Canada</option></select></label>
+    </div>
+  </section>
+
+  <section class="box" id="habView" hidden>
+    <h2>Habitats</h2>
+    <p class="sub">Where each species lives. A habitat opens the first time you raise a species from it (one new habitat
+      for each amphibian added to the collection).</p>
+    <div id="habs" data-nolang></div>
+    <div style="margin-top:14px"><button class="primary" id="collBtn">Go back to Collection</button></div>
+  </section>
+</main>
+
+<div class="overlay" id="sp" hidden role="dialog" aria-modal="true" aria-labelledby="spName">
+  <div class="card">
+    <div class="top"><div><h2 id="spName" data-nolang></h2><div class="sub" id="spSci" data-nolang></div></div>
+      <span class="pill" id="spRar"></span></div>
+    <div class="bigart" id="spArt"></div>
+    <div class="stages" id="spStages"></div>
+    <div class="seenbox"><div class="sub" id="spSeenTxt"></div><button class="primary" id="spSeen">I've seen it!</button></div>
+    <dl class="kv" id="spKv"></dl>
+    <p class="note" id="spLocked" hidden>Raise one in the Tadpole Pond to unlock its field notes.</p>
+    <div id="spFactsWrap"><h3>Field notes</h3><ul class="facts" id="spFacts"></ul></div>
+    <div class="learn" id="spGardenWrap"><h3>Pond Tip</h3><p id="spGarden"></p></div>
+    <div class="learn"><h3>Want To Learn More?</h3>
+      <p class="sub">Free guides from conservation charities and public bodies. Links open in a new tab.</p>
+      <ul class="links" id="spLearn"></ul></div>
+    <div class="learn" id="spSrcWrap"><h3>Additional Sources</h3><ul class="links" id="spSrc"></ul></div>
+    <p class="sub" id="spNote"></p>
+    <div id="spRaisedWrap"><h3>Raised in the Tadpole Pond</h3><div class="raisedlist" id="spRaised"></div></div>
+    <button class="primary" id="spClose" style="width:100%; margin-top:12px">Close</button>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const KINDS = [['frog', 'Frogs'], ['toad', 'Toads'], ['newt', 'Newts'], ['salamander', 'Salamanders']];
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const THE = {gb: 'the UK', ie: 'Ireland', us: 'the US', ca: 'Canada'};
+const UNV = {when: 'egg-laying season', food: 'food', life: 'life cycle', status: 'status'};
+let D = null, kind = 'frog', open = null, stageOn = 5;
+const cap1 = t => t.charAt(0).toUpperCase() + t.slice(1);
+const day = t => new Date(t * 1000).toLocaleDateString(undefined, {day: 'numeric', month: 'short', year: 'numeric'});
+const raisedN = id => (D.raised[id] || []).length;
+const inSeason = s => s.months.includes(D.month);
+const kindsHere = () => KINDS.filter(([k]) => D.species.some(s => s.kind === k));
+
+async function load(c) {
+  try { D = await (await fetch('/api/pond' + (c ? '?c=' + c : ''))).json(); } catch (e) { return; }
+  document.title = `${D.name}'s Tadpole Pond`;
+  $('title').textContent = `${D.name}'s Tadpole Pond`;
+  document.querySelectorAll('.pn').forEach(e => e.textContent = D.name);
+  $('pts').textContent = `${D.score.toLocaleString()} point${D.score === 1 ? '' : 's'}`;
+  $('country').value = D.country;
+  $('locked').hidden = D.unlocked;
+  $('locked').textContent = `The pond opens when ${D.name} reaches level ${D.unlock_level}. You can look around the collection already.`;
+  if (!kindsHere().some(([k]) => k === kind)) kind = kindsHere()[0][0];
+  render();
+  if (!$('habView').hidden) renderHabs();
+}
+function render() {
+  const all = D.species, raised = all.filter(s => raisedN(s.id)).length, seen = all.filter(s => D.seen[s.id]).length;
+  $('counter').innerHTML = `${raised} of ${all.length} species<br>${Object.values(D.raised).reduce((t, v) => t + v.length, 0)} raised · ${seen} seen`;
+  $('tabs').innerHTML = kindsHere().map(([k, w]) => {
+    const list = all.filter(s => s.kind === k);
+    return `<button role="tab" aria-selected="${k === kind}" class="${k === kind ? 'on' : ''}" data-k="${k}">${w} <span class="n">${list.filter(s => raisedN(s.id)).length}/${list.length}</span></button>`;
+  }).join('');
+  $('tabs').querySelectorAll('[data-k]').forEach(b => b.onclick = () => { kind = b.dataset.k; $('q').value = ''; render(); });
+  const q = $('q').value.trim().toLowerCase();
+  const order = {Common: 0, Uncommon: 1, Rare: 2};
+  const list = (q ? all.filter(s => (s.name + ' ' + s.sci).toLowerCase().includes(q)) : all.filter(s => s.kind === kind))
+    .sort((a, b) => order[a.rarity] - order[b.rarity] || a.name.localeCompare(b.name));
+  $('grid').innerHTML = list.map(s => {
+    const n = raisedN(s.id);
+    return `<button class="tile${n ? ' raised' : ''}" data-id="${s.id}">
+      ${inSeason(s) ? '<span class="mark" title="Eggs laid this month" aria-label="Eggs laid this month">🌿</span>' : ''}
+      ${D.seen[s.id] ? '<span class="seen" title="Seen in the wild">✓ seen</span>' : ''}
+      ${n ? pondArt(s.kind, 5) : '<span class="q" aria-hidden="true">?</span>'}
+      <span class="nm">${esc(s.name)}</span><span class="pill ${s.rarity}">${s.rarity}</span></button>`;
+  }).join('') || '<p class="sub">No species match.</p>';
+  $('grid').querySelectorAll('[data-id]').forEach(b => b.onclick = () => openSpecies(b.dataset.id));
+}
+function renderHabs() {
+  const names = D.habitat_names, opened = D.habitats_open;
+  const keys = Object.keys(names).filter(h => D.species.some(s => s.habitats.includes(h)));
+  $('habs').innerHTML = keys.map(h => {
+    const list = D.species.filter(s => s.habitats.includes(h)), isOpen = !!opened[h];
+    return `<div class="hab${isOpen ? '' : ' locked'}" id="hab-${h}"><h3>${esc(names[h])}</h3>
+      <div class="sub">${isOpen ? `Opened ${day(opened[h])}` : 'Raise a species that lives here to open it'} ·
+        ${list.filter(s => raisedN(s.id)).length} of ${list.length} species raised</div>
+      <div class="chips">${list.map(s => `<button data-id="${s.id}">${raisedN(s.id) || isOpen ? esc(s.name) : '?'}</button>`).join('')}</div></div>`;
+  }).join('');
+  $('habs').querySelectorAll('[data-id]').forEach(b => b.onclick = () => openSpecies(b.dataset.id));
+}
+function stageNames(s) {
+  return [[5, s.kind === 'frog' ? 'Frog' : s.kind === 'toad' ? 'Toad' : s.kind === 'newt' ? 'Newt' : 'Salamander'],
+          [4, cap1(s.meta)], [1, cap1(s.young)], [0, 'Spawn']];
+}
+function openSpecies(id) {
+  const s = D.species.find(x => x.id === id); if (!s) return;
+  open = s; stageOn = 5;
+  const n = raisedN(id), yard = D.lang === 'us' ? 'yard' : 'garden';
+  $('spName').textContent = s.name;
+  $('spSci').innerHTML = `${esc(cap1(s.kind))} · <i>${esc(s.sci)}</i>`;
+  $('spRar').className = 'pill ' + s.rarity; $('spRar').textContent = s.rarity;
+  drawStage();
+  const seen = D.seen[id];
+  $('spSeenTxt').textContent = seen ? `You marked this species as seen on ${day(seen)}.` : "You haven't marked this species as seen yet.";
+  $('spSeen').textContent = seen ? 'Not seen after all' : "I've seen it!";
+  const habs = s.habitats.map(h => `<a href="#" data-hab="${h}">${esc(D.habitat_names[h] || h)}</a>`).join('; ');
+  $('spKv').innerHTML = [['Family', esc(s.family)], ['Size', esc(s.size)], ['Food', esc(s.food)], ['Breeding', esc(s.when)],
+    ['In ' + THE[D.country], esc(s.status)], ['Habitats', habs], ['Life cycle', esc(s.life)],
+    ['Eggs laid', s.months.length === 12 ? 'Any month' : s.months.map(m => MONTHS[m]).join(', ')]]
+    .map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('');
+  $('spKv').querySelectorAll('[data-hab]').forEach(a => a.onclick = e => { e.preventDefault(); showHabs(a.dataset.hab); });
+  $('spLocked').hidden = !!n; $('spFactsWrap').hidden = !n;
+  $('spFacts').innerHTML = s.facts.map(f => `<li>${esc(f)}</li>`).join('');
+  $('spGardenWrap').hidden = !s.garden;
+  $('spGarden').textContent = s.garden ? `Want to attract ${/^[aeiou]/i.test(s.name) ? 'an' : 'a'} ${s.name} to your ${yard}? Consider adding ${s.garden}.` : '';
+  const link = ([t, u]) => `<li><a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(t)}</a></li>`;
+  $('spLearn').innerHTML = s.learn.map(link).join('');
+  $('spSrc').innerHTML = s.src.map(link).join(''); $('spSrcWrap').hidden = !s.src.length;
+  const unv = (s.unv || []).map(k => UNV[k]).filter(Boolean);
+  $('spNote').textContent = 'Every field note on this card was checked against all of the above sources in October 2026 ' +
+    '(the family is the standard scientific classification).' +
+    (unv.length ? ` No source could confirm the ${unv.join(' or ')}, so treat ${unv.length > 1 ? 'those' : 'that'} as a best guess.` : '');
+  $('spRaisedWrap').hidden = !n;
+  $('spRaised').innerHTML = (D.raised[id] || []).map((e, i) => `<div><b>#${i + 1}</b> · Raised in the Tadpole Pond
+    <span style="color:var(--rune)">+${e.points}</span><div class="sub">Added to the collection ${day(e.date)}</div></div>`).join('');
+  $('sp').hidden = false; $('sp').scrollTop = 0; $('spClose').focus({preventScroll: true});
+}
+function drawStage() {
+  const s = open;
+  $('spArt').innerHTML = pondArt(s.kind, stageOn);
+  $('spStages').innerHTML = stageNames(s).map(([k, w]) => `<button class="${k === stageOn ? 'on' : ''}" data-st="${k}">${esc(w)}</button>`).join('');
+  $('spStages').querySelectorAll('[data-st]').forEach(b => b.onclick = () => { stageOn = +b.dataset.st; drawStage(); });
+}
+$('spSeen').onclick = async () => {
+  const id = open.id, on = !D.seen[id];
+  try {
+    const r = await (await fetch('/api/pond', {method: 'POST', body: JSON.stringify({country: D.country, species: id, seen: on})})).json();
+    if (!r.ok) return;
+  } catch (e) { return; }
+  if (on) D.seen[id] = Math.floor(Date.now() / 1000); else delete D.seen[id];
+  openSpecies(id); render();
+};
+function closeSp() { $('sp').hidden = true; }
+$('spClose').onclick = closeSp;
+$('sp').addEventListener('click', e => { if (e.target === $('sp')) closeSp(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('sp').hidden) closeSp(); });
+function showHabs(h) {
+  closeSp(); $('collView').hidden = true; $('habView').hidden = false; renderHabs();
+  const el = h && $('hab-' + h); (el || $('habView')).scrollIntoView({block: 'start'});
+}
+$('habBtn').onclick = () => showHabs();
+$('collBtn').onclick = () => { $('habView').hidden = true; $('collView').hidden = false; window.scrollTo(0, 0); };
+$('q').oninput = render;
+$('country').onchange = () => load($('country').value);
+const want = new URLSearchParams(location.search);
+load(want.get('c') || '').then(() => { if (want.get('sp')) openSpecies(want.get('sp')); });
+</script>
+</body>
+</html>

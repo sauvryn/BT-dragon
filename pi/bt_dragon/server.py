@@ -280,6 +280,10 @@ async def web_server(app):
         lib_page = f.read()
     with open(os.path.join(HERE, "achievements.html"), encoding="utf-8") as f:
         ach_page = f.read()
+    with open(os.path.join(HERE, "pond.html"), encoding="utf-8") as f:
+        pond_page = f.read()
+    with open(os.path.join(HERE, "pond_art.js"), encoding="utf-8") as f:
+        pond_art = f.read()
     with open(os.path.join(HERE, "login.html"), encoding="utf-8") as f:
         login_page = f.read()
     with open(os.path.join(HERE, "auth.js"), encoding="utf-8") as f:
@@ -290,7 +294,7 @@ async def web_server(app):
         return login_page.replace("__NAME__", escape(app.pet.name)).replace("__MSG__", escape(msg))
 
     def collection(data):
-        """The Star Chart or the Gadget Journal: one page, its data written into it."""
+        """The Star Chart, the Gadget Journal or the Wi-Fi Journal: one page, its data written into it."""
         from html import escape
         return (coll_page.replace("__TITLE__", escape(data["title"]))
                 .replace("__DATA__", json.dumps(data).replace("</", "<\\/")))
@@ -347,7 +351,8 @@ async def web_server(app):
                 await writer.drain()
                 return
             limit = (210 * 1024 if path == "/api/art" else 256 * 1024 if path == "/api/garden/seen"
-                     else 512 * 1024 if path == "/api/library" else 4096)                                          # a picture, sightings, or a command
+                     else 512 * 1024 if path == "/api/library"
+                     else 12 * 1024 * 1024 if path == "/api/library/story" else 4096)                                          # a picture, sightings, or a command
             n = min(int(headers.get("content-length", "0") or 0), limit)
             if n and path not in ("/api/restore", "/api/library/epub"):
                 body = await asyncio.wait_for(reader.readexactly(n), 30)
@@ -464,6 +469,39 @@ async def web_server(app):
                 out = _response("200 OK", collection(app.whispers_data()), "text/html; charset=utf-8")
             elif path == "/library":
                 out = _response("200 OK", lib_page, "text/html; charset=utf-8")
+            elif path == "/pond":
+                # the Tadpole Pond's collection (pond.html; its data from /api/pond)
+                out = _response("200 OK", pond_page, "text/html; charset=utf-8")
+            elif path == "/pond-art.js":
+                out = _response("200 OK", pond_art, "text/javascript; charset=utf-8")
+            elif path == "/api/pond" and method == "POST":
+                # "I've seen it!": {country, species, seen: true/false}
+                try:
+                    d = json.loads(body.decode(errors="replace"))
+                    err = app.pond.set_seen(d.get("country"), d.get("species"), bool(d.get("seen")))
+                except (ValueError, AttributeError):
+                    err = "not JSON"
+                out = _response("200 OK" if not err else "400 Bad Request",
+                                json.dumps({"ok": not err, "error": err or ""}), "application/json")
+            elif path == "/api/pond":
+                q = urllib.parse.parse_qs(urllib.parse.urlparse(target).query)
+                out = _response("200 OK", json.dumps(app.pond_page_data((q.get("c") or [""])[0])), "application/json")
+            elif path == "/api/library/story" and method == "POST":
+                # "Read me a story": {action: "start", ...} (see story.py) or {action: "stop"}
+                try:
+                    d = json.loads(body.decode(errors="replace"))
+                    d = d if isinstance(d, dict) else {}
+                except ValueError:
+                    d = {}
+                if d.get("action") == "stop":
+                    res = {"ok": True, "stopped": app.story.stop()}
+                elif d.get("action") == "start":
+                    err = app.story.start(d)
+                    res = {"ok": not err, "error": err}
+                else:
+                    res = {"ok": True}
+                res["story"] = app.story.view()
+                out = _response("200 OK", json.dumps(res), "application/json")
             elif path == "/api/library" and method == "POST":
                 try:
                     d = json.loads(body.decode(errors="replace"))
@@ -473,7 +511,8 @@ async def web_server(app):
                 out = _response("200 OK", json.dumps(res), "application/json")
             elif path == "/api/library":
                 out = _response("200 OK", json.dumps(dict(app.library.view(full=True), name=app.pet.name,
-                                                          napping=app.napping, locked=app.den_auth.enabled())),
+                                                          napping=app.napping, locked=app.den_auth.enabled(),
+                                                          story=app.story.view())),
                                 "application/json")
             elif path == "/api/library/epub" and method == "POST":
                 out = await _receive_epub(app, reader, headers)
@@ -497,7 +536,7 @@ async def web_server(app):
                 q = (urllib.parse.parse_qs(urllib.parse.urlparse(target).query).get("q") or [""])[0]
                 try:
                     found = await asyncio.wait_for(
-                        asyncio.get_running_loop().run_in_executor(None, app.library.search, q), 30)
+                        asyncio.get_running_loop().run_in_executor(None, app.library.search, q), 40)
                     out = _response("200 OK", json.dumps({"ok": True, "results": found}), "application/json")
                 except Exception as e:
                     log.info("library search: %s", e)
@@ -514,6 +553,8 @@ async def web_server(app):
                                 "text/html; charset=utf-8")
             elif path == "/journal":
                 out = _response("200 OK", collection(app.journal_data()), "text/html; charset=utf-8")
+            elif path == "/wifijournal":
+                out = _response("200 OK", collection(app.wifi_journal_data()), "text/html; charset=utf-8")
             elif path == "/shopping":
                 out = _response("200 OK", shop_page.replace("__NAME__", app.pet.name), "text/html; charset=utf-8")
             elif path == "/calendar":

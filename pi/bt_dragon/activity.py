@@ -66,15 +66,39 @@ class Motion:
         steps, or, without one, after 90 seconds at walking pace with nothing faster.
       * The step counter, when it's linked: walking and running make steps, so walking or
         running speed with no steps (fewer than 15 in the last 45 seconds) is a vehicle
-        crawling along, not you.
+        crawling along, not you: but only within 3 minutes of vehicle speed (a bus in
+        traffic). With the phone's screen off, many phones send their step count only every
+        minute or so, so on a walk the steps can go quiet for a while; that alone isn't a ride.
+      * And the other way round: a ride never starts while the step counter says you're
+        walking (a burst of speed from GPS glitches between tall buildings, mid-walk).
+
+    Indoors, a phone often can't hear the satellites and finds itself from Wi-Fi and mobile
+    masts instead. Those positions jump tens or hundreds of meters at a time, and the phone
+    reports the jumps as speed: a run of them looks just like a bus pulling away. So speed
+    alone is never enough for the fast modes. Before he decides you're riding (or counts a
+    quick burst as cycling), the position has to have really gone somewhere: over those
+    seconds, the accurate fixes (better than 30 m) must have gone at least 70% as far as the
+    speed says (a bus at 9 m/s goes about 90 m in 10 s), in a fairly straight line (at least
+    80% as far in a straight line as along the way: a road bends, but wobble zigzags round the
+    same spot), with most steps from one fix to the next about the length the speed says (a bus
+    at 11 m/s moves about 11 m a second; wobble jumps 0 m, then 80, then 30). And every bit of
+    distance, riding or not, only counts if its step is about the length the speed says.
+    Better a little real distance missed than a ride that never happened.
     """
 
     WINDOW_S = 30
+    GOOD_ACC_M = 30           # fixes this accurate (or better) show where you really went
+    MOVED_SHARE = 0.7         # ...and must have moved at least this share of what the speed says,
+    STRAIGHT = 0.8            # in a line at least this straight (straight-line distance / path length)
+    MIN_FIXES = 5             # ...shown by at least this many accurate fixes in the VEHICLE_S,
+    PROGRESS = 0.8            # ...nearly all of their steps (this share) the length the speed says,
+    STEP_SLACK_M = 10         # ...give or take this much (or half the step, if more)
     VEHICLE_MS = 9.0          # sustained for VEHICLE_S: in a vehicle
     VEHICLE_S = 10
     OFF_AFTER_S = 90          # (no step counter) this long at walking pace: off the vehicle
     HOLD_S = 30               # stretches on foot or bike are held back this long, in case
                               # they turn out to be a vehicle pulling away
+    CRAWL_S = 180             # walking pace with no steps is a vehicle only this soon after vehicle speed
 
     def __init__(self, feet=None):
         self.speeds = []          # (ts, m/s)
@@ -85,6 +109,8 @@ class Motion:
         self.riding = False       # in a vehicle (see above)
         self._held = []           # (ts, mode, meters): stretches on foot or bike, held back HOLD_S
         self._slow_since = None   # (no step counter) when walking pace began, while riding
+        self._track = []          # (ts, lat, lon) of accurate fixes, the last VEHICLE_S or so
+        self._fast_ts = None      # the last time the speed was a vehicle's (VEHICLE_MS or more)
 
     def _on_feet(self):
         try:
@@ -92,10 +118,39 @@ class Motion:
         except Exception:
             return None
 
+    def _fits(self, d, speed, dt):
+        """A step of d meters in dt seconds is about what `speed` says (give or take jitter)."""
+        want = speed * dt
+        return abs(d - want) <= max(self.STEP_SLACK_M, 0.5 * want)
+
+    def _went_somewhere(self, now, speed):
+        """Did the accurate fixes of the last VEHICLE_S really travel at about `speed` (see above)?"""
+        pts = [p for p in self._track if now - p[0] <= self.VEHICLE_S]
+        if len(pts) < self.MIN_FIXES:          # (outdoors, a phone gives about one good fix a second)
+            return False
+        span = pts[-1][0] - pts[0][0]
+        if span < self.VEHICLE_S / 2:
+            return False
+        net = _dist(pts[0][1:], pts[-1][1:])
+        steps = [(_dist(a[1:], b[1:]), b[0] - a[0]) for a, b in zip(pts, pts[1:])]
+        path = sum(d for d, _ in steps)
+        if net < self.MOVED_SHARE * speed * span:     # far enough for the speed
+            return False
+        if net < self.STRAIGHT * path:                 # fairly straight: wobble zigzags
+            return False
+        fits = sum(1 for d, dt in steps if self._fits(d, speed, dt))
+        return fits >= self.PROGRESS * len(steps)      # steady steps: wobble jumps 0 m, then 80, then 30
+
     def _update_riding(self, now, sp):
         recent = [s for t, s in self.speeds if now - t <= self.VEHICLE_S]
         span = (now - min(t for t, _ in self.speeds if now - t <= self.VEHICLE_S)) if recent else 0
-        if len(recent) >= 3 and span >= self.VEHICLE_S - 2 and statistics.median(recent) >= self.VEHICLE_MS:
+        fast = len(recent) >= 3 and span >= self.VEHICLE_S - 2 and statistics.median(recent) >= self.VEHICLE_MS
+        if fast and self.riding:                   # (already riding: keeps the ride going, as before)
+            self._slow_since = None
+            return
+        # starting a ride needs the proof that the phone really went somewhere (see above), and
+        # never while the step counter says you're walking
+        if fast and self._on_feet() is not True and self._went_somewhere(now, statistics.median(recent)):
             if not self.riding:
                 # it was a vehicle pulling away all along: the stretches still held count as the ride
                 self.pending["vehicle"] = self.pending.get("vehicle", 0.0) + sum(d for _, _, d in self._held)
@@ -115,14 +170,15 @@ class Motion:
             elif sp >= 2.5:
                 self._slow_since = None
 
-    def _really(self, mode):
+    def _really(self, mode, now=None):
         """A mode from speed, corrected for riding and for the step counter."""
         if mode == "still":
             return mode
         if self.riding:
             return "vehicle"
-        if mode in ("walking", "running") and self._on_feet() is False:
-            return "vehicle"
+        if (mode in ("walking", "running") and self._on_feet() is False and now is not None
+                and self._fast_ts is not None and now - self._fast_ts <= self.CRAWL_S):
+            return "vehicle"                       # (no steps, just after vehicle speed: a bus in traffic)
         return mode
 
     def feed(self, fix):
@@ -130,10 +186,15 @@ class Motion:
         sp = fix.get("speed")
         if sp is not None:
             self.speeds.append((now, sp))
+            if sp >= self.VEHICLE_MS:
+                self._fast_ts = now
         self.speeds = [(t, s) for t, s in self.speeds if now - t <= self.WINDOW_S]
+        if fix.get("acc", 10) <= self.GOOD_ACC_M:
+            self._track.append((now, fix["lat"], fix["lon"]))
+        self._track = [p for p in self._track if now - p[0] <= self.VEHICLE_S + 5]
         self._update_riding(now, sp)
         if len(self.speeds) >= 3:
-            self.mode = self._really(classify(statistics.median(s for _, s in self.speeds)))
+            self.mode = self._really(classify(statistics.median(s for _, s in self.speeds)), now)
         pos = (fix["lat"], fix["lon"], now)
         if self.last_pos and now - self.last_pos[2] <= 15:
             d = _dist(self.last_pos, pos)
@@ -141,12 +202,21 @@ class Motion:
             # mode lags ~15 s behind, which would misfile the start of a drive as a walk);
             # readings under 0.5 m/s are GPS wander, not movement.
             raw = classify(sp) if sp is not None else self.mode
-            seg_mode = self._really(raw)
-            if seg_mode != "still" and d < 60 * (now - self.last_pos[2] + 1) and fix.get("acc", 10) < 30:
+            seg_mode = self._really(raw, now)
+            dt = now - self.last_pos[2]
+            # (and the step has to be about as long as the speed says: indoors the position jumps
+            # tens of meters while the phone barely moves, which is wobble, not distance)
+            if (seg_mode != "still" and d < 60 * (dt + 1) and fix.get("acc", 10) < 30
+                    and (sp is None or self._fits(d, sp, max(dt, 1)))):
+                if sp is not None:                 # (and never more than the speed allows: jitter
+                    d = min(d, sp * max(dt, 1))    # zigzagging along a road mustn't add distance)
                 if raw == "vehicle" and not self.riding and sp is not None:
                     # a moment above cycling speed (a sprint, downhill) isn't a vehicle by itself:
-                    # held as cycling, and it becomes the ride if the speed keeps up
-                    self._held.append((now, "cycling", d))
+                    # held as cycling, and it becomes the ride if the speed keeps up. Only if
+                    # you really went somewhere at a cycling pace, though: a jump of the
+                    # position indoors isn't a sprint
+                    if self._went_somewhere(now, MODES[2][1]):
+                        self._held.append((now, "cycling", d))
                 elif seg_mode == "vehicle":
                     self.pending["vehicle"] = self.pending.get("vehicle", 0.0) + d
                 else:

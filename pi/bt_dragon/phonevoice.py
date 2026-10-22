@@ -22,6 +22,7 @@ class PhoneVoice:
         self.items = []           # (seq, text, ts)
         self.seq = 0
         self.last_poll = 0.0
+        self.acked = -1           # the last remark the phone has finished saying (it asks again after)
         self._event = None
 
     def listening(self, now=None):
@@ -33,6 +34,7 @@ class PhoneVoice:
         self.items = [i for i in self.items if now - i[2] < KEEP_S][-20:] + [(self.seq, text, now)]
         if self._event:
             self._event.set()
+        return self.seq
 
     def _fresh(self, after):
         now = time.time()
@@ -42,6 +44,8 @@ class PhoneVoice:
         """What to say after remark number `after`, waiting up to `timeout` for something.
         `after` < 0 (just started) or beyond what he's said (he restarted): start from now."""
         self.last_poll = time.time()
+        if 0 <= after <= self.seq:
+            self.acked = max(self.acked, after)   # (it says everything it's given before asking again)
         if after < 0 or after > self.seq:
             return {"seq": self.seq, "items": []}
         if self._event is None:

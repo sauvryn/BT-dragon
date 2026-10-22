@@ -38,12 +38,14 @@ SECTIONS = [
     ("gadgets", "Gadgets", "ᚷ", "G (the Gebo rune) for Gadgets", "Types of gadget eaten: the Gadget Journal."),
     ("wifi", "Wi-Fi Treats", "ᚹ", "W (the Wunjo rune) for Wi-Fi", "Wi-Fi networks found, every one a treat."),
     ("lands", "Lands and Realms", "ᛚ", "L (the Laguz rune) for Lands", "Squares of the map claimed."),
-    ("places", "Famous Places", "ᛈ", "P (the Perthro rune) for Places", "Famous places (landmarks) seen."),
+    ("places", "Famous Places", "ᚠ", "F (the Fehu rune) for Famous", "Famous places (landmarks) seen."),
     ("nature", "Green Spaces", "ᚾ", "N (the Naudiz rune) for Nature", "Parks, woods, commons and nature reserves found."),
+    ("troves", "Treasure Troves", "ᛏ", "T (the Tiwaz rune) for Troves", "Libraries found out in the world."),
     ("stars", "Stars", "ᛊ", "S (the Sowilo rune) for Stars", "Navigation satellites heard: the Star Chart."),
-    ("friends", "Dragon Friends", "ᚠ", "F (the Fehu rune) for Friends", "Other dragons met."),
+    ("friends", "Dragon Friends", "ᛟ", "O (the Othala rune) for Other Dragons", "Other dragons met."),
     ("library", "The Library", "ᚲ", "K (the Kaunan rune) for Knowledge", "Books finished: the hoard of literary treasures."),
     ("garden", "Butterfly Garden", "ᛒ", "B (the Berkano rune) for Butterflies", "Insects raised in the Butterfly Garden: Bookworm's own achievements."),
+    ("pond", "Tadpole Pond", "ᛈ", "P (the Perthro rune) for Pond", "Amphibians raised in the Tadpole Pond, every one from spawn."),
     ("sky", "Sky Dragons", "ᚨ", "A (the Ansuz rune) for Aircraft", "Planes heard with the radio stick."),
     ("radio", "Radio Whispers", "ᚱ", "R (the Raido rune) for Radio", "Little radios heard with the radio stick."),
 ]
@@ -53,7 +55,9 @@ RUNE_MEANINGS = [("ᚷ", "Gebo", "gift"), ("ᚹ", "Wunjo", "joy"), ("ᛚ", "Lagu
                  ("ᛈ", "Perthro", "unknown: perhaps a dice cup, or a fruit tree"), ("ᚾ", "Naudiz", "need"),
                  ("ᛊ", "Sowilo", "the sun"), ("ᚠ", "Fehu", "cattle, and so wealth"), ("ᛒ", "Berkano", "birch"),
                  ("ᚨ", "Ansuz", "a god"), ("ᚱ", "Raido", "a ride, or a journey"),
-                 ("ᚲ", "Kaunan", "perhaps an ulcer; the Old English rune poem calls it cēn, a torch")]
+                 ("ᚲ", "Kaunan", "perhaps an ulcer; the Old English rune poem calls it cēn, a torch"),
+                 ("ᛏ", "Tiwaz", "the god Tiwaz (Týr in the Norse sagas)"),
+                 ("ᛟ", "Othala", "an inherited estate, a homeland")]
 DEV = {"sky", "radio"}          # (the radio stick is still in development)
 
 # Bookworm's achievement names for each category of insect, in each country
@@ -80,7 +84,9 @@ RARITY_META = {"Common": "Common Ground", "Uncommon": "Uncommonly Good", "Rare":
 # the Gadget Journal's groups
 GADGET_GROUPS = {"Phones and computers": "Screen Time", "Listening": "All Ears",
                  "Wearables and fitness": "Fit for Purpose", "Trackers": "Tracking the Trackers",
-                 "Beacons": "Beacon Keeper", "Around the home": "Home Comforts", "Mysteries": "Unsolved Mysteries"}
+                 "Personal care": "In Good Hands", "Beacons": "Beacon Keeper", "Around the home": "Home Comforts",
+                 "On the road": "Road Trip", "Play and pictures": "Fun and Games", "Shops and work": "Open for Business",
+                 "Mysteries": "Unsolved Mysteries"}
 
 # the Star Chart: about how many of each system's satellites there are to hear (they change as old
 # ones retire and new ones launch, so these are round numbers: Platinum means "about all of them")
@@ -125,14 +131,19 @@ def gather(app):
     c = {}
     found, field = set(), 0
     for s in st.species_list():
-        cat = journal.CAT_BY_LABEL.get(s["label"])
+        cat = journal.category(s["label"])
         if cat:
             found.add(cat[0])
-        else:
+        if s["label"] not in journal.CAT_BY_LABEL:
             field += 1
     c["gadget_types"], c["field"] = found, field
+    from . import wifijournal
     nets = {"all": 0, "open": 0, "wep": 0, "wpa2": 0, "wpa3": 0, "enterprise": 0, "mobile": 0}
+    c["wifi_kinds"] = set()
     for ssid, auth in st.db.execute("SELECT ssid, auth FROM aps"):
+        k = wifijournal.category(ssid)
+        if k:
+            c["wifi_kinds"].add(k)
         nets["all"] += 1
         if mobilewifi.kind(ssid):
             nets["mobile"] += 1
@@ -143,6 +154,8 @@ def gather(app):
     c.update(lands=cq["land"], realms=cq["realm"], places=cq["landmark"])
     greens = [g for g in st.greens_list() if g.get("first_seen")]
     c["greens"] = len(greens)
+    c["troves"] = cq.get("trove", 0)
+    c["trove_visits"] = sum(max(0, (b.get("visits") or 0) - 1) for b in st.libraries_list())
     c["green_kinds"] = {}
     for g in greens:
         c["green_kinds"][g.get("kind")] = c["green_kinds"].get(g.get("kind"), 0) + 1
@@ -153,11 +166,32 @@ def gather(app):
         c["by_const"][s["const"]] = c["by_const"].get(s["const"], 0) + 1
     c["friends"] = app.friends.count() if getattr(app, "friends", None) else 0
     c["garden"] = app.garden if getattr(app, "garden", None) else None
+    c["pond"] = app.pond if getattr(app, "pond", None) else None
+    c["pond_country"] = app.garden.country() if getattr(app, "garden", None) else "gb"
     c["books"] = app.library.counts() if getattr(app, "library", None) else {"short": 0, "medium": 0, "long": 0}
     c["sky_total"] = int(st.get("sky_total", 0) or 0)
     c["finds"] = {k: len(st.finds(k)) for k in ("sky_kind", "sky_airline", "sky_country",
                                                 "whisper_kind", "whisper_model")}
     return c
+
+
+def pond_achievements(pond, country):
+    from . import pond as pondmod
+    c = country if country in pondmod.data() else "gb"
+    species = pondmod.data()[c]["species"]
+    raised = {e["species"] for e in pond.collection(c)}
+    total = sum(len(v) for v in pond.s["collection"].values())
+    out = [_a("pond", "e-all", "Pond Life", "Raise amphibians in the Tadpole Pond", total, "amphibians",
+              fixed=(1, 5, 15, 40, 100)),
+           _a("pond", "e-species", "From Spawn to Shore", "Raise every species in your country",
+              sum(1 for x in species if x["id"] in raised), "species", total=len(species))]
+    for kind, name, word in (("frog", "Frog Chorus", "frogs"), ("toad", "Toad Hall", "toads"),
+                             ("newt", "Newts in the Shallows", "newts"), ("salamander", "Salamander Spring", "salamanders")):
+        ids = [x["id"] for x in species if x["kind"] == kind]
+        if ids:
+            out.append(_a("pond", "e-" + kind, name, f"Raise every species of {word} in your country",
+                          sum(1 for i in ids if i in raised), "species", total=len(ids), group="By kind"))
+    return out
 
 
 def build(c):
@@ -197,6 +231,19 @@ def build(c):
         _a("wifi", "w-mobile", "On the Move", "Find mobile Wi-Fi: cars, buses, trains and phone hotspots", n["mobile"],
            "networks", fixed=(5, 25, 100, 300, 1000), group="By kind"),
     ]
+    from . import wifijournal
+    wk = c.get("wifi_kinds", set())
+    cards = wifijournal.CARDS
+    out.append(_a("wifi", "w-journal", "The Wi-Fi Journal", "Find every kind of network in the Wi-Fi Journal",
+                  sum(1 for x in cards if x[0] in wk), "kinds", total=len(cards), group="Wi-Fi Journal"))
+    for g, name, desc in (("Cars", "Car Spotter", "Find Wi-Fi from every make of car in the Wi-Fi Journal"),
+                          ("Home broadband", "Broadband Bingo", "Find every home broadband provider in the Wi-Fi Journal"),
+                          ("Out and about", "Out and About", "Find every kind of network out and about: public, "
+                                                             "business, printers, mesh and setup networks"),
+                          ("On the move", "Fellow Travelers", "Find dashcams, buses and trains, and phone hotspots")):
+        ids = [x[0] for x in cards if x[1] == g]
+        out.append(_a("wifi", "w-" + g.split()[0].lower(), name, desc, sum(1 for i in ids if i in wk), "kinds",
+                      total=len(ids), group="Wi-Fi Journal"))
     # ---- Lands (ᛚ), Places (ᛈ), Nature (ᚾ)
     out.append(_a("lands", "l-lands", "Land Claimer", "Claim lands (squares of the map about 250 m across)",
                   c["lands"], "lands", fixed=(10, 50, 250, 1000, 5000)))
@@ -206,6 +253,10 @@ def build(c):
                   fixed=(1, 5, 25, 75, 200)))
     out.append(_a("nature", "n-all", "Touch Grass", "Find green spaces of any kind", c["greens"], "green spaces",
                   fixed=(1, 5, 25, 75, 200)))
+    out.append(_a("troves", "t-all", "Treasure Hunter", "Find libraries: treasure troves", c["troves"], "libraries",
+                  fixed=(1, 3, 10, 25, 50)))
+    out.append(_a("troves", "t-again", "Regular Reader", "Visit libraries again on other days", c.get("trove_visits", 0),
+                  "visits", fixed=(1, 5, 15, 40, 100)))
     gk = c["green_kinds"]
     out += [
         _a("nature", "n-park", "Park Life", "Find parks", gk.get("park", 0), "parks",
@@ -247,6 +298,9 @@ def build(c):
     # ---- the Butterfly Garden (ᛒ): Bookworm's achievements
     if c["garden"] is not None:
         out += garden_achievements(c["garden"])
+    # ---- the Tadpole Pond (ᛖ)
+    if c.get("pond") is not None:
+        out += pond_achievements(c["pond"], c["pond_country"])
     # ---- Sky Dragons (ᚨ) and Radio Whispers (ᚱ): the radio stick (in development)
     f = c["finds"]
     out += [

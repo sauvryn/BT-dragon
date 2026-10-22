@@ -47,7 +47,8 @@
 </header>
 <div id="map"></div>
 <div id="note">Gold squares are lands claimed (about 250 m across); dashed outlines are realms (about 1 km);
-  ★ famous places seen, ? famous places nearby not seen yet. Green outlines are parks, woods and other
+  ★ famous places seen, ? famous places nearby not seen yet; square markers are libraries (treasure troves), gold
+  once found. Green outlines are parks, woods and other
   green spaces: solid once you've been in them, dashed if not yet.
   The fog hides everywhere you haven't taken __NAME__ yet. Map tiles load from OpenStreetMap over your phone's own
   connection<span id="offNote"></span>.</div>
@@ -121,6 +122,14 @@ function draw() {
     layers.push(L.marker([lm.lat, lm.lon], {icon}).addTo(map)
       .bindTooltip(lm.seen ? esc(lm.title) : `${esc(lm.title)}: not seen yet`));
   });
+  (data.troves || []).forEach(b => {   // libraries: treasure troves
+    const icon = L.divIcon({className: '', iconSize: [22, 22], iconAnchor: [11, 11],
+      html: `<div style="width:22px;height:22px;border-radius:4px;display:flex;align-items:center;justify-content:center;
+        font:bold 13px system-ui;border:2px solid ${GOLD};${b.seen ? 'background:' + GOLD + ';color:#1d1c1a' : 'background:#1d1c1a;color:' + GOLD}">
+        ${b.seen ? '&#x1F4D6;' : '?'}</div>`});
+    layers.push(L.marker([b.lat, b.lon], {icon}).addTo(map)
+      .bindTooltip(b.seen ? `${esc(b.name)} (a treasure trove)` : `${esc(b.name)}: a library, not found yet`));
+  });
   if (data.here && data.here.wifi) {   // a Wi-Fi position: show how rough it is
     layers.push(L.circle([data.here.lat, data.here.lon], {radius: data.here.acc || 50, color: RED, weight: 1,
       fillOpacity: 0.12}).addTo(map));
@@ -167,6 +176,8 @@ function drawFallback() {
   data.realms.forEach(b => svg += rect(b, `fill="none" stroke="${GOLD}" stroke-dasharray="8 6" stroke-width="2"`));
   (data.landmarks || []).forEach(lm => svg += `<text x="${X(lm.lon)}" y="${Y(lm.lat) + 6}" text-anchor="middle" font-size="18"
       fill="${GOLD}">${lm.seen ? '★' : '?'}<title>${esc(lm.title)}</title></text>`);
+  (data.troves || []).forEach(b => svg += `<rect x="${X(b.lon) - 8}" y="${Y(b.lat) - 8}" width="16" height="16" rx="3"
+      fill="${b.seen ? GOLD : 'none'}" stroke="${GOLD}" stroke-width="2"><title>${esc(b.name)}</title></rect>`);
   if (data.here) svg += `<circle cx="${X(data.here.lon)}" cy="${Y(data.here.lat)}" r="8" fill="${RED}" stroke="#ece6da" stroke-width="3"/>`;
   $('map').innerHTML = svg + '</svg>';
 }

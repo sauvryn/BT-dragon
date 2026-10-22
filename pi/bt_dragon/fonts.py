@@ -166,17 +166,17 @@ def _glyph(font, ch):
     return table.get(ch, [])
 
 
-def _adv(font, ch, scale):
+def _adv(font, ch, scale, bold=False):
     _, table, widths, _ = font
     if font is FONT_LATIN:
         ch = ch.upper()
-    return (widths.get(ch, 5) + 1) * scale
+    return (widths.get(ch, 5) + 1) * scale + (1 if bold else 0)
 
 
-def text_width(text, font=FONT_LATIN, scale=1, spacing=0):
+def text_width(text, font=FONT_LATIN, scale=1, spacing=0, bold=False):
     if not text:
         return 0
-    w = sum(_adv(font, c, scale) + spacing for c in text)
+    w = sum(_adv(font, c, scale, bold) + spacing for c in text)
     return w - scale - spacing  # no gap after the last glyph
 
 
@@ -184,8 +184,17 @@ def text_height(font=FONT_LATIN, scale=1):
     return font[3] * scale
 
 
-def draw_text(draw: ImageDraw.ImageDraw, xy, text, font=FONT_LATIN, scale=1, fill=0, spacing=0):
-    """Draw stroke text with its top-left corner at xy. Returns the x after the text."""
+def draw_text(draw: ImageDraw.ImageDraw, xy, text, font=FONT_LATIN, scale=1, fill=0, spacing=0, bold=False):
+    """Draw stroke text with its top-left corner at xy. Returns the x after the text.
+    Bold draws every glyph twice, a pixel apart, so its strokes are two pixels wide (each
+    letter takes one pixel more)."""
+    if bold:
+        x = x0 = xy[0]
+        for ch in text:
+            draw_text(draw, (x, xy[1]), ch, font, scale, fill)
+            draw_text(draw, (x + 1, xy[1]), ch, font, scale, fill)
+            x += _adv(font, ch, scale, True) + spacing
+        return x
     x0, y0 = xy
     x = x0
     for ch in text:

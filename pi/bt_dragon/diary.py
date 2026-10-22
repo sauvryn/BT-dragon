@@ -97,6 +97,30 @@ class DiaryFiles:
             except (ValueError, OSError):
                 pass
 
+    def replace_labels(self, old, new):
+        """Rewrite these gadget types' names as `new` in the saved diary files (personal care gadgets)."""
+        old = sorted({o for o in old if o and o != new}, key=len, reverse=True)
+        if not old:
+            return 0
+        n = 0
+        for name, _ in self.files():
+            path = os.path.join(self.folder, name)
+            try:
+                with open(path, encoding="utf-8-sig", newline="") as f:
+                    text = f.read()
+                out = text
+                for o in old:
+                    out = out.replace(o, new)
+                if out != text:
+                    tmp = path + ".tmp"
+                    with open(tmp, "w", encoding="utf-8-sig", newline="") as f:
+                        f.write(out)
+                    os.replace(tmp, path)
+                    n += 1
+            except OSError:
+                pass
+        return n
+
     def rename_makers(self, companies):
         """Rewrite 'Maker 0x1234 gadget' in the saved diary files with the company's name."""
         pat = re.compile(r"Maker 0x([0-9A-Fa-f]{4}) gadget")

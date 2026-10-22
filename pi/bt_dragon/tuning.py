@@ -63,6 +63,12 @@ KNOBS = [
      "PACK, reach the garden, shared between the larvae there."),
     ("garden_food_uncommon", "food", "Butterfly Garden: food to raise an Uncommon one", 80, "food", ""),
     ("garden_food_rare", "food", "Butterfly Garden: food to raise a Rare one", 120, "food", ""),
+    ("pond_food_common", "food", "Tadpole Pond: food to raise a Common one", 60, "food",
+     "Frogs, toads, newts and salamanders, from level 8. One at a time."),
+    ("pond_food_uncommon", "food", "Tadpole Pond: food to raise an Uncommon one", 120, "food", ""),
+    ("pond_food_rare", "food", "Tadpole Pond: food to raise a Rare one", 180, "food", ""),
+    ("pond_daily_pct", "food", "Tadpole Pond: most it can grow in a day", 25, "% of the bar",
+     "Worked out at hatching and at midnight: where it was at the start of the day, plus this much."),
     ("garden_pupa_hours", "food", "Butterfly Garden: hours as a pupa", 24, "hours",
      "A larva eats until it pupates; then it eats nothing, and the adult emerges by itself this long after."),
     ("realm_food", "food", "New realm claimed", 3, "food", "A square of the map about 1 km across."),
@@ -122,9 +128,14 @@ KNOBS = [
     ("landmark_again_joy", "joy", "A famous place seen again", 2, "joy", "Once per place per day."),
     ("green_joy", "joy", "A green space never visited before", 5, "joy",
      "Parks, woods, nature reserves, commons and gardens, from OpenStreetMap."),
+    ("trove_joy", "joy", "A library (treasure trove) never visited before", 6, "joy",
+     "Libraries, from OpenStreetMap."),
+    ("trove_again_joy", "joy", "A library visited again", 3, "joy", "Once per library per day."),
     ("green_visit_joy", "joy", "A walk, run or ride in a green space", 6, "joy", "Once per green space per day."),
     ("moon_full_joy", "joy", "Full moon", 12, "joy", "Once, on the day of the full moon."),
     ("moon_phase_joy", "joy", "New moon or a quarter moon", 4, "joy", "Once, on the day of each."),
+    ("pond_hatch_joy", "joy", "Tadpole Pond: spawn hatches", 3, "joy", ""),
+    ("pond_adult_joy", "joy", "Tadpole Pond: one grows up", 10, "joy", ""),
     ("garden_hatch_joy", "joy", "Butterfly Garden: an egg hatches", 3, "joy", ""),
     ("garden_pupate_joy", "joy", "Butterfly Garden: a larva pupates", 3, "joy", ""),
     ("garden_emerge_joy", "joy", "Butterfly Garden: an adult emerges", 10, "joy", "The big-joy face from 8."),
@@ -161,10 +172,15 @@ KNOBS = [
     ("climb_xp", "xp", "Climbing (stairs, hills)", 1, "XP/10 m", ""),
     ("landmark_xp", "xp", "A famous place never seen before", 10, "XP", ""),
     ("green_xp", "xp", "A green space never visited before", 8, "XP", ""),
+    ("trove_xp", "xp", "A library (treasure trove) never visited before", 10, "XP", ""),
     ("green_visit_xp", "xp", "A walk, run or ride in a green space", 5, "XP", "Once per green space per day."),
     ("moon_xp", "xp", "A major moon phase", 5, "XP", ""),
     ("garden_xp", "xp", "Butterfly Garden: an adult emerges", 10, "XP", ""),
+    ("pond_xp", "xp", "Tadpole Pond: one grows up", 10, "XP", ""),
     # ---------------------------------------------------------------- detection
+    ("rss_minutes", "detect", "RSS feeds: check a new feed every", 20, "min",
+     "Each feed has its own number in the Den (Ask Harald → RSS feeds); this is what a new one starts with. On the "
+     "clock, from midnight: 20 means 6:00, 6:20, 6:40 and so on. 10 to 1,440 (once a day)."),
     ("land_accuracy_m", "detect", "Lands: ignore GPS fixes less precise than", 30, "m",
      "Stops GPS wobble from claiming land while you sit still."),
     ("land_wifi_accuracy_m", "detect", "Lands: ignore Wi-Fi positions less precise than", 75, "m",
@@ -218,6 +234,7 @@ KNOBS = [
     ("conquest_land", "points", "Conquest points: a new land", 10, "points", "A square of the map about 250 m across."),
     ("conquest_realm", "points", "Conquest points: a new realm", 50, "points", "About 1 km across."),
     ("conquest_green", "points", "Conquest points: a green space discovered", 50, "points", ""),
+    ("conquest_trove", "points", "Conquest points: a library (treasure trove) found", 75, "points", ""),
     ("conquest_landmark", "points", "Conquest points: a famous place seen for the first time", 100, "points", ""),
     ("conquest_star", "points", "Conquest points: a star (satellite) never seen before", 20, "points", ""),
     ("conquest_constellation", "points", "Conquest points: the first star of a new constellation", 80, "points",
@@ -229,6 +246,9 @@ KNOBS = [
      "A place counts as famous when Wikipedia has an article about it in at least this many languages."),
     ("landmark_m", "detect", "Landmarks: point them out within", 250, "m",
      "How close you need to be for your dragon to say \"LOOK!\"."),
+    ("trove_m", "detect", "Libraries: count a visit within", 60, "m",
+     "How close to a library's point on the map counts as visiting it (a library that's also a famous place counts "
+     "from the landmark distance instead)."),
 ]
 
 _defaults = {k[0]: k[3] for k in KNOBS}
@@ -282,6 +302,10 @@ def set_value(key, value):
         return "at least 1 MB"
     if key == "library_shelf_max_mb" and v < 10:
         return "at least 10 MB"
+    if key == "pond_daily_pct" and not 1 <= v <= 100:
+        return "a percentage, 1 to 100"
+    if key == "rss_minutes" and not (10 <= v <= 1440 and v == int(v)):
+        return "a whole number of minutes, 10 to 1,440"
     if key == "card_save_min" and v < 1:
         return "at least 1 minute"
     if key == "lair_temp_every_h" and (v < 1 or v != int(v)):

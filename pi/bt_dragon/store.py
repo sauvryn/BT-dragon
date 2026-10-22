@@ -55,6 +55,11 @@ CREATE TABLE IF NOT EXISTS greens (
     first_seen REAL, last_seen REAL, visits INT DEFAULT 0);
 CREATE INDEX IF NOT EXISTS greens_lat ON greens(minlat);
 CREATE TABLE IF NOT EXISTS greens_asked (realm TEXT PRIMARY KEY, ts REAL);
+CREATE TABLE IF NOT EXISTS libraries (
+    id TEXT PRIMARY KEY, name TEXT, lat REAL, lon REAL, qid TEXT, realm TEXT,
+    first_seen REAL, last_seen REAL, visits INT DEFAULT 0);
+CREATE INDEX IF NOT EXISTS libraries_lat ON libraries(lat);
+CREATE TABLE IF NOT EXISTS libraries_asked (realm TEXT PRIMARY KEY, ts REAL);
 CREATE TABLE IF NOT EXISTS exercise (start REAL PRIMARY KEY, end REAL, kind TEXT, meters REAL);
 CREATE TABLE IF NOT EXISTS finds (
     coll TEXT, key TEXT, label TEXT, kind TEXT, first_seen REAL, last_seen REAL, count INT DEFAULT 1,
@@ -313,6 +318,27 @@ class Store:
             n += 1
         return n
 
+    def fold_care(self, is_care_label, label, key):
+        """Life-list types saved before Harald knew about personal care gadgets ("Dexcom device",
+        a hearing aid's broadcast name...): fold them into the one type (`label`), so no maker or
+        name is kept, and say only `label` in the diary too. Returns the labels folded."""
+        old = []
+        for r in list(self.db.execute("SELECT key, label, first_seen, last_seen, meals FROM species")):
+            if r["key"] == key or not is_care_label(r["label"]):
+                continue
+            other = self.db.execute("SELECT 1 FROM species WHERE key=?", (key,)).fetchone()
+            if other:
+                self.db.execute("UPDATE species SET first_seen=MIN(first_seen, ?), last_seen=MAX(last_seen, ?), "
+                                "meals=meals+? WHERE key=?", (r["first_seen"], r["last_seen"], r["meals"], key))
+                self.db.execute("DELETE FROM species WHERE key=?", (r["key"],))
+            else:
+                self.db.execute("UPDATE species SET key=?, label=?, kind='care' WHERE key=?", (key, label, r["key"]))
+            old.append(r["label"])
+        for lab in sorted(old, key=len, reverse=True):      # (longest first: "Abbott Medical device" before "Abbott")
+            self.db.execute("UPDATE events SET text=REPLACE(text, ?, ?) WHERE instr(text, ?) > 0", (lab, label, lab))
+        self.db.commit()
+        return old
+
     def rename_maker_events(self, label_for):
         """Old diary entries that mention 'Maker 0x1234 gadget': use the company's name."""
         import re
@@ -438,6 +464,51 @@ class Store:
 
     def forget_greens_seen(self):
         self.db.execute("UPDATE greens SET first_seen=NULL, last_seen=NULL, visits=0, walks=0, runs=0, rides=0")
+
+    # ---------------------------------------------------------------- libraries (treasure troves)
+    def libraries_fetched(self, realm):
+        r = self.db.execute("SELECT ts FROM libraries_asked WHERE realm=?", (realm,)).fetchone()
+        return r[0] if r else None
+
+    def save_libraries(self, realm, libs, now):
+        for b in libs:
+            self.db.execute(
+                "INSERT INTO libraries (id, name, lat, lon, qid, realm) VALUES (?, ?, ?, ?, ?, ?) "
+                "ON CONFLICT(id) DO UPDATE SET name=excluded.name, lat=excluded.lat, lon=excluded.lon, qid=excluded.qid",
+                (b["id"], b["name"], b["lat"], b["lon"], b.get("qid") or "", realm))
+        self.db.execute("INSERT OR REPLACE INTO libraries_asked VALUES (?, ?)", (realm, now))
+
+    def libraries_near(self, lat, lon, reach_m):
+        import math
+        dlat = reach_m / 111320.0
+        dlon = reach_m / (111320.0 * max(0.01, math.cos(math.radians(lat))))
+        return [dict(r, seen=r["first_seen"] is not None) for r in self.db.execute(
+            "SELECT * FROM libraries WHERE lat BETWEEN ? AND ? AND lon BETWEEN ? AND ?",
+            (lat - dlat, lat + dlat, lon - dlon, lon + dlon))]
+
+    def library_by_qid(self, qid):
+        r = self.db.execute("SELECT * FROM libraries WHERE qid=? LIMIT 1", (qid,)).fetchone()
+        return dict(r, seen=r["first_seen"] is not None) if r else None
+
+    def library_seen(self, lid, now):
+        self.db.execute("UPDATE libraries SET first_seen=COALESCE(first_seen, ?), last_seen=?, "
+                        "visits=visits+1 WHERE id=?", (now, now, lid))
+
+    def libraries_list(self):
+        return [dict(r, seen=r["first_seen"] is not None) for r in self.db.execute(
+            "SELECT * FROM libraries ORDER BY first_seen IS NULL, first_seen, name")]
+
+    def forget_libraries_seen(self):
+        self.db.execute("UPDATE libraries SET first_seen=NULL, last_seen=NULL, visits=0")
+
+    def places_seen_since(self, since):
+        """Landmarks, green spaces and libraries seen since `since` (new or known): Adventures today's
+        "places seen". A library that is also a landmark (same Wikidata ID) counts once."""
+        lm = {r[0] for r in self.db.execute("SELECT qid FROM landmarks WHERE last_seen >= ?", (since,))}
+        greens = self.db.execute("SELECT COUNT(*) FROM greens WHERE last_seen >= ?", (since,)).fetchone()[0]
+        libs = sum(1 for r in self.db.execute("SELECT qid FROM libraries WHERE last_seen >= ?", (since,))
+                   if not (r[0] and r[0] in lm))
+        return len(lm) + greens + libs
 
     # ---------------------------------------------------------------- stars (satellites)
     def star_seen(self, key, const, prn, now):

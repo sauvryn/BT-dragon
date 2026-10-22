@@ -541,6 +541,52 @@ class Library:
         d = re.sub(r"[^0-9Xx]", "", q or "")
         return d.upper() if len(d) in (10, 13) and re.fullmatch(r"\d{9,12}[\dXx]", d) else None
 
+    def _by_isbn(self, isbn):
+        """An ISBN: that exact edition (its own page count), from Open Library's edition record,
+        with its ISBN search to fill in what the record lacks (many editions don't name their
+        authors: the work does). The edition record can be slow (Open Library may try to import
+        a book it hasn't got), so it has its own short time limit, and if it fails in any way
+        the ISBN search alone is used. [] if neither knows it; an error only if neither answered."""
+        ed = doc = None
+        errors = 0
+        try:
+            ed = self._get_json(f"{OL}/isbn/{isbn}.json", timeout=8)
+            if not isinstance(ed, dict) or not ed.get("title"):
+                ed = None
+        except urllib.error.HTTPError as e:
+            errors += e.code != 404
+        except Exception:
+            errors += 1
+        try:
+            docs = self._get_json(f"{OL}/search.json?" + urllib.parse.urlencode(
+                {"isbn": isbn, "fields": OL_FIELDS, "limit": 1}), timeout=10).get("docs") or []
+            doc = docs[0] if docs else None
+        except Exception:
+            errors += 1
+        if not ed and not doc:
+            if errors >= 2:
+                raise OSError("Open Library didn't answer")
+            return []
+        doc = doc or {}
+        names = list(doc.get("author_name") or [])
+        for a in ([] if names else ((ed or {}).get("authors") or [])[:2]):
+            try:                                     # (only if the ISBN search didn't name them)
+                names.append(self._get_json(f"{OL}{a['key']}.json", timeout=5).get("name"))
+            except Exception:
+                pass
+        names = [n for n in names if n]
+        if ed:
+            year = re.search(r"\d{4}", ed.get("publish_date") or "")
+            pages = ed.get("number_of_pages")
+            return [{"title": ed.get("title") or doc.get("title") or "Untitled", "author": _authors(names),
+                     "isbn": isbn, "pages": pages or doc.get("number_of_pages_median"),
+                     "cover": next((c for c in ed.get("covers") or [] if c and c > 0), None) or doc.get("cover_i"),
+                     "year": year.group(0) if year else (doc.get("first_publish_year") or ""),
+                     "edition": bool(pages)}]
+        return [{"title": doc.get("title") or "Untitled", "author": _authors(names), "isbn": isbn,
+                 "pages": doc.get("number_of_pages_median"), "cover": doc.get("cover_i"),
+                 "year": doc.get("first_publish_year") or "", "editions": doc.get("edition_count") or 0}]
+
     def search(self, q):
         """Bookworm's search: an ISBN asks for that exact edition (its own page count); anything
         else is a search with one result per work (the typical page count across editions)."""
@@ -549,22 +595,10 @@ class Library:
             return []
         isbn = self.isbn_of(q)
         if isbn:
-            try:
-                ed = self._get_json(f"{OL}/isbn/{isbn}.json")
-                names = []
-                for a in (ed.get("authors") or [])[:3]:
-                    try:
-                        names.append(self._get_json(f"{OL}{a['key']}.json").get("name"))
-                    except Exception:
-                        pass
-                year = re.search(r"\d{4}", ed.get("publish_date") or "")
-                return [{"title": ed.get("title") or "Untitled", "author": _authors([n for n in names if n]),
-                         "isbn": isbn, "pages": ed.get("number_of_pages"),
-                         "cover": next((c for c in ed.get("covers") or [] if c and c > 0), None),
-                         "year": year.group(0) if year else "", "edition": True}]
-            except urllib.error.HTTPError as e:
-                if e.code != 404:
-                    raise
+            found = self._by_isbn(isbn)
+            if found:
+                return found
+            # (Open Library doesn't know that ISBN: an ordinary search for it, below, sometimes does)
         data = self._get_json(f"{OL}/search.json?" + urllib.parse.urlencode(
             {"q": q, "fields": OL_FIELDS, "limit": 10}))
         return [{"title": d.get("title") or "Untitled", "author": _authors(d.get("author_name")),

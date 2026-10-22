@@ -36,7 +36,7 @@ DEFAULTS = {
     "trackers": {"alert_after_minutes": 30, "min_moved_meters": 250},
     "friends": {"beacon": True},
     "diary": {"files": True, "keep_days": 90, "location": True},
-    "sky": {"lands": True, "stars": True, "barometer": True, "landmarks": True, "greens": True, "moon": True},
+    "sky": {"lands": True, "stars": True, "barometer": True, "landmarks": True, "greens": True, "libraries": True, "moon": True},
     "activity": {"enabled": True, "steps_host": "", "steps_port": 8080, "stride_m": 0.75},
     "dot": {"enabled": True, "address": "", "networks": [], "voice": "", "audio_device": 23, "amp_on_after": 0.3,
             "recap_after_minutes": 30,

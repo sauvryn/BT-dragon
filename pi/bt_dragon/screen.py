@@ -69,10 +69,35 @@ def _anchor_icon(d, x, y):
                 d.point((x + col, y + row), fill=0)
 
 
+# the words that name a number on his screen, drawn in bold (the numbers stay regular)
+LABELS = {"SNACKS", "TYPES", "WALK", "TREATS", "PALS", "FRIENDS", "GPS", "WIGLE", "UP", "CPU", "MEM",
+          "JOY", "BELLY", "PACK"}
+
+
+def _parts(text):
+    """A row split into (piece, bold): the label words bold, everything else (spaces included) regular."""
+    import re
+    return [(p, p in LABELS) for p in re.split(r"( +)", text) if p]
+
+
+def _row_width(text):
+    w, parts = 0, _parts(text)
+    for i, (p, b) in enumerate(parts):
+        w += text_width(p, bold=b) + (1 if i < len(parts) - 1 else 0)   # (1: the gap after a glyph)
+    return w
+
+
+def _draw_row(d, x, y, text):
+    """A row with its labels in bold. Returns the x after it."""
+    for p, b in _parts(text):
+        x = draw_text(d, (x, y), p, bold=b)
+    return x
+
+
 def _first_fit(options, width):
     """The first wording that fits; roomier spacing when the numbers are small."""
     for o in options:
-        if text_width(o) <= width:
+        if _row_width(o) <= width:
             return o
     return options[-1]
 
@@ -122,13 +147,13 @@ def render(v: dict) -> Image.Image:
 
     # ---- stats panel: three meters, a little gap, then five rows of text
     x = PANEL_X
-    bar_x = x + 32
+    bar_x = x + 37                     # (room for BELLY in bold, and a gap)
     meters = (("JOY", v.get("joy", 50) / 100.0),
               ("BELLY", v.get("hunger", 50) / 100.0),
               ("PACK", v.get("pack", 0) / max(1.0, v.get("pack_cap", 50))))
     for i, (label, frac) in enumerate(meters):
         y = 26 + i * 9
-        draw_text(d, (x, y), label)
+        draw_text(d, (x, y), label, bold=True)
         _bar(d, bar_x, y - 1, WIDTH - 3 - bar_x, 8, frac)
     walked = v.get("walked_today", 0)
     treats = f"TREATS {v.get('session_treats', 0)}"
@@ -151,7 +176,10 @@ def render(v: dict) -> Image.Image:
                    WIDTH - 2 - x),
     ]
     for i, row in enumerate(rows):
-        draw_text(d, (x, 58 + i * 10), fit_text(row, WIDTH - 2 - x))
+        if _row_width(row) <= WIDTH - 2 - x:
+            _draw_row(d, x, 58 + i * 10, row)              # labels in bold, numbers regular
+        else:                                              # (too long even so: plain, and trimmed)
+            draw_text(d, (x, 58 + i * 10), fit_text(row, WIDTH - 2 - x))
 
     # ---- status line
     d.line([(0, 111), (WIDTH - 1, 111)], fill=0)

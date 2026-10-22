@@ -293,21 +293,20 @@ class Garden:
     def feed(self, food, level, lair_code=None, belly_low=False, now=None):
         # (belly_low is no longer used: a larva's hunger is its own, by how long since it ate)
         """Spare food: snacks and feasts that don't fit in his belly, and treats and berries that fit
-        in neither his belly nor his PACK. Split between everything in the garden."""
+        in neither his belly nor his PACK. Split between the eggs and larvae in the garden.
+        Returns how much they really ate: 0 when there are only pupae and adults waiting to be
+        collected (they don't eat), less than `food` when a larva reaches its pupation point."""
         now = now or time.time()
         if food <= 0 or not self.unlocked(level):
-            return
+            return 0.0
         self.sync_slots(level, now)
         # an adult waiting to be collected, or a pupa, doesn't eat: only eggs and larvae share the food
         slots = [(i, b) for i, b in enumerate(self.s["slots"][: self.slot_count(level)])
                  if not b.get("empty") and not b.get("adult") and not self.is_pupa(b)]
         if not slots:
-            return
-        day = time.strftime("%Y-%m-%d", time.localtime(now))
-        if self.s.get("fed_day") != day:
-            self.s["fed_day"], self.s["fed_today"] = day, 0.0
-        self.s["fed_today"] = self.s.get("fed_today", 0.0) + food
+            return 0.0                      # (nobody to eat it: nothing is said or counted)
         share = food / len(slots)
+        eaten = 0.0
         c = self.country(lair_code)
         for i, b in slots:
             if b.get("egg"):
@@ -315,15 +314,23 @@ class Garden:
             self._check_hunger(b, now)      # (did it go hungry before this meal?)
             b["last_fed"] = now
             # a larva eats only up to its pupation point
+            before = b["fed"]
             b["fed"] = min(b["need"] * b["pupAt"] / 100, b["fed"] + share)
+            eaten += max(0.0, b["fed"] - before)
             pct = 100 * b["fed"] / b["need"] + 1e-6          # (rounding: full means full)
             stage = stage_for(pct, b["pupAt"])
             if stage >= 9 and b.get("stage", 0) < 9:
                 b["pupated"] = now
                 self._tell("pupate", b)
             b["stage"] = stage
+        # only what was really eaten counts (a larva about to pupate stops at its pupation point)
+        day = time.strftime("%Y-%m-%d", time.localtime(now))
+        if self.s.get("fed_day") != day:
+            self.s["fed_day"], self.s["fed_today"] = day, 0.0
+        self.s["fed_today"] = self.s.get("fed_today", 0.0) + eaten
         self.sync_slots(level, now)
         self.save()
+        return eaten
 
     # ---- pupae: a timer, not food
     @staticmethod

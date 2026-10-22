@@ -51,7 +51,8 @@ CHIP = "/sys/devices/soc/11007000.i2c/i2c-0/0-003f/frame"
 PORT = 5555
 MODES = ("all", "big", "recap", "silent", "adventure")
 BIG_MOODS = {"proud", "happy", "excited", "ecstatic", "adventure", "riding", "alarmed", "sunglasses"}
-NEVER_SAY = ("MY DEN:",)
+NEVER_SAY = ("MY DEN:", "UNKNOWN ")   # (an unknown tracker has its own repeating warning: see _timer_loop)
+TRACKER_EVERY_S = 60                    # an unknown tracker's warning, again every minute until it's dismissed
 
 DEFAULTS = {
     "enabled": True,
@@ -80,10 +81,15 @@ DEFAULTS = {
     "say_lair_air": True, "say_lair_air_when": "increased", "say_lair_aurora": True,
     # ...and from the phone's own sensors
     "say_phone_storm": True, "say_phone_sun": True,
+    # ...and the stars (navigation satellites): new ones, new constellations, and known ones rising again
+    "say_stars": True,
+    # ...and new items in your RSS feeds (Ask Harald → RSS feeds)
+    "say_rss": True,
 }
 SAY_BOOLS = ("say_lair_temp", "say_lair_storm", "say_lair_sun", "say_lair_warnings", "say_lair_pollen", "say_lair_uv",
              "say_lair_air", "say_lair_aurora",
-             "say_phone_storm", "say_phone_sun")
+             "say_phone_storm", "say_phone_sun", "say_stars", "say_rss")
+STAR_NEWS = ("A STAR RISES", "A NEW STAR", "A NEW CONSTELLATION")     # (and "... STARS RISING!", "... NEW STARS IN THE SKY!")
 LIMITS = {"volume": (0, 100), "adv_volume": (0, 100), "brightness": (0, 100), "red": (0, 100), "green": (0, 100),
           "blue": (0, 100), "pitch": (-8, 8), "speed": (0.6, 1.6), "gap": (0, 120)}
 
@@ -169,6 +175,16 @@ def build_recap(name, events, meals, treats, away_s):
                 marks.append(m.group(1))
     if marks:
         parts.append(f"I saw {_list(marks[:3])}!")
+    troves = []
+    for e in events:
+        if e["kind"] == "trove":
+            m = re.match(rf"{re.escape(name)} (?:found a new treasure trove|visited a treasure trove): (.*?)!?( \+\d+ Conquest points?\.)?$",
+                         e["text"])
+            if m and m.group(1) not in troves:
+                troves.append(m.group(1))
+    if troves:
+        parts.append(f"We found treasure troves: {_list(troves[:3])}!" if len(troves) > 1
+                     else f"We found a treasure trove: {troves[0]}!")
     outings = []
     for e in events:
         if e["kind"] == "green":
@@ -601,8 +617,8 @@ class DotLink:
             if await self.sh(f"echo {name} > {H}/base", 10) is not None:
                 self._base = name
 
-    async def once(self, name):
-        asked = name.startswith(("ev_test", "ev_alarm", "ev_listen", "ev_think", "ev_hush", "vol_"))
+    async def once(self, name, force=False):
+        asked = force or name.startswith(("ev_test", "ev_alarm", "ev_listen", "ev_think", "ev_hush", "vol_"))
         if not self.ready or (self.quiet_now() and not asked):
             return
         self._seq += 1
@@ -635,6 +651,8 @@ class DotLink:
             self._ring_soon("ev_land")
         if not self.speaks() or any(up.startswith(p) for p in NEVER_SAY):
             return
+        if not self.s["say_stars"] and (up.startswith(STAR_NEWS) or up.endswith(("STARS RISING!", "NEW STARS IN THE SKY!"))):
+            return          # (the stars switched off for the voice: still on his screen and the ring)
         mode = self.s["chatty"]
         if mode in ("recap", "silent", "adventure") or (mode == "big" and mood not in BIG_MOODS):
             return          # (Adventure mode speaks only its own announcements: see adventure())
@@ -653,7 +671,7 @@ class DotLink:
     def on_event(self, kind, text, ts):
         """Hooked into the diary: things that happened, for the ring."""
         name = {"species": "ev_species", "level": "ev_level", "landmark": "ev_landmark",
-                "star": "ev_star", "green": "ev_landmark", "friend": "ev_friend", "treat": "ev_treat", "berries": "ev_nom",
+                "star": "ev_star", "green": "ev_landmark", "trove": "ev_landmark", "friend": "ev_friend", "treat": "ev_treat", "berries": "ev_nom",
                 "pack": "ev_nom", "ration": "ev_nom", "tracker": "ev_alert", "adventure": "ev_realm"}.get(kind)
         if kind == "weather":
             name = "ev_storm" if text.startswith("A storm") else "ev_weather"
@@ -688,10 +706,15 @@ class DotLink:
                     else f"Look, it's {k['title']} again!")
         elif kind == "green_found":
             text = f"A new green space! {k['name']}!"
+        elif kind == "trove":
+            text = (f"New trove! {k['name']}! A library full of treasure!" if k.get("first")
+                    else f"Treasure trove! {k['name']}!")
         elif kind == "green_visit":
             text = k["text"]
         elif kind == "sunny":
             text = "Wow! It's sunny out today!"
+        elif kind in ("constellation", "stars") and not self.s["say_stars"]:
+            return
         elif kind == "constellation":
             text = f"A new constellation in the sky: {k['name']}!"
         elif kind == "stars":
@@ -773,10 +796,12 @@ class DotLink:
         if not text or getattr(self.app, "napping", False):
             return
         route = self.phone_route()
-        if route in ("phone", "both") and (force or not self.quiet_now()):
+        if route in ("phone", "both") and (force or not self.quiet_now()) and (force or not self.story_on("phone")):
             self.phone.push(text)
         if route in ("phone", None):
             return
+        if not force and self.story_on("dot"):
+            return              # (reading a story: his news doesn't interrupt it)
         if not (self.connected and self.ready):
             return              # the Dot's away: nothing is saved up (the recap covers time apart),
                                 # or a timer would come back as a pile of stale "pasta is done!"
@@ -883,6 +908,55 @@ class DotLink:
                 await self.once("ev_hush")
                 self._speaking = False
                 self._last_spoke = time.time()
+
+    async def speak_stream(self, next_part, on_spoken=None):
+        """A long reading (a story from the library): sentence after sentence, each made while
+        the one before plays, so there's no gap between them. `next_part()` gives (sentence,
+        pause after it in seconds) or None at the end; asked one sentence ahead. Returns "done",
+        "stopped" (hush()) or "lost" (the Dot stopped answering)."""
+        async with self._speak_lock:
+            if self.dot_ears.connected:
+                await self.dot_ears.busy(True)
+            hush = self._hush_seq
+            names = ["story1.wav", "story2.wav"]
+            part = next_part()
+            making = asyncio.ensure_future(self._make_speech(part[0], names[0])) if part else None
+            i, started = 0, False
+            try:
+                while part:
+                    speech_s, _ = await making
+                    making = None
+                    if hush != self._hush_seq:
+                        return "stopped"
+                    if speech_s is None or not (self.connected and self.ready):
+                        return "lost"
+                    nxt = next_part()
+                    if nxt:
+                        making = asyncio.ensure_future(self._make_speech(nxt[0], names[(i + 1) % 2]))
+                    if not started:
+                        started, self._speaking = True, True
+                    await self._play(names[i % 2], speech_s)
+                    if hush != self._hush_seq:
+                        return "stopped"
+                    if on_spoken:
+                        on_spoken(part)
+                    if part[1]:
+                        await asyncio.sleep(part[1])
+                    part, i = nxt, i + 1
+                return "done"
+            finally:
+                if making:
+                    making.cancel()
+                if started:
+                    self._speaking = False
+                    self._last_spoke = time.time()
+                if self.dot_ears.connected:
+                    await self.dot_ears.busy(False)
+
+    def story_on(self, where):
+        """Is a story being read through `where` ("dot" or "phone")? Other remarks wait (are dropped)."""
+        st = getattr(self.app, "story", None)
+        return bool(st and st.active and st.voice == where)
 
     async def speaker_loop(self):
         while not self.app.stop.is_set():
@@ -1671,6 +1745,23 @@ class DotLink:
                     self.remind(now)
                 except Exception:
                     log.exception("calendar reminders")
+            # an unknown tracker that's stayed with you: said (and flashed on the ring) straight away,
+            # then again every minute until it's dismissed in the den, whatever "How chatty" is set
+            # to and even in quiet hours, like a timer that's done: it's a safety warning
+            alerts = getattr(getattr(self.app, "trackers", None), "alerts", None)
+            if alerts:
+                if now >= getattr(self, "_tracker_next", 0):
+                    self._tracker_next = now + TRACKER_EVERY_S
+                    a = max(alerts.values(), key=lambda a: a["ts"])
+                    mins = int((now - a["since"]) // 60)
+                    more = f" And {len(alerts) - 1} more." if len(alerts) > 1 else ""
+                    short = a["label"].split(" (")[0].split(" / ")[0]      # "Find My item (owner away)" -> "Find My item"
+                    what = ("an " if short[:1].lower() in "aeiou" else "a ") + short
+                    self.say(f"Warning! An unknown tracker has been near you for {mins} minute{'s' if mins != 1 else ''}: "
+                             f"{what}. Please check the Den.{more}", force=True)
+                    await self.once("ev_alert", force=True)
+            else:
+                self._tracker_next = 0
             done = self.timers.due(now)
             if done:
                 names = [ask.label(t) for t in done]

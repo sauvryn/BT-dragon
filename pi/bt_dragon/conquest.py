@@ -5,6 +5,7 @@ along the way, like the Butterfly Garden's.
   a land (a square of the map about 250 m across)        10
   a realm (about 1 km across)                             50
   a green space discovered                                50
+  a library (treasure trove) found                        75
   a famous place (landmark) seen for the first time      100
   a star (a navigation satellite) never seen before       20
   the first star of a new constellation                 +80 (100 with its star)
@@ -16,11 +17,11 @@ by the dozen on a clear day, so each is worth a little.
 
 The score is counted from what's been claimed (so it's always right, after a restore too, and
 claims made before scoring existed count), and "Forget my map" takes the lands, realms,
-landmarks and green spaces back off it. Every number is a Developer Tools knob.
+landmarks, green spaces and libraries back off it. Every number is a Developer Tools knob.
 """
 from . import tuning
 
-KINDS = ("land", "realm", "green", "landmark", "star", "constellation")
+KINDS = ("land", "realm", "green", "trove", "landmark", "star", "constellation")
 
 TITLES = [(0, "c0", "Fledgling Forager"), (250, "c1", "Wandering Wyrmling"), (750, "c2", "Scouting Skald"),
           (1500, "c3", "Roaming Raider"), (3000, "c4", "Trailblazing Thane"), (5000, "c5", "Boundary-Breaking Berserker"),
@@ -38,6 +39,7 @@ def counts(store, min_langs=0):
     stars = store.stars()
     return {"land": lands, "realm": realms,
             "green": sum(1 for g in store.greens_list() if g.get("first_seen")),
+            "trove": sum(1 for b in store.libraries_list() if b.get("first_seen")),
             "landmark": sum(1 for x in store.landmarks_list(min_langs) if x.get("first_seen")),
             "star": len(stars), "constellation": len({s["const"] for s in stars})}
 

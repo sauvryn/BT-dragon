@@ -1,8 +1,8 @@
 """
 Mobile Wi-Fi: networks that travel. Recognized by their names:
 
-  vehicles   cars (an Audi's "Audi_MMI_1234", a Volkswagen's "VW_WLAN_5678", "InCarHotspot",
-             wireless CarPlay), dashcams, buses, trams and trains;
+  vehicles   cars (an Audi's "Audi_MMI_1234", a Volkswagen's "VW_WLAN_5678", a Porsche's "Taycan_1234",
+             "InCarHotspot", wireless CarPlay), dashcams, buses, trams and trains;
   phones     phone hotspots ("Sam's iPhone", "AndroidAP1234", "Galaxy A52 1a2b", "Pixel_1234")
              and pocket routers ("VodafoneMobileWiFi-12AB", "MiFi").
 
@@ -27,7 +27,7 @@ _WORDS = [
     r"carplay", r"android ?auto", r"in[- ]?car[ _-]?(?:hotspot|wi-?fi|wlan)?", r"car[ _-]?(?:hotspot|wi-?fi|wlan|net)",
     r"my ?car", r"onstar", r"mbux", r"mmi", r"fordpass", r"uconnect", r"sync ?\d",
     # makers whose cars broadcast their name
-    r"audi", r"myaudi", r"vw", r"volkswagen", r"skoda", r"cupra", r"porsche", r"bentley", r"lamborghini",
+    r"audi", r"myaudi", r"vw", r"volkswagen", r"skoda", r"cupra", r"porsche", r"taycan", r"cayenne", r"macan", r"panamera", r"bentley", r"lamborghini",
     r"bmw", r"mybmw", r"mercedes(?:[- ]benz)?", r"mb ?(?:hotspot|wlan|wifi)", r"ford", r"vauxhall", r"opel",
     r"chevrolet", r"cadillac", r"buick", r"toyota", r"lexus", r"honda", r"nissan", r"mazda", r"subaru",
     r"mitsubishi", r"suzuki", r"hyundai", r"kia", r"renault", r"r-?link", r"dacia", r"peugeot",

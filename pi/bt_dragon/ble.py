@@ -106,6 +106,92 @@ APPLE_PODS = {
 
 TRACKER_KINDS = ("tracker",)
 
+# ---------------------------------------------------------------- personal care gadgets
+# Hearing aids, glucose sensors, insulin pumps, CPAP machines, blood-pressure monitors,
+# thermometers, wheelchair controls... A gadget like that says something about the person
+# carrying it, so Harald files every one as the same type, "Personal care gadget", and keeps
+# nothing else: not its name, not its maker, not which kind it is. It's in the diary, on the
+# screen and in Gadgets nearby only as that. (The Gadget Journal's card says what the category
+# covers, in general terms, and that it's worth knowing these can be heard at all.)
+CARE = "Personal care gadget"
+CARE_KEY = "personal-care-gadget"
+# Bluetooth SIG company IDs (companies.tsv, from the SIG's Assigned Numbers) of makers whose
+# gadgets are all of this kind: hearing aids and implants, diabetes care, sleep and breathing
+# machines, home health monitors, mobility controls.
+CARE_COMPANIES = {
+    0x0067, 0x0089,     # GN Hearing (ReSound)
+    0x00BA,             # Starkey Hearing
+    0x00D0,             # Dexcom
+    0x0107,             # Demant (Oticon)
+    0x0167,             # Ascensia Diabetes Care
+    0x016D,             # LifeScan
+    0x0170,             # Roche Diabetes Care
+    0x0175,             # Dynamic Controls (powered wheelchairs)
+    0x01BB, 0x0497,     # Cochlear
+    0x01E0,             # WS Audiology (Widex, Signia)
+    0x01F9,             # Medtronic
+    0x020E,             # Omron Healthcare
+    0x0282,             # Sonova (Phonak); not Sonova Consumer, who make Sennheiser headphones
+    0x0295,             # Sivantos (Signia)
+    0x035A,             # Phillips-Medisize (connected medicine devices)
+    0x0360,             # Insulet (Omnipod)
+    0x038D,             # ResMed
+    0x03BB, 0x03C5,     # Abbott (FreeStyle Libre)
+    0x043E,             # Thermomedics
+    0x059D,             # Tandem Diabetes Care
+    0x0611,             # Beurer (home health monitors)
+    0x0647,             # MED-EL (hearing implants)
+    0x089E,             # i-SENS (glucose meters)
+    0x0C99,             # Vire Health
+    0x0CDC,             # Ypsomed
+    0x0F75,             # Senseonics (Eversense)
+    0x112E,             # Oticon Medical
+}
+# the SIG's standard services for health gadgets (Assigned Numbers), and Android's hearing-aid one
+CARE_SERVICES = {
+    0x1808,   # Glucose
+    0x1809,   # Health Thermometer
+    0x1810,   # Blood Pressure
+    0x181F,   # Continuous Glucose Monitoring
+    0x1822,   # Pulse Oximeter
+    0x183A,   # Insulin Delivery
+    0x1854,   # Hearing Access (LE Audio hearing aids)
+    0xFDF0,   # ASHA: Android's Audio Streaming for Hearing Aids
+}
+# names that say the same (makers' own names and product names)
+CARE_NAME = re.compile(
+    r"dexcom|resmed|airsense|airmini|omnipod|freestyle|\blibre\b|revitive|wheelair|oticon|phonak|resound|widex|"
+    r"starkey|signia|cochlear|accu-?chek|minimed|medtronic|t:slim|ypsomed|eversense|beurer|"
+    r"hearing ?aid|\bcpap\b|glucose|insulin|vire health", re.IGNORECASE)
+_CARE_SHORTS = None
+
+
+def _care_shorts():
+    global _CARE_SHORTS
+    if _CARE_SHORTS is None:
+        _CARE_SHORTS = sorted({COMPANIES[c] for c in CARE_COMPANIES if c in COMPANIES}, key=len, reverse=True)
+    return _CARE_SHORTS
+
+
+def is_care(name, manufacturer_data, svcs):
+    if any(c in CARE_COMPANIES for c in (manufacturer_data or {})):
+        return True
+    if svcs & CARE_SERVICES:
+        return True
+    return bool(name and CARE_NAME.search(name))
+
+
+def is_care_label(label):
+    """Was this life-list type (saved before Harald knew the category) a personal care gadget?
+    "Dexcom device", "ResMed #", "Abbott FreeStyle..." (a maker's name, then the broadcast name)."""
+    if not label or label == CARE:
+        return False
+    if label.startswith("Sonova Consumer"):
+        return False
+    if CARE_NAME.search(label):
+        return True
+    return any(label == f"{s} device" or label.startswith(s + " ") for s in _care_shorts())
+
 
 def uuid16(u: str):
     """'0000feed-0000-1000-8000-00805f9b34fb' -> 0xFEED; None for vendor 128-bit UUIDs."""
@@ -212,6 +298,8 @@ def classify(name, manufacturer_data: dict, service_uuids, service_data: dict):
             return _key(label), label, kind
 
     md = manufacturer_data or {}
+    if is_care(name, md, svcs):
+        return CARE_KEY, CARE, "care"
     if 0x004C in md:
         label, kind = _apple(bytes(md[0x004C]))
         return _key(label), label, kind
@@ -358,14 +446,17 @@ class BleWatcher:
         first = s is None
         if first:
             key, label, kind = classify(name, mfr, uuids, sdata)
-            s = Sighting(address, address_is_stable(address, address_type), rssi, now, key, label, kind, name)
+            s = Sighting(address, address_is_stable(address, address_type), rssi, now, key, label, kind,
+                         None if kind == "care" else name)       # (a personal care gadget's name is never kept)
             self.live[address] = s
         else:
             s.rssi, s.last = rssi, now
-            if name and not s.name:
+            if name and not s.name and s.kind != "care":
                 s.name = name
                 if s.kind in ("maker", "mystery"):
                     s.key, s.label, s.kind = classify(name, mfr, uuids, sdata)
+                    if s.kind == "care":
+                        s.name = None
         today = time.strftime("%Y-%m-%d", time.localtime(now))
         if today != self._day:
             self._day, self.eaten_today, self._day_key = today, set(), os.urandom(16)
