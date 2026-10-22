@@ -50,7 +50,7 @@ def link(enabled, phone, backup, connected, listening):
     d.queue_event = asyncio.Event()
     d.quiet = False
     d.quiet_now = lambda: d.quiet
-    for m in ("say", "phone_route", "speaks"):
+    for m in ("say", "phone_route", "speaks", "story_on"):
         setattr(d, m, getattr(DotLink, m).__get__(d))
     return d
 

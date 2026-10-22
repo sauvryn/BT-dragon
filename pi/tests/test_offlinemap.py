@@ -148,10 +148,10 @@ assert gz and gzip.decompress(data).startswith(b"tile (15")
 assert not m.due()                                                # once a day
 asked.clear()
 m.s.pop("last_day")
-assert "up to date" in m.run(bounds) and not asked                # nothing new: nothing asked for
+assert "up to date" in m.run(bounds, today=datetime.date(2026, 10, 17)) and not asked                # nothing new: nothing asked for
 m.s.pop("last_day")
 more = bounds + [[LAT + 0.01, LON, LAT + 0.012, LON + 0.003]]     # a new land a kilometer north
-r = m.run(more)
+r = m.run(more, today=datetime.date(2026, 10, 17))
 assert "new map tiles" in r and m.counts()[0] > n and "/{}.pmtiles".format(DATE) in asked
 # no internet: says so, and tries again in half an hour (not the next day)
 m.s.pop("last_day")

@@ -52,7 +52,8 @@ items = {i["id"]: i for g in j["groups"] for i in g["items"]}
 assert items["apple-nearby"]["found"] and items["airpods"]["count"] == 6 and not items["tile"]["found"]
 assert [x["label"] for x in items["airpods"]["card"]["mine"]["list"]] == ["AirPods Pro 2"]   # models found, as forms
 extras = {x["id"]: x for x in j["extras"]}
-assert extras["named"]["count"] == 2 and extras["maker"]["count"] == 1
+assert extras["named"]["count"] == 1 and extras["maker"]["count"] == 1
+assert items["speaker"]["found"] and [x["label"] for x in items["speaker"]["card"]["mine"]["list"]] == ["JBL Flip #"]
 assert j["title"] == "Ember's Gadget Journal" and "Ember" in j["intro"] and "Harald" not in str(j["groups"])
 for st in [("GPS", 5), ("GPS", 12), ("Galileo", 3), ("SBAS", 123)]:
     app.store.star_seen(f"{st[0]}-{st[1]}", st[0], st[1], now)
@@ -71,7 +72,7 @@ sock.close()
 app.cfg["link"]["web_port"] = port
 threading.Thread(target=lambda: asyncio.run(server.web_server(app)), daemon=True).start()
 time.sleep(3)
-for path in ("/journal", "/stars"):
+for path in ("/journal", "/stars", "/wifijournal"):
     html = urllib.request.urlopen(f"http://127.0.0.1:{port}{path}").read().decode()
     assert "__DATA__" not in html and "const DATA = {" in html
     assert html.count("</script>") == 3, path                       # lang.js's, auth.js's and the page's own
@@ -87,7 +88,7 @@ if sync_playwright:
     with sync_playwright() as p:
         kw = {"executable_path": "/opt/pw-browsers/chromium"} if os.path.exists("/opt/pw-browsers/chromium") else {}
         br = p.chromium.launch(**kw)
-        for path in ("/journal", "/stars"):
+        for path in ("/journal", "/stars", "/wifijournal"):
             page = br.new_page(viewport={"width": 360, "height": 800})
             errors = []
             page.on("pageerror", lambda e: errors.append(str(e)))

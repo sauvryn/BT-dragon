@@ -98,12 +98,13 @@ assert app.on_radio("sensors", tyre.replace("Schrader", "Other")) is None and \
     not any("Other" in e["text"] for e in app.store.events(10))            # nothing heard in a nap
 app.napping = False
 # Gadget Journal points
-assert journal.points_for("Tile tracker") == scores.POINTS["Uncommon"] and journal.points_for("JBL Flip #") == 10
+assert journal.points_for("Tile tracker") == scores.POINTS["Uncommon"] and journal.points_for("Garmin device") == 10 \
+    and journal.points_for("JBL Flip #") == scores.POINTS["Common"] + 10
 app._eat_species("tile-tracker", "Tile tracker", "tracker", time.time())
 assert any(e["text"] == f"New type: Tile tracker +{scores.POINTS['Uncommon']} Gadget Journal points."
            for e in app.store.events(5))
 app._eat_species("jbl-flip", "JBL Flip #", "named", time.time())
-assert app.journal_score(fresh=True) == scores.POINTS["Uncommon"] + journal.FIELD_POINTS
+assert app.journal_score(fresh=True) == scores.POINTS["Uncommon"] + scores.POINTS["Common"] + journal.FIELD_POINTS   # (a speaker)
 assert app.view()["journal"]["points"] == app.journal_score()
 lines = asyncio.run(app.command("RADIO"))
 d = dict(l.split("=", 1) for l in lines[:-1])

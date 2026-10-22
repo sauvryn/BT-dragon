@@ -75,19 +75,83 @@ steps["on"] = True
 for i in range(30):
     lat += 1.3 / 111320; m.feed({"lat": lat, "lon": -0.13, "ts": t + i, "speed": 1.3, "acc": 5})
 assert not m.riding and m.mode == "walking" and m.take(t + 100).get("walking", 0) > 30
-# ...and walking speed without any steps (a bus in a queue, never fast) isn't a walk
+# ...walking speed without any steps, just after vehicle speed (a bus in traffic), isn't a walk
 steps["on"] = False
 m = Motion(feet=lambda: steps["on"])
+for i in range(12):
+    lat += 10 / 111320; m.feed({"lat": lat, "lon": -0.13, "ts": 4980 + i, "speed": 10.0, "acc": 5})
+m.take(4995)
 for i in range(60):
     lat += 1.3 / 111320; m.feed({"lat": lat, "lon": -0.13, "ts": 5000 + i, "speed": 1.3, "acc": 5})
 got = m.take(6000)
 assert m.mode == "vehicle" and own(got) == 0 and got["vehicle"] > 50, got
+# ...but with no vehicle speed in the last 3 minutes, steps going quiet (many phones send their
+# step count only every minute or so with the screen off) don't make a walk a ride
+m = Motion(feet=lambda: steps["on"])
+for i in range(60):
+    lat += 1.3 / 111320; m.feed({"lat": lat, "lon": -0.13, "ts": 7000 + i, "speed": 1.3, "acc": 5})
+got = m.take(8000)
+assert m.mode == "walking" and got.get("vehicle", 0) == 0 and got.get("walking", 0) > 50, got
+# a burst of vehicle speed mid-walk (GPS between tall buildings) never starts a ride while the
+# step counter says you're walking, even when the positions agree with the speed
+steps["on"] = True
+m = Motion(feet=lambda: steps["on"])
+for i in range(40):
+    lat += 1.4 / 111320; m.feed({"lat": lat, "lon": -0.13, "ts": 8100 + i, "speed": 1.4, "acc": 5})
+for i in range(15):
+    lat += 10 / 111320; m.feed({"lat": lat, "lon": -0.13, "ts": 8140 + i, "speed": 10.0, "acc": 5})
+for i in range(40):
+    lat += 1.4 / 111320; m.feed({"lat": lat, "lon": -0.13, "ts": 8155 + i, "speed": 1.4, "acc": 5})
+got = m.take(8400)
+assert not m.riding and got.get("vehicle", 0) == 0, got
 # a bike ride (fast, but never 9 m/s for long) stays a bike ride
 m = Motion()
 for i in range(120):
     sp = 6.0 + (3.5 if i % 30 == 0 else 0)                      # a quick burst now and then
     lat += sp / 111320; m.feed({"lat": lat, "lon": -0.13, "ts": 9000 + i, "speed": sp, "acc": 5})
 assert not m.riding and m.mode == "cycling" and m.take(9500).get("cycling", 0) > 700
+
+# --- indoors: the phone finds itself from Wi-Fi and masts, the position jumps about, and it
+# reports the jumps as bus-like speeds. Nothing real moved, so no ride, and no "cycling" either.
+import random
+home = (51.51, -0.13)
+for seed in range(20):                                           # twenty different afternoons on the sofa
+    rnd = random.Random(seed)
+    m = Motion()
+    for i in range(600):                                         # ten minutes each
+        jump = rnd.uniform(0, 60) / 111320
+        m.feed({"lat": home[0] + jump * rnd.choice((-1, 1)), "lon": home[1] + rnd.uniform(-40, 40) / 70000,
+                "ts": 20000 + i, "speed": rnd.uniform(9.5, 15), "acc": rnd.choice((12, 20, 25, 45, 80))})
+    got = m.take(21000)
+    assert not m.riding and got.get("vehicle", 0) == 0 and got.get("cycling", 0) == 0, (seed, got)
+# ...a little smaller wobble, and a lot bigger, as well
+for spread in (20, 150):
+    for seed in range(10):
+        rnd = random.Random(100 + seed)
+        m = Motion()
+        for i in range(600):
+            m.feed({"lat": home[0] + rnd.uniform(-spread, spread) / 111320, "lon": home[1] + rnd.uniform(-spread, spread) / 70000,
+                    "ts": 20000 + i, "speed": rnd.uniform(9.5, 15), "acc": rnd.choice((10, 15, 25))})
+        got = m.take(21000)
+        assert not m.riding and sum(got.values()) == 0, (spread, seed, got)
+# a tram whose fixes jitter a few meters each still rides, and jitter never adds distance
+rnd = random.Random(1)
+m = Motion()
+lat, lon, t, true = 51.51, -0.13, 0, 0.0
+for sp in ([1.0, 2.0, 3.5, 5.0, 7.0] + [11.0] * 25 + [7.0, 5.0, 3.5, 2.0, 1.0] + [0.0] * 20 + [1.5] * 20) * 4:
+    lat += sp * 0.8 / 111320; lon += sp * 0.6 / 70000; true += sp
+    m.feed({"lat": lat + rnd.gauss(0, 4) / 111320, "lon": lon + rnd.gauss(0, 4) / 70000, "ts": t, "speed": sp, "acc": 15})
+    t += 1
+got = m.take(t + 60)
+assert m.riding and 0.75 * true < got.get("vehicle", 0) <= true and own(got) == 0, (got, true)
+# ...while a real ride, with the same accuracy, still counts
+m = Motion()
+lat = 51.51
+for i in range(60):
+    lat += 11 / 111320
+    m.feed({"lat": lat, "lon": -0.13, "ts": 30000 + i, "speed": 11, "acc": 20})
+assert m.riding and m.take(31000).get("vehicle", 0) > 400
+print("indoor wobble ok")
 
 # the step counter's evidence: steps in the last 45 s
 a = Activity(Store(":memory:"))

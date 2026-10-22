@@ -106,6 +106,7 @@ stars = true               # collect navigation satellites (needs GPSd Forwarder
 barometer = true           # climbing and weather, from your phone's barometer via SensorServer
 landmarks = true           # point out famous places; looks up each new ~1 km square on Wikipedia
 greens = true              # parks and woods: looks up each new ~1 km square on OpenStreetMap
+libraries = true           # libraries (treasure troves): looks up each new ~1 km square on OpenStreetMap
 moon = true                # celebrate new, quarter and full moons (worked out on the Pi, no internet)
 
 [dot]
