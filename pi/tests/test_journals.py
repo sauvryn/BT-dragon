@@ -85,11 +85,23 @@ expect = {
     "DJI-MAVIC#PRO-#": "camera", "Quest #": "console", "Nintendo device": "console", "Seiko Epson device": "printer",
     "SumUp #": "printer", "Square device": "printer", "Apple Pencil": "hid", "Mi": "xiaomi",
     "iPhone / iPad / Mac": "apple-nearby", "AirPods Pro 2": "airpods",
+    # (November 2026)
+    "Samsung device": "android", "Oppo Mobile device": "android", "Transsion device": "android",
+    "LAPTOP-AB#CD#EF": "laptop", "DESKTOP-ABC#DEF": "laptop", "Dell Computer device": "laptop",
+    "Scale-#-#": "scale", "Etekcity device": "scale", "Luxottica device": "glasses",
+    "LG HBS-FN#_LE": "headphones", "Baseus BowieE#": "headphones", "LE-Bose S# Pro": "speaker",
+    "Ultimea device": "speaker", "GARD PRO HS#s": "smartwatch", "T#ultra#": "smartwatch",
+    "Allterco Robotics device": "smart-home", "Woan device": "smart-home", "Salto device": "smart-home",
+    "Cucumber Lighting device": "lights", "Samsung #\" Crystal UHD": "appliance", "MiraScreen #": "appliance",
+    "Luba-MN#W#QY#": "appliance", "MG_CarKey": "car", "TDI TUNING CRTD#": "obd", "AVINOX #": "bike",
+    "NEXBLUE_XB#S": "ev", "Votronic": "camper", "xiaoxiang BMS V#.#": "camper", "Canon EOSR#_#": "camera",
+    "Valve device": "console", "Pokemon GO Plus": "console",
 }
 for lab, cid in expect.items():
     c = journal.category(lab)
     assert c and c[0] == cid, (lab, c and c[0], cid)
-for lab in ("Samsung device", "Garmin device", "Bose device", "Sony device", "Mystery-ish #", "Maker 0x0C98 gadget"):
+for lab in ("Canon device", "Garmin device", "Bose device", "Sony device", "Mystery-ish #", "Maker 0x0C98 gadget",
+            "Google device", "Zhuhai Jieli device"):
     assert journal.category(lab) is None, lab
 ids = [c[0] for c in journal.CATALOGUE]
 assert len(ids) == len(set(ids)) and all(i in ids for i, _ in journal.MATCH)
@@ -129,6 +141,8 @@ cases = {
     "Cafe Guest": "public", "FreeWiFi@Shop": "public", "Staff WiFi": "business", "PDQ": "business",
     "Acme Corporate": "business", "xfinitywifi": "public", "MySpectrumWiFi12-5G": "spectrum",
     "Brotherhood Guest WIFI": "public", "Orbit_12": None, "Hotspot1234": None, "": None, None: None,
+    "ClearFibre 1A2B": "clearfibre", "RUT955_WiFi": "mobilebb", "Shop_POS": "business", "Lift_IoT": "business",
+    "EPOS": "business", "Colleague WiFi": "business", "podpoint_123": "setup", "Patriot": None, "Possum": None,
 }
 for ssid, cid in cases.items():
     assert wifijournal.category(ssid) == cid, (ssid, wifijournal.category(ssid), cid)
