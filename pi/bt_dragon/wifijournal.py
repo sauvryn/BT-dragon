@@ -123,10 +123,13 @@ CARDS = [
      *_ISP_DYK),
     ("communityfibre", "Home broadband", "Community Fibre", "Rare", "router", r"^community ?fibre",
      "A Community Fibre broadband router.", "\"CommunityFibre\" and a few letters or numbers.", *_ISP_DYK),
+    ("clearfibre", "Home broadband", "ClearFibre", "Rare", "router", r"^clear ?fibre",
+     "A ClearFibre broadband router.", "\"ClearFibre\" and a few letters or numbers. " + _ISP_HOW, *_ISP_DYK),
     ("mobilebb", "Home broadband", "4G and 5G home broadband", "Uncommon", "router",
-     r"^three[_ -]|(?<![\d.])4g\b|\b5g ?(?:hub|router|home)|^o2 ?wireless|^huawei-|^zte",
+     r"^three[_ -]|^rut\d|(?<![\d.])4g\b|\b5g ?(?:hub|router|home)|^o2 ?wireless|^huawei-|^zte",
      "A home broadband router that gets its internet from a mobile network, as a phone does.",
-     "Its name has the network's (\"Three_\") or says 4G.", *_ISP_DYK),
+     "Its name has the network's (\"Three_\") or says 4G; \"RUT\" and a number is a Teltonika router, often in a "
+     "van or a small business.", *_ISP_DYK),
     ("xfinity", "Home broadband", "Xfinity", "Rare", "router", r"^xfinity(?!wifi)|^comcast",
      "An Xfinity (Comcast) router, in the United States.", "Its name has the provider's.", "", []),
     ("spectrum", "Home broadband", "Spectrum", "Rare", "router", r"^myspectrumwifi|^spectrum",
@@ -152,7 +155,7 @@ CARDS = [
      "network in between.",
      [("Brother: Wi-Fi Direct", "https://www.brother.com.ph/en/solutions/wifi-direct")]),
     ("setup", "Out and about", "Smart-home setup networks", "Uncommon", "gear",
-     r"set-?up|^esp[_-]|tasmota|shelly|meross|smart ?life|tuya|^sonos|^amazon-|^roku|chromecast|^google ?home|"
+     r"set-?up|^esp[_-]|^pod ?point|tasmota|shelly|meross|smart ?life|tuya|^sonos|^amazon-|^roku|chromecast|^google ?home|"
      r"^ezviz|^wyze|^tapo|^kasa|^wiz_|^nanoleaf|^lifx|^miio|^xiaomi-|^roborock|^dreame|^ecovacs|^viomi",
      "A smart-home gadget waiting to be set up: a plug, bulb, camera, speaker or robot vacuum.",
      "Until it knows your Wi-Fi, a gadget makes a little network of its own, often with \"Setup\" or its maker's "
@@ -182,7 +185,8 @@ CARDS = [
      "sign-in page, and with WPA2-Enterprise security turned on automatically.",
      [("Wi-Fi Alliance: Passpoint", "https://www.wi-fi.org/node/6836")]),
     ("business", "Out and about", "Staff and business networks", "Common", "office",
-     r"staff|corp|office|internal|secure|private|\bpos\b|\bpdq\b|\btill|cctv|voip|\biot\b|members?\b|crew|mgmt|"
+     r"staff|corp|office|internal|secure|private|(?<![a-z])(?:pos|iot)(?![a-z])|pdq|epos|\btill|cctv|voip|"
+     r"colleague|conference|members?\b|crew|mgmt|"
      r"admin|workshop|stores?\b|partners|production|meeting|byod|warehouse|backoffice|back ?office|\blan\b|\bint\b|"
      r"business|\bltd\b|limited|\bplc\b|\binc\b|employee|\btools?\b|\btech\b|clinic|surgery|dental|practice|"
      r"school|academy|council|church|trades|backstage|volunteer",
@@ -193,7 +197,7 @@ CARDS = [
 _CAR_IDS = [c[0] for c in CARDS if c[1] == "Cars"]
 _MATCH = [(c[0], re.compile(c[5], re.IGNORECASE)) for c in CARDS if c[5]]
 _ORDER = ["printer", "setup", "mesh", "public", "business", "bt", "sky", "virgin", "vodafone", "talktalk", "plusnet",
-          "youfibre", "hyperoptic", "communityfibre", "mobilebb", "xfinity", "spectrum", "att", "verizon", "canada",
+          "youfibre", "hyperoptic", "communityfibre", "clearfibre", "mobilebb", "xfinity", "spectrum", "att", "verizon", "canada",
           "ownrouter"]
 _BY_ID = dict(_MATCH)
 _DASH = re.compile(r"(?<![a-z0-9])(?:dash ?cam\w*|dash-\d+|\w*car ?cam\w*|70mai|viofo|ddpai|nextbase|blackvue|"

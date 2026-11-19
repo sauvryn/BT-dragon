@@ -287,6 +287,22 @@ CATALOGUE = [
 # on its card, and each still counts as a field find too (FIELD_POINTS), so nothing found before
 # is worth less now that it has a home.
 CATALOGUE += [
+    # ---------------------------------------------------------------- phones and computers
+    ("android", "Phones and computers", "Android phone", "Common", "phone", [],
+     "A phone that isn't an iPhone: Samsung, Oppo, vivo, OnePlus, Honor, Tecno or Infinix.",
+     "Android phones mostly keep quiet, but advertise for their own reasons: their watch or earbuds, Quick Share, "
+     "or a Fast Pair gadget nearby. These carry their maker's company number, and that's how Harald knows them. "
+     "(Samsung's earbuds, watches and TVs carry Samsung's too, but most of what's heard with it is phones.)",
+     "The first phone with Android was the HTC Dream, sold as the T-Mobile G1: it went on sale in the United "
+     "States in October 2008 and in Britain a month later, with a keyboard that slid out from under the screen.",
+     [("Wikipedia: HTC Dream", "https://en.wikipedia.org/wiki/HTC_Dream")]),
+    ("laptop", "Phones and computers", "Laptop or PC", "Common", "laptop", [],
+     "A laptop or desktop computer, known by its maker or by the name Windows gave it.",
+     "A computer advertises its name so its Bluetooth gadgets (a mouse, earbuds, a phone) can find it again.",
+     "A Windows PC that's never been renamed is called DESKTOP- and seven letters or numbers, made up when "
+     "Windows was set up, which is why so many computers have names nobody chose.",
+     [("Dell Support: Computer name shows as Desktop-XXXXXX",
+       "https://dell.com/support/kbdoc/en-us/000137111/computer-name-shows-as-desktop-xxxxxx-on-dell-systems-that-ship-with-windows-10?lang=en")]),
     # ---------------------------------------------------------------- listening
     ("headphones", "Listening", "Headphones and earbuds", "Common", "earbuds", [],
      "Headphones, earbuds or a headset from any maker (Apple's have a card of their own).",
@@ -309,6 +325,19 @@ CATALOGUE += [
      "Most watches measure your pulse with green light. Blood is red because it reflects red light and absorbs "
      "green, so with each heartbeat, as more blood flows through the wrist, a little less green light comes back.",
      [("Apple Support: Monitor your heart rate with Apple Watch", "https://support.apple.com/en-AU/120277")]),
+    ("scale", "Wearables and fitness", "Smart scale", "Uncommon", "scale", [],
+     "A bathroom scale that sends your weight to an app.",
+     "It wakes when you step on it and advertises for a few seconds, so its app can collect the reading.",
+     "Scales that estimate body fat send a tiny electrical current, too small to feel, through your feet: fat "
+     "resists it more than muscle and water do. It's an estimate, though, and how much you've drunk changes it.",
+     [("Live Science: How do smart scales measure body composition?",
+       "https://www.livescience.com/health/how-do-smart-scales-measure-body-composition-and-how-accurate-are-they")]),
+    ("glasses", "Wearables and fitness", "Smart glasses", "Rare", "glasses", [],
+     "Glasses with a camera, speakers and microphones (Ray-Ban and Oakley Meta glasses, from Luxottica).",
+     "They stay in touch with their phone over Bluetooth, like a watch or earbuds.",
+     "Meta's glasses have a small light on the front that blinks while they take a photo and stays on while they "
+     "record. If the light is covered, the camera won't work.",
+     [("Meta: AI glasses privacy", "https://www.meta.com/br/en/ai-glasses/privacy/")]),
     # ---------------------------------------------------------------- personal care
     ("care", "Personal care", "Personal care gadget", "Uncommon", "care", ["Personal care gadget"],
      "A gadget that looks after someone's health or helps them get about: a hearing aid or a hearing implant's "
@@ -458,25 +487,25 @@ CATALOGUE += [
 import re as _re
 MATCH = [(i, _re.compile(rx, _re.IGNORECASE)) for i, rx in [
     ("grooming", r"oral-?b|toothbru|sonicare|^philips s#|procter & gamble|braun series|shaver|trimmer|gillette|remington"),
-    ("smart-home", r"\bring\b|august home|\byale\b|assa abloy|nuki|resideo|honeywell|schneider|digistat|drayton|"
+    ("smart-home", r"\bring\b|allterco|^woan\b|olibra|^salto\b|2n telekomunikace|august home|\byale\b|assa abloy|nuki|resideo|honeywell|schneider|digistat|drayton|"
                    r"\bhive\b|tado|netatmo|tuya|smart ?life|lumi united|aqara|\bniko\b|itron|smart ?meter|switchbot|"
                    r"shelly|meross|blufi|iotbt|tapo|\bkasa\b|ezviz|arlo|chamberlain|\bmyq\b|somfy|velux|fibaro|sonoff"),
-    ("speaker", r"soundlink|beats pill|\bjbl (?!tune|live|wave|tour|endurance|vibe|reflect|quantum)|\bjbl$|"
+    ("speaker", r"soundlink|bose s[#\d] pro|color ii sou|ultimea|beats pill|\bjbl (?!tune|live|wave|tour|endurance|vibe|reflect|quantum)|\bjbl$|"
                 r"marshall (?!major|minor|motif|monitor|device)|\bacton\b|stanmore|woburn|emberton|willen|middleton|"
                 r"tufton|speaker|soundbar|\bbar #|^fugoo device$|tribit (?!flybuds)|ultimate ears|boombox|partybox|"
                 r"philips tam|yamaha ?av|beosound|vinyl"),
-    ("headphones", r"\bbuds?\b|jbl (?:tune|live|wave|tour|endurance|vibe|reflect|quantum)|"
+    ("headphones", r"\bbuds?\b|hbs-|bowie|audio-technica|jbl (?:tune|live|wave|tour|endurance|vibe|reflect|quantum)|"
                    r"marshall (?:major|minor|motif|monitor)|philips tah|^no connect|earbud|earfun|headphone|headset|\bqc\b|\bqc#|quietcomfort|momentum|jabra|sennheiser|"
                    r"shokz|openfit|openrun|skullcandy|tozo|beats|soundcore|jlab|urbanista|nura|heavys|flybuds|"
                    r"hitune|\bwh-|\bwf-|\bnc#?\b|#?anc\b|turtle beach|audeze|\bdsea\b|onanoff|beoplay|ult wear|"
                    r"epic air|razer|edifier"),
-    ("smartwatch", r"watch|^charge #|^inspire #|fitbit|\bband\b|amazfit|huami|mi band|fenix|forerunner|"
+    ("smartwatch", r"watch|gard pro|goodmans fit|^t#ultra|^charge #|^inspire #|fitbit|\bband\b|amazfit|huami|mi band|fenix|forerunner|"
                    r"v[ií]voactive|\bvenu\b|approach s|instinct|sekonda|polar electro|whoop|\boura\b|coros|suunto|"
                    r"withings"),
     ("hue", r"signify|philips hue"),
-    ("lights", r"bled[od]m|bleddm|^elk-|^melk-|triones|ledble|leddmx|govee|ihoment|casambi|smart ?light|\blights?\b|"
+    ("lights", r"bled[od]m|cucumber lighting|bleddm|^elk-|^melk-|triones|ledble|leddmx|govee|ihoment|casambi|smart ?light|\blights?\b|"
                r"\bled\b|_led|coolled|kloudnation|lifx|nanoleaf|twinkly|yeelight|\bbulb|\blamp\b|light ?strip"),
-    ("appliance", r"webos|\btv\b|odyssey|washer|dryer|fridge|freezer|daikin|dimplex|heatstore|flamerite|heater|"
+    ("appliance", r"webos|crystal uhd|mirascreen|vent-axia|^carel\b|^luba-|mammotion|stihl|\btv\b|odyssey|washer|dryer|fridge|freezer|daikin|dimplex|heatstore|flamerite|heater|"
                   r"\bmira\b|dreo|electrolux|midea|mitsubishi electric|bunn-o-matic|sgl italia|skyq|^lg device$|"
                   r"hisense|dyson|ninja|tefal|nespresso|de'?longhi|miele|beko|hoover|haier|hotpoint|purifier|kettle|"
                   r"thermomix|vorwerk|roborock|irobot|roomba|ecovacs|robot vacuum|hatch rest|samsung cu"),
@@ -486,24 +515,29 @@ MATCH = [(i, _re.compile(rx, _re.IGNORECASE)) for i, rx in [
     ("pets", r"pawfit|tractive|whistle|petcube|sure ?pet|sureflap|petsafe|furbo|\bpets?\b"),
     ("dashcam", r"70mai|^#mai|blackvu|azdome|nextbase|viofo|ddpai|thinkware|vantrue|dash ?cam|rearvue|campercam|"
                 r"cameramatics|redtiger"),
-    ("obd", r"\bobd|carista|vgate|vlinker|obdlink|veepeak|bimmercode|thinkcar"),
-    ("ev", r"zappi|myenergi|rolec|pod ?point|\bohme\b|wallbox|easee|hypervolt|indra|evbox|alfen|wall connector|"
+    ("obd", r"\bobd|tdi tuning|carista|vgate|vlinker|obdlink|veepeak|bimmercode|thinkcar"),
+    ("ev", r"zappi|nexblue|myenergi|rolec|pod ?point|\bohme\b|wallbox|easee|hypervolt|indra|evbox|alfen|wall connector|"
            r"ev ?charg"),
-    ("camper", r"victron|truma|ecoflow|jackery|bluetti|renogy|solar|mppt|power ?hub|lithium|camper|caravan|"
+    ("camper", r"victron|votronic|\bbms\b|truma|ecoflow|jackery|bluetti|renogy|solar|mppt|power ?hub|lithium|camper|caravan|"
                r"motorhome|thetford|dometic|avtex|smartshunt|dji power|innovative yachtter"),
     ("intercom", r"interphone|^sena\b|cardo|packtalk|freecom|uclear|fodsports|ejeas|livall"),
     ("tacho", r"^dtco|tacho|fleetsmart|octo-|samsara|webfleet|geotab|microlise|aesys"),
-    ("bike", r"shimano|sram|fiido|e-?bike|smart system|vanmoof|cowboy|wahoo|varia|bryton|hammerhead|cateye|lezyne|"
+    ("bike", r"shimano|avinox|seemee|sram|fiido|e-?bike|smart system|vanmoof|cowboy|wahoo|varia|bryton|hammerhead|cateye|lezyne|"
              r"scooter|ninebot|segway"),
-    ("car", r"jlr|jaguar|land rover|range rover|^saic|polestar|volvo|media-cartec|tesla|bayerische motoren|"
+    ("car", r"jlr|car_?key|jaguar|land rover|range rover|^saic|polestar|volvo|media-cartec|tesla|bayerische motoren|"
             r"metasystem|digital key|\bford\b|vauxhall|toyota|lexus|hyundai|renault|peugeot|citro[eë]n|nissan|skoda|"
             r"volkswagen|mercedes|porsche|garmin driv|tomtom|schrader|tpms|sat ?nav|carplay|android auto|ooono"),
-    ("camera", r"gopro|\bdji\b|sz dji|mavic|osmo|insta ?#|insta360|nikon|fujifilm|ricoh|theta|taser|axon"),
-    ("console", r"nintendo|joy-?con|\bquest\b|meta platforms|oculus|playstation|dualsense|dualshock|"
+    ("camera", r"gopro|canon eos|\bdji\b|sz dji|mavic|osmo|insta ?#|insta360|nikon|fujifilm|ricoh|theta|taser|axon"),
+    ("console", r"nintendo|^valve device$|pokemon go|joy-?con|\bquest\b|meta platforms|oculus|playstation|dualsense|dualshock|"
                 r"wireless controller|xbox|steam ?deck|8bitdo"),
+    ("scale", r"^scale-|etekcity|smart ?scale"),
+    ("glasses", r"luxottica|ray-?ban|oakley meta"),
     ("printer", r"epson|\bhp\b|hewlett|deskjet|laserjet|officejet|cloudprint|printer|zebra|brother|tsc auto-id|"
                 r"datalogic|sumup|^square|bbpos|zettle|ingenico|verifone|\bdojo\b|card ?reader|star micronics|"
                 r"phomemo|niimbot|dymo"),
+    ("android", r"^samsung device$|^samsung\.?$|^oppo mobile device$|^vivo mobile device$|^oneplus device$|"
+                r"^honor device device$|^transsion device$"),
+    ("laptop", r"laptop|^desktop-|^dell computer device$"),
 ]]
 CAT_BY_ID = {c[0]: c for c in CATALOGUE}
 assert all(i in CAT_BY_ID for i, _ in MATCH)
