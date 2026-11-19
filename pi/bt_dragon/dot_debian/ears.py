@@ -510,7 +510,7 @@ class Voice:
         async with self.lock:
             try:
                 t0 = time.monotonic()
-                speed = max(0.5, min(2.0, float(req.get("speed", 1.0))))
+                speed = max(0.3, min(2.0, float(req.get("speed", 1.0))))
                 pitch = max(-12.0, min(12.0, float(req.get("pitch", 0.0))))
                 scale = round(2 ** (pitch / 12) / speed, 3)
                 raw = os.path.join(self.args.tmp, "voice-raw.wav")
