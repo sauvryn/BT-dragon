@@ -55,10 +55,14 @@ day2 = time.mktime(datetime.datetime(2026, 4, 2, 0, 5).timetuple())
 day3 = time.mktime(datetime.datetime(2026, 4, 3, 9, 0).timetuple())
 day4 = time.mktime(datetime.datetime(2026, 4, 4, 9, 0).timetuple())
 day5 = time.mktime(datetime.datetime(2026, 4, 5, 9, 0).timetuple())
+assert pond.s["slot"] == {"empty": True} and pond.room(8, day1) == 0 and pond.feed(5, 8, "gb", now=day1) == 0
+assert pond.give_egg(7) is False                                       # (closed: no spawn)
+assert pond.give_egg(8) is True and pond.give_egg(8) is False          # a green space visited: spawn (once)
+assert [e[0] for e in events][-1] == "egg"
 assert pond.room(8, day1) == float("inf")                            # spawn: hatches with the next food
 eaten = pond.feed(1000, 8, "gb", now=day1)
 b = pond.s["slot"]
-assert events[0][0] == "hatch" and b["country"] == "gb" and b["species"] in D["gb"]["by_id"]
+assert events[1][0] == "hatch" and b["country"] == "gb" and b["species"] in D["gb"]["by_id"]
 need = b["need"]
 assert need == tuning.get("pond_food_" + b["rarity"].lower())
 assert tuning.get("pond_daily_pct") == 25
@@ -76,6 +80,7 @@ assert "meta" in [e[0] for e in events] and "legs" in [e[0] for e in events]
 assert pond.feed(5, 8, "gb", now=day4) == 0                          # grown up: eats nothing
 # the "10% by midnight -> 35% the next day" rule
 p2 = P.Pond(Store(os.path.join(tmp, "p2.db")), random.Random(1))
+p2.give_egg(8)
 p2.feed(0.0001, 8, "us", now=day1)
 n2 = p2.s["slot"]["need"]
 p2.feed(n2 * 0.10, 8, "us", now=day1 + 60)
@@ -85,15 +90,16 @@ assert abs(p2.pct(p2.s["slot"]) - 35) < 0.1, p2.pct(p2.s["slot"])
 for t in (day3, day4, day5):
     p2.feed(n2, 8, "us", now=t)
 assert abs(p2.pct(p2.s["slot"]) - 100) < 0.2 and p2.s["slot"].get("adult")
-# the collection: a new spawn appears
+# the collection: the pond is left empty, for the next spawn
 species = pond.s["slot"]["species"]
-assert pond.collect(now=day4) is None and pond.s["slot"] == {"egg": True}
+assert pond.collect(now=day4) is None and pond.s["slot"] == {"empty": True}
 sp0 = D["gb"]["by_id"][species]
 assert list(pond.s["habitats"]["gb"]) == [sp0["habitats"][0]]           # its first habitat opened
 assert pond.collection("gb")[0]["species"] == species and pond.score() == P.POINTS[D["gb"]["by_id"][species]["rarity"]]
 assert pond.collect() is not None                                    # nothing grown up
 v = pond.view(8, "gb")
-assert v["raised_species"] == 1 and v["total"] == 7 and v["slot"] == {"egg": True}
+assert v["raised_species"] == 1 and v["total"] == 7 and v["slot"] == {"empty": True}
+assert not pond.eats(8) and pond.room(8) == 0
 # sightings, and the page's data
 assert pond.set_seen("gb", "natterjack", True) is None and "natterjack" in pond.s["seen"]["gb"]
 assert pond.set_seen("gb", "natterjack", False) is None and "natterjack" not in pond.s["seen"]["gb"]
@@ -111,7 +117,12 @@ cfg["data_dir"] = tempfile.mkdtemp()
 app = Dragon(cfg, simulate=True, out_dir=tempfile.mkdtemp())
 app.pet.level = lambda: 8
 app.garden.unlock_now(8)
-app.garden.give_egg(8)
+app._green_egg("Oakfield Park")                         # a walk in a park: an egg for the garden, spawn for the pond
+assert app.garden.s["slots"][0].get("egg") and app.pond.s["slot"] == {"egg": True}
+assert ("pond", ("egg", {"place": "Oakfield Park"})) in app._garden_news
+app._pond_said("egg", {"place": "Oakfield Park"})
+assert "SPAWN" in app.pet.message and any("Oakfield Park gave the Tadpole Pond some spawn" in e["text"]
+                                          for e in app.store.events(5))
 assert app.pond.unlocked(8) and app.garden.unlocked(8)
 app._garden_feed(0.002)                                  # hatches the garden's egg and the pond's spawn
 assert not app.garden.s["slots"][0].get("egg") and not app.pond.s["slot"].get("egg")
