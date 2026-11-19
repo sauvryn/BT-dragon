@@ -603,7 +603,11 @@ class Dragon:
             self.event("garden", f"{line} +{info.get('points', 0)} Butterfly Garden points.")
 
     def _pond_said(self, kind, info):
-        """The Tadpole Pond's news: hatching, legs, leaving the water, grown up, collected."""
+        """The Tadpole Pond's news: spawn, hatching, legs, leaving the water, grown up, collected."""
+        if kind == "egg":
+            self.pet.say(["SPAWN FOR THE TADPOLE POND!", "SPAWN FOR THE POND!", "NEW SPAWN!"], "happy", 20, speak=False)
+            self.event("garden", f"{info.get('place') or 'A green space'} gave the Tadpole Pond some spawn.")
+            return
         name, young, meta = info["name"], info["young"], info["meta"]
         a, the = gardenmod.a_(name), gardenmod.the_(name)
         The = the[0].upper() + the[1:]
@@ -1481,6 +1485,8 @@ class Dragon:
         i = self.garden.give_egg(self.pet.level())
         if i is not None and self._garden_news and self._garden_news[-1][0] == "egg":
             self._garden_news[-1][1]["place"] = place
+        if self.pond and self.pond.give_egg(self.pet.level()) and self._garden_news[-1][0] == "pond":
+            self._garden_news[-1][1][1]["place"] = place
 
     async def _lair_check(self, now, kinds=None):
         """Local announcements, each at its own time: how warm it is at the Lair (on the hour),

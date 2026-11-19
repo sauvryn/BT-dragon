@@ -14,6 +14,10 @@ Food: like the garden's larvae, it eats Harald's spare food (snacks and feasts t
 his BELLY, treats and berries that fit in neither the BELLY nor the PACK). Shared with the
 garden as one more mouth, or first, with "Priority for spare food" (see app._garden_feed).
 
+Spawn is earned, as the Butterfly Garden's eggs are: each green space or wood visited (a walk,
+run or ride in it: greens.py, once per place per day) brings spawn, if the pond is empty. After
+an adult is added to the Pond Collection, the pond stays empty until the next visit.
+
 The daily limit: instead of the garden's 24 hours as a pupa, an amphibian can eat at most a
 quarter of its whole progress bar (25%, Developer Tools) in a day, worked out at hatching and
 again at midnight: its limit for the day is where it was at the start of the day, plus 25%. One
@@ -81,7 +85,7 @@ class Pond:
         self.store = store
         self.rng = rng or random.Random()
         self.s = store.get(KEY) or {}
-        self.s.setdefault("slot", {"egg": True})
+        self.s.setdefault("slot", {"empty": True})  # (spawn is earned: give_egg)
         self.s.setdefault("collection", {})       # country -> [{species, date, points}]
         self.s.setdefault("seen", {})             # country -> {species: when you said you'd seen it}
         self.s.setdefault("habitats", {})         # country -> {habitat: when it opened}
@@ -122,7 +126,20 @@ class Pond:
     def eats(self, level):
         """Is there something in the pond that eats? (An egg does: the first food hatches it.)"""
         b = self.s["slot"]
-        return self.unlocked(level) and not b.get("adult")
+        return self.unlocked(level) and not b.get("adult") and not b.get("empty")
+
+    def give_egg(self, level, now=None):
+        """A green space or wood visited: spawn, if the pond is open and empty. True if it got some."""
+        if not self.unlocked(level) or not self.s["slot"].get("empty"):
+            return False
+        self.s["slot"] = {"egg": True}
+        self.save()
+        if self.on_event:
+            try:
+                self.on_event("egg", {})
+            except Exception:
+                pass
+        return True
 
     def room(self, level, now=None):
         """How much it could still eat today (an egg: it hatches, so at least something)."""
@@ -208,7 +225,7 @@ class Pond:
         return sum(e.get("points", 0) for lst in self.s["collection"].values() for e in lst)
 
     def collect(self, now=None):
-        """The Den's "add to the Pond Collection": the adult leaves, and new spawn appears."""
+        """The Den's "add to the Pond Collection": the adult leaves, and the pond waits for spawn."""
         now = now or time.time()
         b = self.s["slot"]
         if not b.get("adult"):
@@ -223,7 +240,7 @@ class Pond:
         habitat = next((h for h in sp["habitats"] if h not in opened), None)
         if habitat:
             opened[habitat] = int(now)
-        self.s["slot"] = {"egg": True}
+        self.s["slot"] = {"empty": True}         # (the next spawn: a green space or wood visited)
         self.save()
         self._tell("collect", dict(b, new=is_new, points=pts, habitat=habitat))
         return None
@@ -249,7 +266,7 @@ class Pond:
         seen = self.s["seen"].get(c, {})
         b = self.s["slot"]
         growing = None
-        if not b.get("egg") and b.get("country") == c:
+        if not b.get("egg") and not b.get("empty") and b.get("country") == c:
             growing = {"species": b["species"], "pct": round(min(100.0, self.pct(b)), 1), "adult": bool(b.get("adult")),
                        "stage": stage(b["kind"], self.pct(b))[0]}
         return {"name": name, "country": c, "score": self.score(), "points": POINTS,
@@ -279,7 +296,9 @@ class Pond:
                "fed_today": round(self.s.get("fed_today", 0.0), 1) if self.s.get("fed_day") == _day(now) else 0,
                "slot": None, "collection": [], "total": len(data()[c]["species"])}
         b = self.s["slot"]
-        if b.get("egg"):
+        if b.get("empty"):
+            out["slot"] = {"empty": True}
+        elif b.get("egg"):
             out["slot"] = {"egg": True}
         else:
             sp = data()[b["country"]]["by_id"][b["species"]]

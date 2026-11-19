@@ -1837,7 +1837,10 @@ async function loadPond() {
   $('pdScore').textContent += p.fed_today ? ` · ${p.fed_today} spare food eaten today` : '';
   const b = p.slot, cap1 = t => t.charAt(0).toUpperCase() + t.slice(1);
   let html;
-  if (!b || b.egg) {
+  if (!b || b.empty) {
+    html = `<div class="larva egg"><b>An empty pond</b><div class="sub">Waiting for spawn: take ${PET} for a walk, run or
+      ride in a park or a wood (once per place each day).</div></div>`;
+  } else if (b.egg) {
     html = `<div class="larva egg"><div class="lv-row"><div class="lv-text"><b>Spawn</b>
       <div class="sub">Hatches with the next spare food, and only then do we find out what it is.</div></div>
       <div class="pd-art">${pondArt('frog', 0)}</div></div></div>`;
