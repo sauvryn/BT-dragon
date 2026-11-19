@@ -14,7 +14,7 @@ Optional GPS integration unlocks the ability to "conquer" squares on a real-worl
 
 **Why BT Dragon was created:** In brief, the project author initially created Harald to use existing hardware for a personal educational purpose: to learn more about Bluetooth and Wi-Fi and to encourage physical activity and exploration of their local area. The project quickly snowballed into lots of different directions based on what was discovered to be possible using the capabilities of a RPiZ2W on its own, plus additions that were available with a connected smartphone sharing its own sensors. BT Dragon is very much a learning-focused tool that other curious folk can try and perhaps enjoy.
 
-## Latest Updates as of November 19, 2026 at 1:20 PM GMT
+## Latest Updates as of November 19, 2026 at 2:20 PM GMT
 
 [Optional: Skip Updates and move to the Contents ↓](#contents)
 
@@ -72,6 +72,7 @@ Optional GPS integration unlocks the ability to "conquer" squares on a real-worl
 
 **Fixed**
 
+- **Text cut off on the right in the e-book reader (testing in progress):** on phones the reading area is often a fraction of a pixel wide, and each page turn moved a fraction of a pixel too little, so the further into a chapter, the more of the last letters on the right was hidden (about half a letter by page 24). The reading area is now a whole number of pixels wide, so the pages line up however far you read.
 - **Steps during a nap (testing in progress):** going out while he napped at home was counted as a walk with him once he woke up. A nap now forgets the step count he was following, so the steps you took while he slept are a story you tell him (*"You told Harald about your adventure!"*), as when he's switched off.
 - **The phone's voice after an address change (testing in progress):** your phone's hotspot picks a new range of addresses each time it's switched on (Android 11 and later do), so the Pi's address changes too, and the helper on the phone didn't always find him again by listening alone. See **Added** above.
 - **Porsche Taycans (testing in progress):** a Taycan's Wi-Fi ("Taycan_1234") is a car's now, like a Cayenne's, Macan's or Panamera's.
