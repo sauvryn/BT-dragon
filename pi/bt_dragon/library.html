@@ -945,7 +945,12 @@ function rdLayout(target) {
   const R = RD, flow = $('rd-flow');
   flow.style.fontSize = readerFont() + 'px';
   flow.style.columnWidth = 'auto'; flow.scrollLeft = 0;
-  const W = flow.clientWidth, G = 48, step = W + G;
+  // A whole number of pixels wide: phones often give a fractional width (363.28px, say), and the
+  // column then stretches to fill it while each page turn moves by the rounded width, so the pages
+  // drift left of the screen a little more each time (half a letter cut off, 25 pages in).
+  flow.style.width = '';
+  const W = Math.floor(flow.getBoundingClientRect().width), G = 48, step = W + G;
+  flow.style.width = W + 'px';
   flow.style.setProperty('--rd-h', flow.clientHeight + 'px');
   flow.style.columnWidth = W + 'px'; flow.style.columnGap = G + 'px';
   R.step = step; R.pages = Math.max(1, Math.round((flow.scrollWidth + G) / step));
