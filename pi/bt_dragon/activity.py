@@ -265,9 +265,10 @@ class SensorLink:
                 except (OSError, asyncio.TimeoutError, ValueError, ConnectionError,
                         asyncio.IncompleteReadError) as e:
                     log.debug("%s link: %s", self.name, e)
-                if self.connected and self.on_lost:
-                    self.on_lost()
-                self.connected = False
+                finally:                # (a nap cancels it mid-read: it's lost then too)
+                    if self.connected and self.on_lost:
+                        self.on_lost()
+                    self.connected = False
             try:
                 await asyncio.wait_for(stop.wait(), 20)
             except asyncio.TimeoutError:

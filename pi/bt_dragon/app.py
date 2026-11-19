@@ -2454,7 +2454,8 @@ class Dragon:
         except Exception:
             pass
         self.pet.save()
-        self.activity.save()
+        self.activity.save()                    # (the phone's step count now: steps_last)...
+        self.activity.link_lost()               # ...so steps taken during the nap are a story you tell him
         self._save_ble()
         self.nap_since = time.time()
         self.store.put("napping", {"since": self.nap_since})    # so a restart doesn't wake him
@@ -2484,6 +2485,7 @@ class Dragon:
         # is known to be right) and the Dot gives a welcome-back recap
         self._mono_start, self._caught_up, self._from_nap = time.monotonic(), False, True
         self.started = time.monotonic()
+        self.activity.link_lost()               # (again, in case a reading slipped in): the next one is a story
         from .pet import away_words
         self.event("wake", f"{self.pet.name} woke up from a nap" + (f" ({away_words(away).lower()})" if away >= 60 else ""))
         self.pet.say(["YAWN! HELLO!"], "happy", 20)
