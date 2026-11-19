@@ -8,7 +8,7 @@ import random
 import tempfile
 import urllib.error
 
-from bt_dragon import config, garden as G, homezone
+from bt_dragon import config, garden as G, homezone, tuning
 from bt_dragon.app import Dragon
 from bt_dragon.library import Library
 from bt_dragon.store import Store
@@ -45,9 +45,9 @@ assert st["here"] == "nofix"
 assert "if (!hzSet)" in den and "Switch on the home zone around where" in den
 assert "the first time, the circle goes around wherever" in den
 
-# ---- rations: the Den mentions books
-assert "and for every book finished in the Library" in den
-assert "feasts, new lands and finished books earn them" in den
+# ---- rations: the Den says what earns them (new lands and famous places), and scrolls (libraries)
+assert "Earned for every new land claimed, every famous place visited (once a day each), and every book finished" in den
+assert "new lands, famous places and finished books earn them" in den and "visiting libraries earns them" in den
 
 # ---- ISBN search
 tmp = tempfile.mkdtemp()
@@ -101,6 +101,8 @@ assert r[0]["author"] == "From The Author Record"
 # ---- the garden: nothing "fed" when only a pupa is there
 g = G.Garden(Store(os.path.join(tmp, "g.db")), random.Random(3))
 g.unlock_now(5)
+tuning.set_value("garden_daily_pct", 100)              # (the daily limit: test_garden)
+g.give_egg(5)
 assert g.feed(0.001, 5, "GB") > 0
 b = g.s["slots"][0]
 need, pup = b["need"], b["pupAt"]
@@ -111,10 +113,12 @@ assert g.feed(5, 5, "GB") == 0 and g.s["fed_today"] == today
 # and in the app: no message waiting
 app.garden.unlock_now(5)
 app.pet.level = lambda: 5
+app.garden.give_egg(5)
 app.garden.feed(0.001, 5)
 s0 = app.garden.s["slots"][0]
 app.garden.feed(s0["need"], 5)
 assert app.garden.is_pupa(app.garden.s["slots"][0])
+tuning.set_value("garden_daily_pct", 50)
 app._garden_fed = 0.0
 app._garden_feed(10)
 assert app._garden_fed == 0.0

@@ -15,9 +15,11 @@ from bt_dragon.store import Store
 tmp = tempfile.mkdtemp()
 store = Store(os.path.join(tmp, "g.db"))
 tuning.load(store)
+assert tuning.get("garden_daily_pct") == 50
+tuning.set_value("garden_daily_pct", 100)           # (the daily limit has its own tests, below)
 g = G.Garden(store, random.Random(7))
 events = []
-g.on_event = lambda k, i: events.append((k, i))
+g.on_event = lambda k, i: k != "egg" and events.append((k, i))
 
 # stages: Bookworm's, from a species' own pupation point
 assert G.stage_at(0, 90) == 0 and G.stage_at(9, 63) == 63 and G.stage_at(10, 63) == 100 and G.stage_at(3, 90) == 30
@@ -37,7 +39,10 @@ g.unlock_now(3)
 # food while locked does nothing; while open, the first food hatches the egg
 g2 = G.Garden(Store(os.path.join(tmp, "g2.db")))
 g2.feed(50, 3)
-assert not g2.s["slots"]
+assert not g2.s["slots"] and g2.give_egg(3) is None
+g.feed(1, 3, "GB")
+assert events == [] and g.s["slots"] == [{"empty": True}]       # no egg yet: eggs are earned
+assert g.give_egg(3) == 0 and g.give_egg(3) is None            # (one spot, now full)
 g.feed(1, 3, "GB")
 assert [e[0] for e in events] == ["hatch"] and len(g.s["slots"]) == 1      # unlocked at level 3: one spot
 b = g.s["slots"][0]
@@ -56,7 +61,8 @@ assert 2800 < counts["Common"] < 3200 and 1300 < counts["Uncommon"] < 1700 and 3
 # grow one to the end: pupates at its species' point, then emerges into the collection
 events.clear()
 g = G.Garden(Store(os.path.join(tmp, "g4.db")), random.Random(3))
-g.on_event = lambda k, i: events.append((k, i))
+g.on_event = lambda k, i: k != "egg" and events.append((k, i))
+g.give_egg(5)
 g.feed(0.001, 5, "GB")
 b = g.s["slots"][0]
 pup = b["pupAt"]
@@ -97,15 +103,15 @@ coll = g.cdata("gb")["collection"]
 assert len(coll) == 1 and coll[0]["species"] == b["species"] and coll[0]["points"] == G.data()["points"][b["rarity"]]
 assert coll[0]["title"] == "Raised in the Butterfly Garden" and coll[0]["pages"] == 0
 assert col["habitat"] in g.cdata("gb")["habitats"]
-assert g.s["slots"][0].get("egg") and len(g.s["slots"]) == 1            # the only spot: a new egg
+assert g.s["slots"] == [{"empty": True}]                  # the only spot: empty until the next egg
 assert g.score() == coll[0]["points"]
 
-# collected from one of several spots: the ones below move up, the last spot is left empty
+# collected from one of several spots: its spot is left empty, and the others stay where they are
 g = G.Garden(Store(os.path.join(tmp, "g4b.db")), random.Random(4))
 g.unlock_now(1)
+g.give_egg(3)
 g.feed(0.001, 3, "GB")
-g.lay_egg(1, 3)
-g.lay_egg(2, 3)
+assert g.give_egg(3) == 1 and g.give_egg(3) == 2 and g.give_egg(3) is None
 g.feed(0.003, 3, "GB")
 ids = [x["species"] for x in g.s["slots"]]
 g.s["slots"][0]["fed"] = g.s["slots"][0]["need"] * g.s["slots"][0]["pupAt"] / 100 - 0.0001
@@ -113,10 +119,12 @@ g.feed(0.003, 3, "GB")
 g.check_pupae(time.time() + g.pupa_s() + 1)
 assert g.s["slots"][0]["adult"]
 assert g.collect(0, 3) is None
-assert [x.get("species") for x in g.s["slots"][:2]] == ids[1:] and g.s["slots"][2] == {"empty": True}
+assert g.s["slots"][0] == {"empty": True} and [x.get("species") for x in g.s["slots"][1:]] == ids[1:]
+assert g.give_egg(3) == 0                                   # the next egg goes in the empty spot
 # its country of origin: raised in Ireland, collected after the garden moved to the UK
 g = G.Garden(Store(os.path.join(tmp, "g4c.db")), random.Random(6))
 g.set_country("ie")
+g.give_egg(5)
 g.feed(0.001, 5)
 g.s["slots"][0]["fed"] = g.s["slots"][0]["need"] * g.s["slots"][0]["pupAt"] / 100 - 0.0001
 g.feed(0.001, 5)
@@ -124,25 +132,26 @@ g.check_pupae(time.time() + g.pupa_s() + 1)
 g.set_country("gb")
 assert g.collect(0, 5) is None
 assert len(g.cdata("ie")["collection"]) == 1 and g.cdata("gb")["collection"] == []
-assert g.s["slots"][0].get("egg")
+assert g.s["slots"][0] == {"empty": True}
 
-# a new spot stays empty until you put an egg in it (only the first spot fills itself)
+# the second and third spots can be switched off (while empty): no eggs go there
 g = G.Garden(Store(os.path.join(tmp, "g5.db")), random.Random(5))
+assert g.give_egg(6) == 0
 g.feed(5, 6, "US")
 assert g.s["slots"][1] == {"empty": True} and g.s["slots"][0]["fed"] == 5        # all of it to the one larva
-assert g.take_egg(0, 6) and g.take_egg(1, 6) and g.lay_egg(2, 6)               # no such things to do
-assert g.lay_egg(1, 6) is None and g.lay_egg(1, 6)                              # (not twice)
-assert g.take_egg(1, 6) is None and g.s["slots"][1] == {"empty": True}
-assert g.lay_egg(1, 6) is None
+assert g.set_on(0, False, 6) and g.set_on(2, False, 6)                          # the first: always on; the third: not open
+assert g.set_on(1, False, 6) is None and not g.is_on(1) and g.give_egg(6) is None
+v = g.view(6, "US")
+assert v["larvae"][1] == {"empty": True, "slot": 1, "on": False}
+assert g.set_on(1, True, 6) is None and g.give_egg(6) == 1
+assert g.set_on(1, False, 6)                                                    # an egg in it: stays on
 # food is shared: two larvae each get half
 g.feed(10, 6, "US")
 a, c = g.s["slots"]
 assert abs(a["fed"] - 5 - 5) < 0.001 and abs(c["fed"] - 5) < 0.001 and a["species"] != c["species"]
-assert g.take_egg(1, 6)                                                        # hatched now: stays
 v = g.view(6, "US")
 assert [x.get("slot") for x in v["larvae"]] == [0, 1] and v["fed_today"] == 15
-# when a second-spot adult is collected, its spot is left empty; when the first spot's is,
-# the first spot gets a new egg
+# an adult collected leaves its spot empty, for the next egg
 evs = []
 g.on_event = lambda k, i: evs.append(k)
 c["fed"] = c["need"] * c["pupAt"] / 100 - 0.01
@@ -154,7 +163,25 @@ a = g.s["slots"][0]
 a["fed"] = a["need"] * a["pupAt"] / 100 - 0.01
 g.feed(0.1, 6, "US")
 g.check_pupae(time.time() + g.pupa_s() + 1)
-assert g.collect(0, 6) is None and g.s["slots"][0].get("egg")
+assert g.collect(0, 6) is None and g.s["slots"][0] == {"empty": True}
+
+# a larva grows at most half of its food to pupation in a day; what it can't eat goes round the others
+tuning.set_value("garden_daily_pct", 50)
+g = G.Garden(Store(os.path.join(tmp, "g5d.db")), random.Random(8))
+g.give_egg(6), g.give_egg(6)
+g.feed(0.0001, 6, "GB")
+a, c = g.s["slots"]
+for x in (a, c):
+    x["need"], x["pupAt"], x["fed"], x["today"] = 100.0, 80, 0.0, 0.0        # (80 food to pupate: 40 a day)
+c["need"] = 200.0                                                            # (160 food to pupate: 80 a day)
+eaten = g.feed(200, 6, "GB")
+assert abs(a["fed"] - 40) < 0.01 and abs(c["fed"] - 80) < 0.01 and abs(eaten - 120) < 0.01   # the rest is left
+assert g.room(a) < 1e-6 and g.feed(10, 6, "GB") == 0
+v = g.view(6, "GB")
+assert v["daily_pct"] == 50 and v["larvae"][0]["today_left"] == 0 and v["larvae"][0]["today_most"] == 40
+tomorrow = time.time() + 86400
+assert abs(g.feed(30, 6, "GB", now=tomorrow) - 30) < 0.01 and abs(a["fed"] - 55) < 0.01   # a new day
+tuning.set_value("garden_daily_pct", 100)
 
 # picking: forms count separately; a species with all forms raised isn't picked again while others remain
 gb = G.data()["countries"]["gb"]
@@ -192,7 +219,7 @@ if ins and outs:
 caste = next(s for s in gb["species"] if s["caste"])
 g = G.Garden(Store(os.path.join(tmp, "g8.db")), random.Random(1))
 evs = []
-g.on_event = lambda k, i: evs.append((k, i))
+g.on_event = lambda k, i: k != "egg" and evs.append((k, i))
 g.unlock_now(1)
 # (hunger, as in Bookworm: well fed 24 h, satisfied to 48, peckish to 72, hungry, very hungry from 96)
 day = 24 * 3600
@@ -272,6 +299,14 @@ cfg["data_dir"] = tempfile.mkdtemp()
 app = Dragon(cfg, simulate=True, out_dir=tempfile.mkdtemp())
 app.pet.xp = 0
 app.garden.unlock_now(app.pet.level())
+tuning.set_value("garden_daily_pct", 100)
+app._green_egg("Oakfield Park")                    # a walk in a park: an egg
+assert app._garden_news[-1] == ("egg", {"slot": 0, "place": "Oakfield Park"})
+app.pet.message_hold = 0
+app.pet.message_ts = time.time() - 10
+app._garden_tick()
+assert "EGG" in app.pet.message and any("Oakfield Park gave the Butterfly Garden an egg" in e["text"]
+                                        for e in app.store.events(5))
 app.pet.hunger, app.pet.pack = 100.0, tuning.get("pack_cap")
 app.pet.treat({"ssid": "Cafe", "security": "open"})
 assert app.garden.s["slots"] and not app.garden.s["slots"][0].get("egg"), "a full belly and pack: the treat fed the garden"
@@ -287,6 +322,7 @@ assert app.garden.s["slots"][0]["fed"] == before, "room in his belly: nothing sp
 v = json.loads(asyncio.run(app.command("GARDEN"))[0])
 assert v["larvae"][0]["hunger"] == "well fed"            # just ate: a larva's hunger is its own, by time
 assert v["unlocked"] and v["forced"] and len(v["larvae"]) == 1 and v["larvae"][0]["pct"] > 0
+assert asyncio.run(app.command("GARDENOFF 0"))[0].startswith("ERR") and asyncio.run(app.command("GARDENON x"))[0].startswith("ERR")
 assert asyncio.run(app.command("GARDENCOUNTRY ie")) == ["OK"] and asyncio.run(app.command("GARDENCOUNTRY xx"))[0].startswith("ERR")
 assert asyncio.run(app.command("GARDENUNLOCK off")) == ["OK"] and not app.garden.unlocked(app.pet.level())
 assert "Harald" in app.garden_page("us") or app.pet.name in app.garden_page("us")

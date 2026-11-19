@@ -25,6 +25,7 @@ try:
     run("TUNE growth_pct 0")                    # (growing up has its own test: test_growth)
     app.pet.xp = 900
     app.garden.unlock_now(app.pet.level())
+    app.garden.give_egg(app.pet.level())        # (eggs are earned: a walk in a park)
     app.pet.hunger, app.pet.pack = 99.0, tuning.get("pack_cap")
     app.pet.treat({"ssid": "Cafe", "security": "wpa2"})
     assert app._garden_fed == 3.0 and app.garden.s["slots"][0]["fed"] == 3.0

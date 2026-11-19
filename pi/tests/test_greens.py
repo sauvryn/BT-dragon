@@ -168,6 +168,8 @@ app.pet.green_visit = lambda words: said.append(("visit", words))
 app.dot = Obj()
 app.dot.adventure = lambda kind, **k: spoken.append((kind, k))
 app.event = lambda kind, text: events.append((kind, text))
+eggs = []
+app._green_egg = lambda place: eggs.append(place)
 app._conquered = lambda text, pts, kind="land": events.append((kind, f"{text} +{pts} Conquest points."))
 app.greens.wanted = lambda fix: None
 t = T0
@@ -175,6 +177,7 @@ for i in range(130):
     Dragon._green_tick(app, {"lat": LAT, "lon": LON + (i % 20 - 10) * 6 / 69300, "ts": t, "acc": 8})
     t += 5
 assert said == [("found", "Oakfield Country Park"), ("visit", "Took a walk in Oakfield Country Park!")], said
+assert eggs == ["Oakfield Country Park"]          # a visit: an egg for the Butterfly Garden
 assert spoken == [("green_found", {"name": "Oakfield Country Park"}),
                   ("green_visit", {"text": "Took a walk in Oakfield Country Park!"})], spoken
 assert events == [("green", "Harald found a new green space: Oakfield Country Park. +50 Conquest points."),

@@ -111,7 +111,7 @@ cfg["data_dir"] = tempfile.mkdtemp()
 app = Dragon(cfg, simulate=True, out_dir=tempfile.mkdtemp())
 app.pet.level = lambda: 8
 app.garden.unlock_now(8)
-app.garden.sync_slots(8)
+app.garden.give_egg(8)
 assert app.pond.unlocked(8) and app.garden.unlocked(8)
 app._garden_feed(0.002)                                  # hatches the garden's egg and the pond's spawn
 assert not app.garden.s["slots"][0].get("egg") and not app.pond.s["slot"].get("egg")
@@ -168,7 +168,8 @@ threading.Thread(target=lambda: asyncio.run(server.web_server(app)), daemon=True
 time.sleep(3)
 base = f"http://127.0.0.1:{port}"
 assert "Tadpole Pond" in urllib.request.urlopen(base + "/pond").read().decode()
-assert "TEMP" in urllib.request.urlopen(base + "/pond-art.js").read().decode()
+art_js = urllib.request.urlopen(base + "/pond-art.js").read().decode()
+assert "window.pondArt" in art_js and "TEMP" not in art_js
 pdj = json.loads(urllib.request.urlopen(base + "/api/pond?c=ca").read())
 assert pdj["country"] == "ca" and len(pdj["species"]) == 25 and pdj["habitat_names"]["heath"] == "Mountains & Tundra"
 req = urllib.request.Request(base + "/api/pond", data=json.dumps({"country": "ca", "species": "mink-frog", "seen": True}).encode(),
@@ -189,7 +190,7 @@ with sync_playwright() as pw:
     pg.fill("#q", "natter"); pg.wait_for_timeout(200)
     assert pg.locator("#grid .tile").count() == 1
     pg.click("#grid .tile"); pg.wait_for_timeout(300)
-    assert pg.is_visible("#sp") and "Natterjack" in pg.inner_text("#spName") and "TEMP" in pg.inner_html("#spArt")
+    assert pg.is_visible("#sp") and "Natterjack" in pg.inner_text("#spName") and "<svg" in pg.inner_html("#spArt") and "TEMP" not in pg.inner_html("#spArt")
     assert "arc-trust.org" in pg.inner_html("#spLearn") and "best guess" in pg.inner_text("#spNote")
     assert pg.is_visible("#spLocked") or pg.is_visible("#spFactsWrap")
     pg.click("#spSeen"); pg.wait_for_timeout(400)

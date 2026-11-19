@@ -16,7 +16,7 @@ run = lambda c: asyncio.run(app.command(c))                             # noqa: 
 at = lambda lv: xp_for(lv)                                              # noqa: E731
 
 assert abs(pet.growth(1) - 1.0) < 1e-9 and abs(pet.growth(5) - 1.2) < 1e-9 and abs(pet.growth(11) - 1.5) < 1e-9
-assert pet.growth(40) == 2.0                                            # the limit: twice level 1
+assert abs(pet.growth(20) - 1.95) < 1e-9 and abs(pet.growth(40) - 1.95) < 1e-9   # adult at 20: no more growing
 pet.xp = at(5)
 assert pet.level() == 5 and abs(pet.pack_cap() - 60) < 1e-9
 
@@ -64,4 +64,22 @@ run("TUNE growth_pct 0")
 assert pet.growth() == 1.0 and pet.pack_cap() == tuning.get("pack_cap")
 run("TUNERESET food")
 assert tuning.get("growth_pct") == 5
+
+# adulthood and the limit are linked: the belly stops growing when he's all grown up
+from bt_dragon.pet import stage                                         # noqa: E402
+assert tuning.get("adult_level") == 20 and tuning.get("growth_max") == 195 and stage(20)[0] == "adult"
+assert stage(19) == ("teen", 20)
+assert run("TUNE growth_pct 3")[0].startswith("OK") and tuning.get("growth_max") == 157   # the rate moves the limit
+assert abs(pet.growth(33) - 1.57) < 1e-9
+assert run("TUNE growth_max 200")[0].startswith("OK")                   # the limit moves adulthood...
+assert tuning.get("adult_level") == 34 and tuning.get("growth_max") == 199 and stage(33)[0] == "teen"
+assert run("TUNE adult_level 25")[0].startswith("OK") and tuning.get("growth_max") == 172   # ...and back
+assert stage(25)[0] == "adult" and abs(pet.growth(30) - 1.72) < 1e-9
+assert run("TUNE adult_level 10")[0].startswith("ERR") and run("TUNE adult_level 25.5")[0].startswith("ERR")
+assert run("TUNE growth_max 5000")[0].startswith("ERR")
+listing = {l.split("|")[0]: l.split("|") for l in run("TUNE")[:-1] if "|" in l}
+assert listing["growth_max"][3] == "172" and listing["growth_max"][4] == "195" and listing["adult_level"][3] == "25"
+assert run("TUNE growth_max default")[0].startswith("OK") and tuning.get("adult_level") == 20
+run("TUNERESET food")
+assert tuning.get("adult_level") == 20 and tuning.get("growth_max") == 195
 print("growth ok")

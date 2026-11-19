@@ -74,6 +74,7 @@ assert conquest.next_title(1600) == (3000, "Trailblazing Thane") and conquest.ne
 # the garden: an adult waits for "tap to add to Collection", then its points go in the diary
 app.pet.xp = 900
 app.garden.unlock_now(app.pet.level())
+app.garden.give_egg(app.pet.level())
 app.garden.feed(0.01, app.pet.level())
 b = app.garden.s["slots"][0]
 b["fed"] = b["need"] * b["pupAt"] / 100 - 0.001
