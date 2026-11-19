@@ -1,15 +1,11 @@
 /* The Tadpole Pond's placeholder art, for the Den and the Pond Collection page (/pond-art.js).
-   Grey, with TEMP across it, in the same style as the Butterfly Garden's placeholder art
-   (Bookworm's): the same greys, the same 320 x 210 picture and the same tilted TEMP, until
-   there's real artwork. stage: 0 spawn, 1 tadpole or larva, 2 back legs (frogs and toads) or
+   Greyscale, in the same style as the Butterfly Garden's placeholder art (Bookworm's): the
+   same greys and the same 320 x 210 picture, until there's real artwork. stage: 0 spawn, 1 tadpole or larva, 2 back legs (frogs and toads) or
    front legs (newts and salamanders), 3 four legs, 4 froglet, toadlet, eft or juvenile, 5 grown up. */
 (function () {
   var SHADE = {frog: ['#a9a9a9', '#4a4a4a'], toad: ['#8f8f8f', '#3f3f3f'], newt: ['#b9b9b9', '#555555'],
                salamander: ['#9a9a9a', '#3a3a3a']};
   var INK = '#2b2b2b', LINE = '#7a7a7a';
-  var TEMP = '<g pointer-events="none" aria-hidden="true"><text x="160" y="116" text-anchor="middle" dominant-baseline="middle" ' +
-    'font-family="Arial, Helvetica, sans-serif" font-size="60" font-weight="900" letter-spacing="8" fill="#7a7a7a" ' +
-    'fill-opacity=".42" stroke="#fff" stroke-opacity=".55" stroke-width="1.5" transform="rotate(-14 160 116)">TEMP</text></g>';
   var NAMES = {0: 'spawn', 1: 'young', 2: 'growing legs', 3: 'four legs', 4: 'leaving the water', 5: 'grown up'};
 
   function pondArt(kind, stage) {
@@ -68,7 +64,7 @@
         '<ellipse cx="90" cy="45" rx="7" ry="5.5" fill="' + c + '" stroke="' + INK + '" stroke-width="1.4"/><circle cx="92" cy="43" r="1.6" fill="' + INK + '"/>';
     }
     return '<svg class="art" viewBox="0 0 320 210" role="img" aria-label="' + (kind || 'amphibian') + ', ' + NAMES[stage] +
-      ' (placeholder art)"><g transform="translate(16 9) scale(2.4)">' + water + g + '</g>' + TEMP + '</svg>';
+      ' (placeholder art)"><g transform="translate(16 9) scale(2.4)">' + water + g + '</g></svg>';
   }
   window.pondArt = pondArt;
 })();

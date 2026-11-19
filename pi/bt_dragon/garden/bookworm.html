@@ -3499,18 +3499,13 @@ function moodFor(b){
 }
 
 /* ---------- art ----------
-   TEMPORARY placeholder artwork: greyscale, generic, and stamped "TEMP" across the middle, until real art is made.
+   Placeholder artwork: greyscale and generic, until real art is made.
    One generic image per life stage and group, chosen by artFor(stage, mood, speciesId):
    - larva (all species), grows with the stage and shows the mood face and thought bubble;
    - butterfly chrysalis, moth cocoon, fly puparium, and an exarate pupa for bees, wasps, ants, beetles and other insects;
    - adults: butterfly/moth, ant, wasp, bee, beetle, fly, and a lacewing-like "other insect". */
 let uid=0;
 const G={ink:"#2b2b2b",dark:"#4a4a4a",mid:"#7a7a7a",light:"#a9a9a9",pale:"#d4d4d4",paper:"#ececec"};
-function tempMark(cy){
-  return `<g pointer-events="none" aria-hidden="true"><text x="160" y="${cy}" text-anchor="middle" dominant-baseline="middle"
-    font-family="Arial, Helvetica, sans-serif" font-size="60" font-weight="900" letter-spacing="8" fill="${G.mid}" fill-opacity=".42"
-    stroke="#fff" stroke-opacity=".55" stroke-width="1.5" transform="rotate(-14 160 ${cy})">TEMP</text></g>`;
-}
 const ground=`<path d="M6 172 Q160 120 314 172 Q160 206 6 172Z" fill="${G.pale}"/><path d="M14 172 Q160 156 306 172" stroke="${G.light}" stroke-width="2" fill="none"/>`;
 const soil=`<path d="M10 176 Q160 150 310 176 L310 196 L10 196Z" fill="${G.pale}"/><g fill="${G.light}"><circle cx="60" cy="182" r="2"/><circle cx="110" cy="188" r="1.6"/><circle cx="210" cy="186" r="2"/><circle cx="262" cy="181" r="1.6"/></g>`;
 const twig=`<path d="M50 22 Q160 12 280 26" stroke="${G.dark}" stroke-width="6" fill="none" stroke-linecap="round"/><path d="M226 24 Q250 6 272 14 Q254 30 226 24Z" fill="${G.light}"/>`;
@@ -3543,7 +3538,6 @@ function caterpillarSVG(stage,mood){
       ${face}
     </g>
     ${bubble}
-    ${tempMark(108)}
   </svg>`;
 }
 /* Butterfly chrysalis: bare, hanging from a silk pad */
@@ -3559,7 +3553,6 @@ function chrysalisSVG(){
       <path d="M126 96 Q160 88 194 96" stroke="${G.dark}" stroke-width="2.5" fill="none"/>
       <ellipse cx="146" cy="118" rx="7" ry="20" fill="#fff" opacity=".25"/>
     </g>
-    ${tempMark(110)}
   </svg>`;
 }
 /* Moth cocoon: a silk case spun along a twig */
@@ -3575,7 +3568,6 @@ function cocoonSVG(){
       ${silk}
       <ellipse cx="160" cy="98" rx="34" ry="24" fill="${G.light}" opacity=".45"/>
     </g>
-    ${tempMark(104)}
   </svg>`;
 }
 /* Fly puparium: the hardened, barrel-shaped last larval skin, lying in the soil */
@@ -3588,7 +3580,6 @@ function pupariumSVG(){
     ${rings}
     <ellipse cx="146" cy="120" rx="34" ry="7" fill="#fff" opacity=".2"/>
     <circle cx="224" cy="134" r="3" fill="${G.ink}"/><circle cx="224" cy="146" r="3" fill="${G.ink}"/>
-    ${tempMark(106)}
   </svg>`;
 }
 /* Exarate pupa (bees, wasps, ants, beetles, other insects): pale, with legs, wings and antennae folded against the body */
@@ -3605,13 +3596,12 @@ function pupaSVG(){
       <path d="M182 120 Q196 134 192 150 M174 130 Q186 144 180 160 M164 136 Q172 150 166 164"/>
     </g>
     <path d="M162 86 C178 96 182 118 174 134 C164 128 158 110 162 86Z" fill="${G.pale}" stroke="${G.mid}" stroke-width="1.8"/>
-    ${tempMark(108)}
   </svg>`;
 }
 /* ---------- generic adults ---------- */
 const adultFrame=(cls,label,body,wings,cy=112)=>`<svg class="art ${cls||""}" viewBox="0 0 320 210" role="img" aria-label="${label} (placeholder art)">
   ${wings?`<g class="wing-r">${wings}</g><g class="wing-l"><g transform="translate(320,0) scale(-1,1)">${wings}</g></g>`:""}
-  ${body}${tempMark(cy)}</svg>`;
+  ${body}</svg>`;
 const legsTop=(ys,spread,ink=G.ink)=>ys.map((y,i)=>`<path d="M160 ${y} L${160+spread[i][0]} ${y+spread[i][1]} L${160+spread[i][2]} ${y+spread[i][3]}" stroke="${ink}" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M160 ${y} L${160-spread[i][0]} ${y+spread[i][1]} L${160-spread[i][2]} ${y+spread[i][3]}" stroke="${ink}" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`).join("");
 function lepSVG(cls){
   const wing=`<path d="M160 96 C182 52 246 28 292 44 C304 62 288 96 266 112 C232 116 192 112 160 104Z" fill="${G.light}" stroke="${G.ink}" stroke-width="6" stroke-linejoin="round"/>

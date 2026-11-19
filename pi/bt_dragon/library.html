@@ -288,7 +288,7 @@ function bookCard(b) {
     <div class="meta"><b>${esc(b.title)}</b><span class="sub">${esc(b.author || 'Unknown author')}</span>
       <span class="bar" aria-hidden="true"><i style="width:${b.pct}%"></i></span>
       <span class="foot"><span class="sub mono">${fmtPct(b.pct)} · ${where}</span>
-        <span>${frozen ? '<span class="chip ice">Frozen</span> ' : today ? '<span class="chip ok">Read today</span> ' : ''}<span class="chip">${b.length_name} · ${b.rations} rations</span></span></span>
+        <span>${frozen ? '<span class="chip ice">Frozen</span> ' : today ? '<span class="chip ok">Read today</span> ' : ''}<span class="chip">${b.length_name}${b.rations ? ` · ${b.rations} rations` : ''}</span></span></span>
       ${frozen ? '' : `<form class="row" style="margin-top:6px" data-log="${b.id}" autocomplete="off">
         <label class="grow">${isP ? "I'm now on page" : "I'm now at percent"}
           <input type="number" min="${b.progress}" max="${isP ? b.pages : 100}" step="${isP ? 1 : 0.1}" placeholder="${b.progress}" inputmode="decimal"></label>
@@ -307,7 +307,7 @@ function render() {
   document.title = `${name}'s Hoard: Literary Treasures`;
   $('title').textContent = `${name}'s Hoard: Literary Treasures`;
   const r = L.rations;
-  $('note').textContent = `Knowledge feeds your brain and can also help you feed your dragon! Recording reading progress earns Joy and finishing books earns packs of rations. Short books = ${r.short}, Medium = ${r.medium}, Long = ${r.long}.`;
+  $('note').textContent = `Knowledge feeds your brain and can also help you feed your dragon! Recording reading progress earns Joy, and finishing books earns library points${r.short || r.medium || r.long ? ` and packs of rations. Short books = ${r.short}, Medium = ${r.medium}, Long = ${r.long}` : ''}. Visiting a library earns a scroll.`;
   $('napNote').hidden = !L.napping; $('napNote').textContent = `${name} is napping: wake ${name} in the Den to log reading or change the library.`;
   $('score').textContent = num(L.score); $('ttl').textContent = L.title;
   $('nextTtl').textContent = L.next_title ? `(${num(L.next_title[0] - L.score)} to ${L.next_title[1]})` : '';
@@ -331,7 +331,7 @@ function render() {
   $('done').innerHTML = L.done.length ? L.done.map(d => `<div class="card"><div class="bk">${cover(d)}<div class="meta">
       <b>${esc(d.title)}</b><span class="sub">${esc(d.author || 'Unknown author')} · <span class="mono">${num(d.pages)} pp</span></span>
       <span class="sub">${d.started && day(d.started) !== day(d.date) ? day(d.started) + ' to ' : 'Read '}${day(d.date)}</span>
-      <span class="foot"><span><span class="chip">${LEN[d.length]}</span> <span class="chip gold">+${d.points}</span> <span class="chip ok">+${d.rations} rations</span></span>
+      <span class="foot"><span><span class="chip">${LEN[d.length]}</span> <span class="chip gold">+${d.points}</span>${d.rations ? ` <span class="chip ok">+${d.rations} rations</span>` : ''}</span>
         <button class="star" data-fav="${d.id}" aria-pressed="${favs.has(d.id)}" aria-label="Favourite" title="Favourite">${favs.has(d.id) ? '★' : '☆'}</button></span>
     </div></div></div>`).join('')
     : `<p class="empty">Books you finish appear here, with what each one earned.</p>`;
@@ -393,9 +393,9 @@ function ask(h, text, yes, cls, fn) {
 }
 function celebrate(d) {
   sheet(`<h3>Book finished!</h3><p><b>${esc(d.title)}</b></p>
-    <p class="big">+${d.rations} rations</p>
+    ${d.rations ? `<p class="big">+${d.rations} rations</p>
     <p>${L.name} can't eat them alone: give one from the Den (<b>Give Ration</b>) whenever the pack needs filling.
-      +${d.points} library points.</p>
+      +${d.points} library points.</p>` : `<p class="big">+${d.points} library points</p>`}
     <div class="actions"><button class="primary" onclick="closeSheet()">Back to the library</button></div>`);
 }
 function openTitles() {
@@ -438,7 +438,7 @@ function lenHint() {
   const p = +$('fPages').value;
   if (!(p > 0) || !L) { $('lenHint').textContent = 'Short books are under 450 pages, Medium 450 to 799, and Long 800 or more.'; return; }
   const k = lenOf(p);
-  $('lenHint').textContent = `${num(p)} pages is a ${LEN[k]} book: finishing it earns ${L.rations[k]} rations and ${L.points[k]} library points.`;
+  $('lenHint').textContent = `${num(p)} pages is a ${LEN[k]} book: finishing it earns ${L.rations[k] ? `${L.rations[k]} rations and ` : ''}${L.points[k]} library points.`;
 }
 $('fPages').addEventListener('input', lenHint);
 function formBook() {

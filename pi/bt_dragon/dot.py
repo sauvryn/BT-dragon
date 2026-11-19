@@ -91,7 +91,7 @@ SAY_BOOLS = ("say_lair_temp", "say_lair_storm", "say_lair_sun", "say_lair_warnin
              "say_phone_storm", "say_phone_sun", "say_stars", "say_rss")
 STAR_NEWS = ("A STAR RISES", "A NEW STAR", "A NEW CONSTELLATION")     # (and "... STARS RISING!", "... NEW STARS IN THE SKY!")
 LIMITS = {"volume": (0, 100), "adv_volume": (0, 100), "brightness": (0, 100), "red": (0, 100), "green": (0, 100),
-          "blue": (0, 100), "pitch": (-8, 8), "speed": (0.6, 1.6), "gap": (0, 120)}
+          "blue": (0, 100), "pitch": (-8, 8), "speed": (0.3, 1.6), "gap": (0, 120)}
 
 
 SETUP_IP = "10.201.126.241"      # the Dot's address on its own setup network

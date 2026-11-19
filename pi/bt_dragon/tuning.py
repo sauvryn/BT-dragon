@@ -32,21 +32,32 @@ KNOBS = [
     ("growth_pct", "food", "Growing up: bigger appetite each level", 5, "%",
      "Each level, the belly, joy and PACK hold this much more than at level 1 (each snack fills a smaller share). "
      "0 = the same at every level."),
-    ("growth_max", "food", "Growing up: at most", 200, "% of level 1",
-     "The limit, so a grown dragon somewhere quiet can still be kept fed. 200 = twice level 1."),
+    ("growth_max", "food", "Growing up: at most", 195, "% of level 1",
+     "How much the belly, joy and PACK hold once your dragon is an adult, when they stop growing. Linked to "
+     "Growing up: adult at level: changing this moves the level, to the nearest whole one. 100 = the same as level 1."),
+    ("adult_level", "food", "Growing up: adult at level", 20, "level",
+     "Your dragon is all grown up at this level, and the belly, joy and PACK stop growing. Linked to Growing up: "
+     "at most, which changes with it (and with the appetite each level). 11 or more (a teen at 10)."),
     ("garden_grows", "food", "Growing up: the Butterfly Garden's needs grow too", 0, "0/1",
      "1 = new larvae need more food at higher levels, in step with the growing appetite; 0 = the same at every level."),
     ("pack_trigger", "food", "PACK: eat from it when FOOD drops to", 25, "%", ""),
     ("pack_portion", "food", "PACK: how much of it gets eaten each time", 50, "%",
      "Never more than it takes to fill the belly back to 100."),
-    ("ration_feast", "food", "Rations: earned for each feast", 1, "rations",
+    ("ration_landmark", "food", "Rations: earned for each famous place visited", 1, "rations",
      "A ration fills the PACK completely, but only when you press Give Ration in the den: food for when you're "
-     "stuck somewhere and can't take your dragon out. Fractions add up: 0.25 = one ration for every 4 feasts."),
+     "stuck somewhere and can't take your dragon out. Once per famous place per day (a library that's also a "
+     "famous place counts). Fractions add up: 0.5 = one ration for every 2 visits."),
+    ("ration_feast", "food", "Rations: earned for each feast", 0, "rations",
+     "0 to start with: feasts are common, and rations come from going places and finishing books. Fractions add up: 0.25 = one "
+     "ration for every 4 feasts."),
     ("ration_land", "food", "Rations: earned for each land claimed", 1, "rations",
      "A new realm comes with its first land, so it earns the same. While riding in a vehicle, a land earns this "
      "much times 'Lands: rewards while riding' (under Detection). Fractions add up: 0.1 = one for every 10 lands."),
     ("ration_max", "food", "Rations: most that can be stored", 0, "rations",
      "0 = no limit: they can be stockpiled for lean times."),
+    ("scroll_joy_pct", "joy", "Scrolls: joy from studying one", 50, "% of the most",
+     "A scroll is earned once per library (treasure trove) per day, and kept until you press Give Scroll in the "
+     "den. Studying it fills this much of the joy bar: at 50, two scrolls fill an empty bar."),
     ("library_rations_short", "food", "Library: rations for finishing a Short book", 10, "rations",
      "A book under 450 pages (Bookworm's lengths). Each ration fills the PACK when you give it."),
     ("library_rations_medium", "food", "Library: rations for finishing a Medium book", 20, "rations", "450 to 799 pages."),
@@ -69,6 +80,9 @@ KNOBS = [
     ("pond_food_rare", "food", "Tadpole Pond: food to raise a Rare one", 180, "food", ""),
     ("pond_daily_pct", "food", "Tadpole Pond: most it can grow in a day", 25, "% of the bar",
      "Worked out at hatching and at midnight: where it was at the start of the day, plus this much."),
+    ("garden_daily_pct", "food", "Butterfly Garden: most a larva can grow in a day", 50, "% of its food",
+     "Of all the food it eats before it pupates. At 50 a larva takes at least two days to pupate; what's left over "
+     "goes to the others, and then to the Tadpole Pond."),
     ("garden_pupa_hours", "food", "Butterfly Garden: hours as a pupa", 24, "hours",
      "A larva eats until it pupates; then it eats nothing, and the adult emerges by itself this long after."),
     ("realm_food", "food", "New realm claimed", 3, "food", "A square of the map about 1 km across."),
@@ -265,16 +279,31 @@ def load(store, config_defaults=None):
         if k in _defaults:
             _defaults[k] = v
     _over.clear()
-    for k, v in (store.get("tuning", {}) or {}).items():
-        if k in _defaults:
+    saved = store.get("tuning", {}) or {}
+    for k, v in saved.items():
+        if k in _defaults and k != "growth_max":
             _over[k] = float(v)
+    if "growth_max" in saved and "adult_level" not in saved:      # (from before the two were linked)
+        _set_limit(float(saved["growth_max"]))
+
+
+ADULT_MIN, ADULT_MAX = 11, 200          # (a teen at 10: pet.STAGES)
+
+
+def _limit(pct, adult):
+    """Growing up: what the belly, joy and PACK hold at the adult level, in % of level 1."""
+    return round(100 + pct * (adult - 1), 2)
 
 
 def get(key):
+    if key == "growth_max":          # always worked out, so it can never disagree with the adult level
+        return _limit(get("growth_pct"), get("adult_level"))
     return _over.get(key, _defaults[key])
 
 
 def default(key):
+    if key == "growth_max":
+        return _limit(_defaults["growth_pct"], _defaults["adult_level"])
     return _defaults[key]
 
 
@@ -294,14 +323,26 @@ def set_value(key, value):
         return "must be a percentage, 0 to 100"
     if key in ("xp_curve", "climb_step_m", "storm_hpa", "rise_hpa") and v < 0.5:
         return "too small"
-    if key == "growth_max" and v < 100:
-        return "at least 100 (the same as level 1)"
+    if key == "growth_max":
+        if v < 100:
+            return "at least 100 (the same as level 1)"
+        if get("growth_pct") <= 0:
+            return "set Growing up: bigger appetite each level first (at 0 there's no growing)"
+        err = _set_limit(v)
+        if err:
+            return err
+        _save()
+        return None
+    if key == "adult_level" and not (ADULT_MIN <= v <= ADULT_MAX and v == int(v)):
+        return f"a whole level, {ADULT_MIN} to {ADULT_MAX} (a teen at 10)"
     if key == "garden_grows" and v not in (0, 1):
         return "0 or 1"
     if key == "library_epub_max_mb" and v < 1:
         return "at least 1 MB"
     if key == "library_shelf_max_mb" and v < 10:
         return "at least 10 MB"
+    if key in ("garden_daily_pct", "scroll_joy_pct") and not 1 <= v <= 100:
+        return "1 to 100"
     if key == "pond_daily_pct" and not 1 <= v <= 100:
         return "a percentage, 1 to 100"
     if key == "rss_minutes" and not (10 <= v <= 1440 and v == int(v)):
@@ -317,6 +358,22 @@ def set_value(key, value):
     else:
         _over[key] = v
     _save()
+    return None
+
+
+def _set_limit(v):
+    """Growing up: at most -> the adult level that gives it, to the nearest whole level."""
+    pct = get("growth_pct")
+    if pct <= 0:
+        return None
+    lv = int(round(1 + (v - 100) / pct))
+    if not ADULT_MIN <= lv <= ADULT_MAX:
+        return (f"that's an adult at level {lv}: it must be {ADULT_MIN} to {ADULT_MAX}, so at most "
+                f"{_num(_limit(pct, ADULT_MIN))} to {_num(_limit(pct, ADULT_MAX))}")
+    if lv == _defaults["adult_level"]:
+        _over.pop("adult_level", None)
+    else:
+        _over["adult_level"] = float(lv)
     return None
 
 
@@ -336,7 +393,7 @@ def listing():
     """One line per knob: key|section|label|value|default|unit|help"""
     out = []
     for key, section, label, dflt, unit, help_ in KNOBS:
-        out.append("|".join(str(x) for x in (key, section, label, _num(get(key)), _num(_defaults[key]),
+        out.append("|".join(str(x) for x in (key, section, label, _num(get(key)), _num(default(key)),
                                              unit, help_.replace("|", "/"))))
     return out
 

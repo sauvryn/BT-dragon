@@ -4,7 +4,8 @@ How other devices talk to Harald over the hotspot.
   * Discovery (UDP 5150): every 5 seconds Harald broadcasts one short line,
         BTDRAGON 1 port=5151 web=8080 name=Harald
     to everyone on the network. A client doesn't need to know the Pi's address in
-    advance; it just waits for this shout and connects back to the sender.
+    advance; it just waits for this shout and connects back to the sender. A client can
+    also ask, "BTDRAGON? 1" to UDP 5150, and gets the same line back.
   * Control link (TCP 5151): plain text, one command per line, e.g. "STATUS". Answers are
     "OK ..." / "ERR ..." or several lines ending with "END". Harald also pushes
     "EVT kind|text" lines when something happens.
@@ -61,6 +62,43 @@ async def discovery(app):
             except OSError:
                 pass  # no network yet
             await app._sleep(5)
+    finally:
+        sock.close()
+
+
+async def discovery_replies(app):
+    """Answers "BTDRAGON? 1" with the same line as the announcement, straight back to whoever
+    asked. The phone's voice helper asks when Harald's address has changed (a phone hotspot
+    picks a new range of addresses each time it's switched on), because a question sent to
+    each address in turn reaches him even where a broadcast doesn't."""
+    port = app.cfg["link"]["discovery_port"]
+    loop = asyncio.get_running_loop()
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    sock.setblocking(False)
+    try:
+        sock.bind(("", port))
+    except OSError as e:
+        log.warning("discovery replies: can't listen on UDP %s (%s)", port, e)
+        sock.close()
+        return
+    try:
+        while not app.stop.is_set():
+            try:
+                data, peer = await asyncio.wait_for(loop.sock_recvfrom(sock, 256), 5)
+            except asyncio.TimeoutError:
+                continue
+            except OSError:
+                await app._sleep(1)
+                continue
+            if not data.startswith(b"BTDRAGON? "):
+                continue                    # (our own announcement, or another dragon's)
+            msg = (f"BTDRAGON 1 port={app.cfg['link']['port']} web={app.cfg['link']['web_port']} "
+                   f"name={app.pet.name}\n").encode()
+            try:
+                sock.sendto(msg, peer)
+            except OSError:
+                pass
     finally:
         sock.close()
 
@@ -638,7 +676,8 @@ async def web_server(app):
             elif path in ("/phone/bt_dragon_voice.py", "/phone/harald_voice.py"):   # (the older name too)
                 from .phonevoice import script
                 host = headers.get("host") or f"{app.my_ip or '127.0.0.1'}:{app.cfg['link']['web_port']}"
-                out = _response("200 OK", script(re.sub(r"[^A-Za-z0-9.:\-\[\]]", "", host), app.den_auth.phone_token()),
+                out = _response("200 OK", script(re.sub(r"[^A-Za-z0-9.:\-\[\]]", "", host), app.den_auth.phone_token(),
+                                                 re.sub(r"[^A-Za-z0-9\-]", "", socket.gethostname())[:63]),
                                 "text/x-python; charset=utf-8",
                                 [f'Content-Disposition: attachment; filename="{path.rsplit("/", 1)[1]}"'])
             elif path == "/api/backup":
@@ -670,4 +709,4 @@ async def web_server(app):
 
 
 async def serve_all(app):
-    await asyncio.gather(discovery(app), control_server(app), web_server(app))
+    await asyncio.gather(discovery(app), discovery_replies(app), control_server(app), web_server(app))

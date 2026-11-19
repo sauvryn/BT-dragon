@@ -431,10 +431,11 @@ class Dragon:
             n = info["rations"]
             self.pet.earn_ration(n)
             self.pet.save()
+            got = f"+{n} ration{'s' if n != 1 else ''}, " if n else ""
             self.event("library", f"Finished {info['title']} ({info['length']}, {info['pages']} pages): "
-                                  f"+{n} ration{'s' if n != 1 else ''}, +{info['points']} library points.")
-            self.pet.say(_fit([f"A BOOK FINISHED! +{n} RATIONS", f"BOOK FINISHED! +{n} RATIONS", "A BOOK FINISHED!"]),
-                         "ecstatic", 40)
+                                  f"{got}+{info['points']} library points.")
+            self.pet.say(_fit(([f"A BOOK FINISHED! +{n} RATIONS", f"BOOK FINISHED! +{n} RATIONS"] if n else
+                               [f"A BOOK FINISHED! +{info['points']} POINTS"]) + ["A BOOK FINISHED!"]), "ecstatic", 40)
         elif kind == "title":
             self.event("library", f"New library title: {info['name']}")
 
@@ -547,6 +548,12 @@ class Dragon:
             text = f"NEW BUTTERFLY GARDEN TITLE: {info['name'].upper()}!"
             self.pet.say([text, f"NEW TITLE: {info['name'].upper()}!"], "proud", 30)
             self.event("garden", f"New Butterfly Garden title: {info['name']}")
+            return
+        if kind == "egg":
+            self.pet.say(["AN EGG FOR THE BUTTERFLY GARDEN!", "AN EGG FOR THE GARDEN!", "A NEW EGG!"], "happy", 20,
+                         speak=False)
+            self.event("garden", f"{info.get('place') or 'A green space'} gave the Butterfly Garden an egg "
+                                 f"(spot {info['slot'] + 1}).")
             return
         sp = gardenmod.data()["countries"][info["country"]]["by_id"][info["species"]]
         name = gardenmod.full_name(sp)
@@ -1161,7 +1168,9 @@ class Dragon:
             "mood": self.pet.mood(), "belly": self.pet.belly(), "hunger": round(self.pet.hunger), "pack": round(self.pet.pack, 1), "pack_cap": round(self.pet.pack_cap(), 1),
             "rations": int(self.pet.rations + 1e-9), "ration_part": round((self.pet.rations + 1e-9) % 1, 2),
             "ration_room": round(self.pet.ration_room(), 1),
-            "belly_holds": round(100 * self.pet.growth()), "growth": round(self.pet.growth(), 3),
+            "scrolls": self.pet.scrolls, "scroll_room": round(self.pet.scroll_room() * self.pet.growth()),
+            "belly_holds": round(100 * self.pet.growth()), "belly_now": round(self.pet.hunger * self.pet.growth()),
+            "joy_now": round(self.pet.joy * self.pet.growth()), "growth": round(self.pet.growth(), 3),
             "joy": round(self.pet.joy), "feeling": self.pet.feeling(),
             "moving": self.activity.motion.mode if self.gps.state() == "FIX" else "",
             "headless": self.display.headless, "headless_why": self.display.headless_why,
@@ -1390,9 +1399,11 @@ class Dragon:
                     if not self.libraries.visited_today(lib):
                         lib, lib_first = self.libraries.visit(lib)
                         self._trove(lib, lib_first, lm, first)
-                    elif first:                  # (counted as a library earlier today: the landmark quietly)
-                        self._conquered(f"{self.pet.name} saw {lm['title']} for the first time!",
-                                        conquest.points("landmark"), "landmark")
+                    else:                        # (counted as a library earlier today: the landmark quietly)
+                        self._landmark_ration(lm)
+                        if first:
+                            self._conquered(f"{self.pet.name} saw {lm['title']} for the first time!",
+                                            conquest.points("landmark"), "landmark")
                     continue
                 self._landmark(lm, first)
         if self.libraries:
@@ -1408,8 +1419,12 @@ class Dragon:
         famous place it also is (its Conquest points too, and "where is that landmark?" means it)."""
         self.pet.trove(lib["name"], first)
         self.dot.adventure("trove", name=lib["name"], first=first)
+        self.pet.earn_scroll()               # (once per library per day: libraries.visit)
+        self.event("scroll", f"A scroll from {lib['name']} ({self.pet.scrolls} scroll{'s' if self.pet.scrolls != 1 else ''} "
+                             f"to give {self.pet.name})")
         if lm is not None:
             self.dot.saw_landmark(lm)
+            self._landmark_ration(lm)
             if lm_first:
                 self._conquered(f"{self.pet.name} saw {lm['title']} for the first time!", conquest.points("landmark"),
                                 "landmark")
@@ -1419,7 +1434,17 @@ class Dragon:
         else:
             self.event("trove", f"{self.pet.name} visited a treasure trove: {lib['name']}")
 
+    def _landmark_ration(self, lm):
+        """A famous place visited (once per place per day: landmarks.near): a ration."""
+        n = tuning.get("ration_landmark")
+        if n > 0:
+            self.pet.earn_ration(n)
+            self.pet.save()
+            have = int(self.pet.rations + 1e-9)
+            self.event("ration", f"A ration for visiting {lm['title']} ({have} ration{'s' if have != 1 else ''})")
+
     def _landmark(self, lm, first):
+        self._landmark_ration(lm)
         self.pet.landmark(lm["title"], first)
         self.dot.saw_landmark(lm)
         self.dot.adventure("landmark", title=lm["title"], first=first)
@@ -1446,6 +1471,16 @@ class Dragon:
                 self.pet.green_visit(words)
                 self.dot.adventure("green_visit", text=words)
                 self.event("green", f"{self.pet.name}: {words}")
+                self._green_egg(g["name"])
+
+    def _green_egg(self, place):
+        """A visit to a green space or wood (once per place per day): an egg for the Butterfly
+        Garden, if a spot that's switched on is empty."""
+        if not self.garden:
+            return
+        i = self.garden.give_egg(self.pet.level())
+        if i is not None and self._garden_news and self._garden_news[-1][0] == "egg":
+            self._garden_news[-1][1]["place"] = place
 
     async def _lair_check(self, now, kinds=None):
         """Local announcements, each at its own time: how warm it is at the Lair (on the hour),
@@ -1843,11 +1878,10 @@ class Dragon:
                 return ["ERR which spot?"]
             err = self.garden.collect(int(arg), self.pet.level())
             return [f"ERR {err}"] if err else ["OK"]
-        if cmd in ("GARDENEGG", "GARDENEMPTY"):     # put an egg in a spot, or take one away
+        if cmd in ("GARDENON", "GARDENOFF"):     # switch an empty spot (the 2nd or 3rd) on or off
             if not arg.strip().isdigit():
                 return ["ERR which spot?"]
-            f = self.garden.lay_egg if cmd == "GARDENEGG" else self.garden.take_egg
-            err = f(int(arg), self.pet.level())
+            err = self.garden.set_on(int(arg), cmd == "GARDENON", self.pet.level())
             return [f"ERR {err}"] if err else ["OK"]
         if cmd == "LANG":    # the language setting, and what moving the Lair would offer
             code = self._lair_code().upper()
@@ -1945,7 +1979,9 @@ class Dragon:
             if not arg:
                 return tuning.listing() + ["END"]
             key, _, val = arg.partition(" ")
-            if val.strip().lower() == "default":
+            if val.strip().lower() == "default" and key == "growth_max":
+                err = tuning.set_value("adult_level", tuning.default("adult_level"))   # (the two are linked)
+            elif val.strip().lower() == "default":
                 err = tuning.set_value(key, tuning.default(key)) if key in dict.fromkeys(k[0] for k in tuning.KNOBS) else "no such knob"
             else:
                 err = tuning.set_value(key, val.strip())
@@ -1975,6 +2011,13 @@ class Dragon:
             if which == "rations":
                 try:
                     self.pet.rations = max(0.0, float(val))
+                except ValueError:
+                    return ["ERR give a number"]
+                self.pet.save()
+                return ["OK"]
+            if which == "scrolls":
+                try:
+                    self.pet.scrolls = max(0, int(float(val)))
                 except ValueError:
                     return ["ERR give a number"]
                 self.pet.save()
@@ -2171,6 +2214,17 @@ class Dragon:
             self.event("ration", f"You gave {self.pet.name} a ration: +{_n(room)} food, the pack is full "
                                  f"({left} ration{'s' if left != 1 else ''} left).")
             return [f"OK {self.pet.name}'s pack is full ({left} ration{'s' if left != 1 else ''} left)"]
+        if cmd == "SCROLL":  # give him a scroll to study: joy, half the bar
+            if self.napping:
+                return [f"ERR {self.pet.name} is napping: wake {self.pet.name} first"]
+            room = self.pet.scroll_room()
+            why = self.pet.give_scroll()
+            if why:
+                return [f"ERR {why}"]
+            left = self.pet.scrolls
+            self.event("scroll", f"You gave {self.pet.name} a scroll to study: +{_n(room)}% joy "
+                                 f"({left} scroll{'s' if left != 1 else ''} left).")
+            return [f"OK {self.pet.name} studied a scroll ({left} scroll{'s' if left != 1 else ''} left)"]
         if cmd == "NAP":
             return [await self.nap()]
         if cmd == "WAKE":

@@ -8,9 +8,15 @@ Feeding: treats and berries go into his BELLY, then his PACK; anything that fits
 used to be wasted. Now it feeds the garden, split evenly between whatever is growing there,
 so raising three at once means each grows a third as fast.
 
+Eggs are earned: each green space or wood visited (a walk, run or ride in it: greens.py,
+once per place per day) brings an egg, into the first spot that's switched on and empty.
+The second and third spots can be switched off in the den while they're empty, to raise one
+or two at a time; they're on to start with. A larva can grow at most half of its food to
+pupation in a day (Developer Tools: "Butterfly Garden: most a larva can grow in a day"), so
+it takes at least two days; what it can't eat goes to the others, then to the Tadpole Pond.
+
 A larva's life, as in Bookworm:
-  - an egg waits in the first spot (and in any other you put one in, from the den); the
-    first food hatches it, and only then is its species
+  - an egg waits in its spot; the first food hatches it, and only then is its species
     chosen (a little joy). Rarity is rolled (Common 60%, Uncommon 30%, Rare 10%), and a rarer
     one needs more food to raise, like a longer book;
   - which species: Bookworm's own rules. Every species of that rarity not yet raised, in the
@@ -184,38 +190,45 @@ class Garden:
         return {"egg": True, "laid": now or time.time(), "fed": 0.0}
 
     def sync_slots(self, level, now=None):
-        """The first spot always has an egg (or a larva) in it. Spots that open later, or that
-        an adult has just left, stay empty until you put an egg in them from the den, so you
-        can raise one or two at a time if you'd rather."""
+        """Spots open with the levels, empty: eggs are earned (see give_egg)."""
         n = self.slot_count(level)
         changed = False
         while len(self.s["slots"]) < n:
-            self.s["slots"].append(self._egg(now) if not self.s["slots"] else {"empty": True})
-            changed = True
-        if self.s["slots"] and self.s["slots"][0].get("empty"):
-            self.s["slots"][0] = self._egg(now)
+            self.s["slots"].append({"empty": True})
             changed = True
         if changed:
             self.save()
 
-    def lay_egg(self, i, level):
-        """The den's "Put an egg here" on an empty spot."""
-        if not self.unlocked(level) or not 0 <= i < self.slot_count(level):
-            return "there's no such spot"
-        self.sync_slots(level)
-        if not self.s["slots"][i].get("empty"):
-            return "that spot isn't empty"
-        self.s["slots"][i] = self._egg()
-        self.save()
+    def is_on(self, i):
+        """Is this spot switched on (it gets eggs)? The first always is."""
+        return i == 0 or i not in (self.s.get("off") or [])
+
+    def give_egg(self, level, now=None):
+        """A green space or wood visited: an egg, into the first empty spot that's switched on.
+        Returns the spot it went in (0, 1 or 2), or None (the garden is closed, or full)."""
+        if not self.unlocked(level):
+            return None
+        self.sync_slots(level, now)
+        for i, b in enumerate(self.s["slots"][: self.slot_count(level)]):
+            if b.get("empty") and self.is_on(i):
+                self.s["slots"][i] = self._egg(now)
+                self.save()
+                self._tell("egg", {"slot": i})
+                return i
         return None
 
-    def take_egg(self, i, level):
-        """The den's "Leave this spot empty": only an egg that hasn't hatched, and never the first spot's."""
-        if not 0 < i < min(len(self.s["slots"]), self.slot_count(level)):
-            return "the first spot always has an egg"
-        if not self.s["slots"][i].get("egg"):
-            return "only an egg that hasn't hatched yet can be taken away"
-        self.s["slots"][i] = {"empty": True}
+    def set_on(self, i, on, level):
+        """The den's switch for the second and third spots: only while the spot is empty."""
+        if not 0 < i < MAX_SLOTS:
+            return "the first spot is always on"
+        if i >= self.slot_count(level):
+            return "that spot hasn't opened yet"
+        self.sync_slots(level)
+        if not self.s["slots"][i].get("empty"):
+            return "only an empty spot can be switched off or on"
+        off = set(self.s.get("off") or [])
+        (off.discard if on else off.add)(i)
+        self.s["off"] = sorted(off)
         self.save()
         return None
 
@@ -305,18 +318,36 @@ class Garden:
                  if not b.get("empty") and not b.get("adult") and not self.is_pupa(b)]
         if not slots:
             return 0.0                      # (nobody to eat it: nothing is said or counted)
-        share = food / len(slots)
         eaten = 0.0
         c = self.country(lair_code)
+        day = time.strftime("%Y-%m-%d", time.localtime(now))
+        hungry = []
         for i, b in slots:
             if b.get("egg"):
                 self._hatch(b, c, now)
-            self._check_hunger(b, now)      # (did it go hungry before this meal?)
-            b["last_fed"] = now
-            # a larva eats only up to its pupation point
-            before = b["fed"]
-            b["fed"] = min(b["need"] * b["pupAt"] / 100, b["fed"] + share)
-            eaten += max(0.0, b["fed"] - before)
+            if b.get("day") != day:         # (a new day: a fresh allowance)
+                b["day"], b["today"] = day, 0.0
+            if self.room(b) > 1e-9:
+                hungry.append(b)
+        # shared out evenly; what one can't eat (its day's allowance or its pupation point
+        # reached) goes round the others
+        left = food
+        while left > 1e-9 and hungry:
+            share = left / len(hungry)
+            for b in list(hungry):
+                bite = min(share, self.room(b))
+                if bite <= 0:
+                    hungry.remove(b)
+                    continue
+                self._check_hunger(b, now)  # (did it go hungry before this meal?)
+                b["last_fed"] = now
+                b["fed"] += bite
+                b["today"] = b.get("today", 0.0) + bite
+                eaten += bite
+                left -= bite
+                if self.room(b) <= 1e-9:
+                    hungry.remove(b)
+        for i, b in slots:
             pct = 100 * b["fed"] / b["need"] + 1e-6          # (rounding: full means full)
             stage = stage_for(pct, b["pupAt"])
             if stage >= 9 and b.get("stage", 0) < 9:
@@ -331,6 +362,17 @@ class Garden:
         self.sync_slots(level, now)
         self.save()
         return eaten
+
+    @staticmethod
+    def day_most(b):
+        """The most a larva can eat in a day: a share of all it eats before it pupates."""
+        return b["need"] * b["pupAt"] / 100 * tuning.get("garden_daily_pct") / 100
+
+    def room(self, b):
+        """What a larva can still eat: today's allowance, and no further than its pupation point."""
+        to_pupa = b["need"] * b["pupAt"] / 100 - b["fed"]
+        today = self.day_most(b) - (b.get("today", 0.0) if b.get("day") == time.strftime("%Y-%m-%d") else 0.0)
+        return max(0.0, min(to_pupa, today))
 
     # ---- pupae: a timer, not food
     @staticmethod
@@ -420,8 +462,7 @@ class Garden:
     def collect(self, i, level, now=None):
         """The den's "tap to add to Collection": the adult joins the collection of the country it
         hatched in (wherever the garden has moved since), may open a habitat and earns its points.
-        Its spot is freed: the larvae below move up one, and the last spot is left empty (or gets
-        a new egg, if it's the only spot)."""
+        Its spot is left empty until the next egg."""
         now = now or time.time()
         slots = self.s["slots"]
         if not 0 <= i < len(slots) or not slots[i].get("adult"):
@@ -442,9 +483,8 @@ class Garden:
         habitat = next((h for h in sp["habitats"] if h not in self.cdata(c)["habitats"]), None)
         if habitat:
             self.cdata(c)["habitats"][habitat] = iso(now)
-        del slots[i]
-        slots.append({"empty": True})
-        self.sync_slots(level, now)          # (the first spot always gets an egg, if it's now empty)
+        slots[i] = {"empty": True}           # (it waits for the next egg: a green space or wood visited)
+        self.sync_slots(level, now)
         self.save()
         self._tell("collect", dict(b, form=form, new=is_new, habitat=habitat, name=sp["name"], points=points))
         for n, tid, name in TITLES:
@@ -472,9 +512,10 @@ class Garden:
                "fed_today": round(self.s.get("fed_today", 0.0), 1) if self.s.get("fed_day") == time.strftime("%Y-%m-%d") else 0}
         if out["unlocked"]:
             self.sync_slots(level)
+        out["daily_pct"] = tuning.get("garden_daily_pct")
         for i, b in enumerate(self.s["slots"][: out["slots"]]):
             if b.get("empty"):
-                out["larvae"].append({"empty": True, "slot": i})
+                out["larvae"].append({"empty": True, "slot": i, "on": self.is_on(i)})
                 continue
             if b.get("egg"):
                 out["larvae"].append({"egg": True, "slot": i})
@@ -490,6 +531,8 @@ class Garden:
                 "fed": round(b["fed"], 1), "need": b["need"], "country": b["country"], "slot": i,
                 "adult": bool(b.get("adult")), "form": b.get("form"),
                 "emerges_at": int(self.emerges_at(b) or 0),
+                "today_left": round(self.room(b), 1) if not b.get("adult") and not self.is_pupa(b) else 0,
+                "today_most": round(self.day_most(b), 1),
                 "country_name": COUNTRY_NAME.get(b["country"], "")})
         return out
 

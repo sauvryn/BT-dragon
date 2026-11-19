@@ -207,16 +207,20 @@
       <div class="stat"><b id="sSpecies">0</b><span>types</span></div>
       <div class="stat"><b id="sTreats">0</b><span>treats today</span></div>
     </div>
-    <div class="sub" style="margin-top:10px">Joy</div>
+    <div class="sub" style="margin-top:10px">Joy <b id="joyNow" style="color: var(--ink)">0</b> / <span id="joyCap">100</span></div>
     <div class="meter"><div id="joy" style="width:50%; background: var(--rune)"></div></div>
-    <div class="sub" style="margin-top:8px">Belly (food) <span id="bellyHolds"></span></div>
+    <div class="row" style="margin-top:4px; border-top:0">
+      <div class="grow sub">Scrolls <b id="scrolls" style="color: var(--ink)">0</b>
+        · yours to give: studying one fills half the joy bar. Earned for every library (treasure trove) visited, once a day each.</div>
+      <button id="scrollBtn" onclick="giveScroll()" disabled>Give Scroll</button></div>
+    <div class="sub" style="margin-top:8px">Belly <b id="bellyNow" style="color: var(--ink)">0</b> / <span id="bellyCap">100</span> food <span id="bellyHolds"></span></div>
     <div class="meter"><div id="hunger" style="width:50%"></div></div>
     <div class="sub" style="margin-top:8px">Pack <b id="packNow" style="color: var(--ink)">0</b> / <span id="packCap">50</span>
       · spare berries and treats for when <span class="pname" data-nolang>Harald</span> gets hungry</div>
     <div class="meter"><div id="packBar" style="width:0; background: var(--dim)"></div></div>
     <div class="row" style="margin-top:4px; border-top:0">
       <div class="grow sub">Rations <b id="rations" style="color: var(--ink)">0</b><span id="rationPart"></span>
-        · yours to give: each fills the pack completely. Earned for every feast and land claimed, and for every book finished in the Library.</div>
+        · yours to give: each fills the pack completely. Earned for every new land claimed, every famous place visited (once a day each), and every book finished in the Library.</div>
       <button id="rationBtn" onclick="giveRation()" disabled>Give Ration</button></div>
     <p id="feeling" style="margin:10px 0 0; font-weight:600"></p>
     <p class="sub" id="stage" style="margin:4px 0 0"></p>
@@ -376,6 +380,10 @@
         <div class="sub">Now <span id="nowJoy">--</span>%</div></div>
         <input id="setJoy" type="number" min="0" max="100" step="1" inputmode="decimal"><span class="unit">%</span>
         <button style="visibility:visible; border-color: var(--rune); color: var(--ink)" onclick="setMeter('joy')">Set</button></div>
+      <div class="row knob setmeter"><div class="grow"><b>Set scrolls</b>
+        <div class="sub">Now <span id="nowScrolls">--</span></div></div>
+        <input id="setScrolls" type="number" min="0" step="1" inputmode="decimal"><span class="unit">scrolls</span>
+        <button style="visibility:visible; border-color: var(--rune); color: var(--ink)" onclick="setMeter('scrolls')">Set</button></div>
       <div id="knobs-joy"></div>
     </details>
     <details class="subtools" id="dt-xp"><summary><b>XP</b> <span class="sub">· XP and the level curve</span><span class="changedn" id="chg-xp"></span></summary>
@@ -462,7 +470,7 @@
     <h2><span class="pname" data-nolang>Harald</span>'s Hoard: Literary Treasures</h2>
     <p class="sub" id="libNote" style="margin:0 0 8px; border-left:3px solid var(--rune); padding-left:10px">Knowledge feeds your
       brain and can also help you feed your dragon! Recording reading progress earns Joy and finishing books earns packs
-      of rations. Short books = 10, Medium = 20, Long = 30.</p>
+      of rations. Short books = 10, Medium = 20, Long = 30. Visiting a library earns a scroll.</p>
     <p style="margin:0 0 6px"><b id="libScore">0</b> library points · <b id="libTitle"></b> <span class="sub" id="libNext"></span></p>
     <div id="libBooks"></div>
     <p class="sub" id="libMore" style="margin:6px 0 0"></p>
@@ -614,7 +622,7 @@
     <details class="subtools"><summary><b>Voice</b> <span class="sub">· pitch, speed and pauses</span></summary>
       <div class="row"><div class="grow">Pitch<div class="sub">Lower is deeper and more dragonish (needs SoX)</div></div><input type="range" min="-8" max="8" step="0.5" id="dotPitch"
         oninput="$('dotPitchV').textContent=this.value" onchange="dotSet('pitch', this.value)"><span class="val" id="dotPitchV"></span></div>
-      <div class="row"><div class="grow">Speed</div><input type="range" min="0.6" max="1.6" step="0.05" id="dotSpeed"
+      <div class="row"><div class="grow">Speed</div><input type="range" min="0.3" max="1.6" step="0.05" id="dotSpeed"
         oninput="$('dotSpeedV').textContent=this.value" onchange="dotSet('speed', this.value)"><span class="val" id="dotSpeedV"></span></div>
       <div class="row"><div class="grow">Pause between remarks<div class="sub">Seconds, at least</div></div><input type="range" min="0" max="60" step="1" id="dotGap"
         oninput="$('dotGapV').textContent=this.value" onchange="dotSet('gap', this.value)"><span class="val" id="dotGapV"></span></div>
@@ -1011,11 +1019,13 @@ async function refresh() {
     $('joy').style.width = v.joy + '%';
     $('nowFood').textContent = v.hunger; $('nowJoy').textContent = v.joy;
     $('packNow').textContent = v.pack; $('packCap').textContent = v.pack_cap;
-    $('bellyHolds').textContent = v.belly_holds > 100 ? `· holds ${v.belly_holds} food (growing up: ${v.belly_holds - 100}% more than at level 1)` : ''; $('packBar').style.width = Math.min(100, v.pack * 100 / Math.max(1, v.pack_cap)) + '%'; $('nowPack').textContent = v.pack + ' food';
+    $('joyNow').textContent = v.joy_now ?? v.joy; $('joyCap').textContent = v.belly_holds ?? 100;
+    $('bellyNow').textContent = v.belly_now ?? v.hunger; $('bellyCap').textContent = v.belly_holds ?? 100;
+    $('bellyHolds').textContent = v.belly_holds > 100 ? `· growing up: ${v.belly_holds - 100}% more than at level 1` : ''; $('packBar').style.width = Math.min(100, v.pack * 100 / Math.max(1, v.pack_cap)) + '%'; $('nowPack').textContent = v.pack + ' food';
     if ('beacon_on' in v && document.activeElement !== $('beaconOn')) $('beaconOn').checked = !!v.beacon_on;
     if (v.library) {
       const B = v.library, r = B.rations;
-      $('libNote').textContent = `Knowledge feeds your brain and can also help you feed your dragon! Recording reading progress earns Joy and finishing books earns packs of rations. Short books = ${r.short}, Medium = ${r.medium}, Long = ${r.long}.`;
+      $('libNote').textContent = `Knowledge feeds your brain and can also help you feed your dragon! Recording reading progress earns Joy, and finishing books earns library points${r.short || r.medium || r.long ? ` and packs of rations. Short books = ${r.short}, Medium = ${r.medium}, Long = ${r.long}` : ''}. Visiting a library earns a scroll.`;
       $('libScore').textContent = Number(B.score).toLocaleString(); $('libTitle').textContent = B.title;
       $('libNext').textContent = B.next_title ? `(${Number(B.next_title[0] - B.score).toLocaleString()} to ${B.next_title[1]})` : '';
       const book = `<svg viewBox="0 0 46 68" aria-hidden="true"><rect x="4" y="3" width="38" height="62" rx="3" fill="#3a352e" stroke="#6b5a3a"/><rect x="4" y="3" width="7" height="62" rx="2" fill="#4a4136"/><path d="M28 22 L21 34 L28 46" fill="none" stroke="#d9a441" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -1044,8 +1054,14 @@ async function refresh() {
       $('rations').textContent = v.rations; $('nowRations').textContent = v.rations + (v.ration_part ? ` (+${Math.round(v.ration_part * 100)}% of the next)` : '');
       $('rationPart').textContent = v.ration_part ? ` (+${Math.round(v.ration_part * 100)}% of the next)` : '';
       const rb = $('rationBtn'); rb.disabled = v.rations < 1 || v.ration_room < 0.05 || !!v.napping;
-      rb.title = v.rations < 1 ? 'No rations yet: feasts, new lands and finished books earn them' : v.ration_room < 0.05 ? 'The pack is already full'
+      rb.title = v.rations < 1 ? 'No rations yet: new lands, famous places and finished books earn them' : v.ration_room < 0.05 ? 'The pack is already full'
         : v.napping ? PET + ' is napping' : `Fills the pack: +${v.ration_room} food`;
+    }
+    if ('scrolls' in v) {
+      $('scrolls').textContent = v.scrolls; $('nowScrolls').textContent = v.scrolls;
+      const sb = $('scrollBtn'); sb.disabled = v.scrolls < 1 || v.scroll_room < 0.05 || !!v.napping;
+      sb.title = v.scrolls < 1 ? 'No scrolls yet: visiting libraries earns them' : v.scroll_room < 0.05 ? 'The joy bar is already full'
+        : v.napping ? PET + ' is napping' : `Studying it: +${v.scroll_room} joy`;
     }
     $('nowXp').textContent = `${v.xp.toLocaleString()} XP, level ${v.level} (next at ${v.next_xp.toLocaleString()})`;
     $('feeling').textContent = v.feeling.charAt(0) + v.feeling.slice(1).toLowerCase();
@@ -1381,10 +1397,15 @@ async function giveRation() {
   toast((r[0] || PET + ' is not answering').replace(/^(OK|ERR) /, ''));
   refresh();
 }
+async function giveScroll() {
+  const r = await cmd('SCROLL');
+  toast((r[0] || PET + ' is not answering').replace(/^(OK|ERR) /, ''));
+  refresh();
+}
 async function setMeter(which) {
-  const box = $({food: 'setFood', joy: 'setJoy', xp: 'setXp', pack: 'setPack', rations: 'setRations'}[which]);
+  const box = $({food: 'setFood', joy: 'setJoy', xp: 'setXp', pack: 'setPack', rations: 'setRations', scrolls: 'setScrolls'}[which]);
   if (box.value === '') return toast({xp: 'Type an amount of XP first', pack: 'Type an amount of food first',
-                                      rations: 'Type a number of rations first'}[which]
+                                      rations: 'Type a number of rations first', scrolls: 'Type a number of scrolls first'}[which]
                                      || 'Type a percentage first');
   await cmd(`METER ${which} ${box.value}`, true);
   box.value = ''; refresh();
@@ -1718,8 +1739,9 @@ async function loadGarden() {
   const bellyFull = g.belly >= 99.5, packFull = g.pack >= g.pack_cap - 0.05;
   $('gdFood').innerHTML = `Spare food today: <b>${g.fed_today}</b>. Snacks and feasts reach the garden once the BELLY is full
     (now ${Math.round(g.belly)}%${bellyFull ? ' ✓' : ''}); treats and berries once the PACK is full too (${g.pack} of ${g.pack_cap}${packFull ? ' ✓' : ''}).`;
-  $('gdSpots').textContent = g.slots < g.max ? `${g.slots} of ${g.max} spots: one more opens with each level gained (next at level ${g.level + 1}).`
-    : `All ${g.max} spots open. Food is shared between the ones with an egg or a larva in them.`;
+  $('gdSpots').textContent = (g.slots < g.max ? `${g.slots} of ${g.max} spots: one more opens with each level gained (next at level ${g.level + 1}).`
+    : `All ${g.max} spots open. Food is shared between the ones with an egg or a larva in them.`)
+    + ` Eggs come from walks, runs and rides in parks and woods. A larva grows at most ${g.daily_pct}% of the way to pupating each day.`;
   gardenArtFrame(g.art);
   const cap1 = t => t.charAt(0).toUpperCase() + t.slice(1);
   // a pupa eats nothing: it just takes its time (Developer Tools: hours as a pupa)
@@ -1728,12 +1750,13 @@ async function loadGarden() {
     const h = Math.floor(s / 3600), m = Math.round((s % 3600) / 60);
     return 'in ' + (h ? `${h} h ${m} min` : `${m} min`); };
   const html = g.larvae.map(b => {
-    if (b.empty) return `<div class="larva egg"><b>An empty spot</b><div class="sub">Nothing grows here until you put an
-      egg in it, so the spare food goes further for the others.</div>
-      <div class="actions" style="margin-top:6px"><button onclick="gardenEgg(${b.slot}, true)">Put an egg here</button></div></div>`;
+    if (b.empty) return `<div class="larva egg"><b>${b.on ? 'An empty spot' : 'A spot switched off'}</b><div class="sub">${b.on
+      ? `Waiting for an egg: take ${PET} for a walk, run or ride in a park or a wood (one egg per place each day).`
+      : 'No eggs come here, so you can raise fewer at a time and the spare food goes further for the others.'}</div>
+      ${b.slot > 0 ? `<label class="row" style="border-top:0; margin-top:6px"><input type="checkbox" ${b.on ? 'checked' : ''}
+        onchange="gardenOn(${b.slot}, this.checked)"> <span class="grow">Spot ${b.slot + 1} gets eggs</span></label>` : ''}</div>`;
     if (b.egg) return `<div class="larva egg"><div class="lv-row"><div class="lv-text"><b>An egg</b>
-      <div class="sub">Hatches with the next spare food, and only then do we find out what it is.</div>
-      ${b.slot > 0 ? `<div class="actions" style="margin-top:6px"><button onclick="gardenEgg(${b.slot}, false)">Leave this spot empty</button></div>` : ''}</div>
+      <div class="sub">Hatches with the next spare food, and only then do we find out what it is.</div></div>
       <div class="gd-art lv-art">${EGG_SVG}</div></div></div>`;
     const nodes = [];
     for (let k = 1; k <= 10; k++) {
@@ -1759,6 +1782,7 @@ async function loadGarden() {
         <div>${esc(stage)}${form ? ` <span class="sub">· ${esc(form)}</span>` : ''}</div>
         <div class="sub">${esc(b.rarity)}</div>
         <div>Progress: <b>${b.adult ? 100 : b.pct.toFixed(0)}%</b></div>${away}
+        ${!b.adult && b.stage < 9 && b.today_left < 0.05 ? `<div class="sub">Eaten all it can today: it grows again tomorrow</div>` : ''}
       </div>${art ? `<div class="gd-art lv-art art-wrap${!b.adult && b.stage < 9 ? ' crawl' : ''}">${art}</div>` : ''}</div>
       ${b.adult ? '' : `<div class="stemlbl top"><span style="left:${b.pupAt}%${b.pupAt > 78 ? ';transform:translateX(-88%)' : ''}">${esc(pupa)} ${b.pupAt}%</span></div>
       <div class="stem"><span class="track"></span><span class="fill" style="width:${b.pct}%"></span>${nodes.join('')}</div>`}
@@ -1782,8 +1806,8 @@ async function gardenCollect(slot, notes) {
   if (r[0] !== 'OK') toast((r[0] || PET + ' is not answering').replace(/^ERR /, ''));
   loadGarden();
 }
-async function gardenEgg(slot, lay) {
-  const r = await cmd((lay ? 'GARDENEGG ' : 'GARDENEMPTY ') + slot);
+async function gardenOn(slot, on) {
+  const r = await cmd((on ? 'GARDENON ' : 'GARDENOFF ') + slot);
   if (r[0] !== 'OK') toast((r[0] || PET + ' is not answering').replace(/^ERR /, ''));
   loadGarden();
 }

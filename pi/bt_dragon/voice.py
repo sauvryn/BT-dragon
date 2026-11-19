@@ -201,7 +201,7 @@ class Piper:
         if not exe or not model:
             return False
         self.proc = await asyncio.create_subprocess_exec(
-            exe, "--model", model, "--json-input", "--length_scale", f"{1 / max(0.5, self.speed):.2f}",
+            exe, "--model", model, "--json-input", "--length_scale", f"{1 / max(0.3, self.speed):.2f}",
             stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL)
         log.info("Piper started with %s", os.path.basename(model))
         return True
